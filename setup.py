@@ -1,24 +1,14 @@
-from distutils.core import setup
+from setuptools import find_packages, setup
 
 
 setup(name='scikit-datasets',
-      packages=['skdatasets', 'skdatasets.keel', 'skdatasets.keel.imbalanced',
-                'skdatasets.keel.standard_classification', 'skdatasets.libsvm',
-                'skdatasets.libsvm.classification',
-                'skdatasets.libsvm.classification_scale',
-                'skdatasets.libsvm.classification_test',
-                'skdatasets.libsvm.classification_test_remaining',
-                'skdatasets.libsvm.classification_test_scale',
-                'skdatasets.libsvm.classification_val_test',
-                'skdatasets.libsvm.regression', 'skdatasets.uci',
-                'skdatasets.uci.classification',
-                'skdatasets.uci.classification_test'],
-      version='0.1.2',
+      packages=find_packages(),
+      version='0.1.3',
       description='Scikit-learn-compatible datasets',
       author='David Diaz Vico',
       author_email='david.diaz.vico@outlook.com',
       url='https://github.com/daviddiazvico/scikit-datasets',
-      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.2.tar.gz',
+      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.3.tar.gz',
       keywords=['scikit-learn', 'pandas'],
       classifiers=['Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
