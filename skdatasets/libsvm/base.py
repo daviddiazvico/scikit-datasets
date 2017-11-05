@@ -37,7 +37,7 @@ def load_train(name, url, fetch_file=fetch_file, return_X_y=False):
     X = X.todense()
 
     if return_X_y:
-        return ((X, y), )
+        return X, y
 
     return Bunch(data=X, target=y)
 
@@ -76,7 +76,7 @@ def load_train_scale(name, url, url_scale, fetch_file=fetch_file,
     X_scale = X_scale.todense()
 
     if return_X_y:
-        return ((X, y), )
+        return X, y
 
     return Bunch(data=X, target=y, data_scale=X_scale, target_scale=y_scale)
 
@@ -115,7 +115,7 @@ def load_train_test(name, url, url_test, fetch_file=fetch_file,
     X_test = X_test.todense()
 
     if return_X_y:
-        return ((X, y), (X_test, y_test))
+        return (X, y), (X_test, y_test)
 
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test)
 
@@ -160,7 +160,7 @@ def load_train_test_remaining(name, url, url_test, url_remaining,
     X_remaining = X_remaining.todense()
 
     if return_X_y:
-        return ((X, y), (X_test, y_test))
+        return (X, y), (X_test, y_test)
 
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
                  data_remaining=X_remaining, target_remaining=y_remaining)
@@ -212,7 +212,7 @@ def load_train_val_test(name, url, url_tr, url_val, url_test,
     X_test = X_test.todense()
 
     if return_X_y:
-        return ((X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test))
+        return (X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test)
 
     return Bunch(data=X, target=y, data_tr=X_tr, target_tr=y_tr, data_val=X_val,
                  target_val=y_val, data_test=X_test, target_test=y_test)
@@ -263,7 +263,7 @@ def load_train_test_scale(name, url, url_test, url_scale, url_test_scale,
     X_scale_test = X_scale_test.todense()
 
     if return_X_y:
-        return ((X, y), (X_test, y_test))
+        return (X, y), (X_test, y_test)
 
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
                  data_scale=X_scale, target_scale=y_scale,

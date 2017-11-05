@@ -54,7 +54,7 @@ def load_train(name, url_data, url_names, names, target_names,
     target = data[target_names].values
 
     if return_X_y:
-        return ((features, target), )
+        return features, target
 
     filename_descr = fetch_file(name, url_names)
     with open(filename_descr) as rst_file:
@@ -116,7 +116,7 @@ def load_train_test(name, url_data, url_test, url_names, names, target_names,
                                  drop_first=True).astype(np.int).values
 
     if return_X_y:
-        return ((features, target), (features_test, target_test))
+        return (features, target), (features_test, target_test)
 
     filename_descr = fetch_file(name, url_names)
     with open(filename_descr) as rst_file:

@@ -75,7 +75,7 @@ def load_imbalanced(name, url, names, target_names, return_X_y=False):
     target = pd.factorize(data[target_names[0]].tolist(), sort=True)[0]
 
     if return_X_y:
-        return ((features, target), )
+        return features, target
 
     data_home_fold = fetch_zip(name, url + '/' + name + '-5-fold.zip')
     test_5fold = []
@@ -132,7 +132,7 @@ def load_standard_classification(name, url, names, target_names,
     target = pd.factorize(data[target_names[0]].tolist(), sort=True)[0]
 
     if return_X_y:
-        return ((features, target), )
+        return features, target
 
     data_home_fold = fetch_zip(name, url + '/' + name + '-5-fold.zip')
     test_5fold = []
