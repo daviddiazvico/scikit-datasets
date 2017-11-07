@@ -26,7 +26,7 @@ from .standard_classification import (load_balance, load_cleveland, load_ecoli,
                                       load_satimage, load_yeast)
 
 
-load = {'abalone9_18': load_abalone9_18, 'abalone19': load_abalone19,
+load = {'abalone9-18': load_abalone9_18, 'abalone19': load_abalone19,
         'cleveland-0_vs_4': load_cleveland_0_vs_4, 'ecoli4': load_ecoli4,
         'ecoli-0-1-3-7_vs_2-6': load_ecoli_0_1_3_7_vs_2_6,
         'ecoli-0-1-4-6_vs_5': load_ecoli_0_1_4_6_vs_5,
