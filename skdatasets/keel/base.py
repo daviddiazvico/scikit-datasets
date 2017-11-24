@@ -15,13 +15,13 @@ def _load_fold(fold, name, nfolds, data_home_fold, names, feature_names,
                 target_names):
     """Load a dataset fold."""
     data = pd.read_csv(join(data_home_fold,
-                            name + '-' + str(nfolds) + '-' + str(fold) + 'tra.dat'),
+                            name + '-' + str(nfolds) + '-' + str(fold + 1) + 'tra.dat'),
                        names=names, sep=', ', engine='python',
                        skiprows=len(names) + 4, na_values='?')
     features = pd.get_dummies(data[feature_names]).as_matrix()
     target = pd.factorize(data[target_names[0]].tolist(), sort=True)[0]
     data_test = pd.read_csv(join(data_home_fold,
-                                 name + '-' + str(nfolds) + '-' + str(fold) + 'tst.dat'),
+                                 name + '-' + str(nfolds) + '-' + str(fold + 1) + 'tst.dat'),
                             names=names, sep=', ', engine='python',
                             skiprows=len(names) + 4, na_values='?')
     features_test = pd.get_dummies(data_test[feature_names]).as_matrix()
@@ -31,17 +31,24 @@ def _load_fold(fold, name, nfolds, data_home_fold, names, feature_names,
 
 def _load_folds(name, nfolds, url, names, feature_names, target_names):
     """Load a dataset folds."""
-    test_fold = []
-    folds = []
-    data_home_fold = fetch_zip(name, url + '/' + name + '-' + str(nfolds) + '-fold.zip')
-    counter = 0
-    for i in range(1, 6):
-        _, _, features_test, _ = _load_fold(i, name, 5, data_home_fold, names,
-                                             feature_names, target_names)
-        folds.append(features_test)
-        test_fold.extend([i - 1]*len(features_test))
-        counter += len(features_test)
-    return folds, test_fold
+    data_home_fold = fetch_zip(name,
+                               url + '/' + name + '-' + str(nfolds) + '-fold.zip')
+    features = []
+    target = []
+    features_test = []
+    target_test = []
+    for i in range(nfolds):
+        _features, _target, _features_test, _target_test = _load_fold(i, name,
+                                                                      nfolds,
+                                                                      data_home_fold,
+                                                                      names,
+                                                                      feature_names,
+                                                                      target_names)
+        features.append(_features)
+        target.append(_target)
+        features_test.append(_features_test)
+        target_test.append(_target_test)
+    return features, target, features_test, target_test
 
 
 def load_imbalanced(name, url, names, target_names, return_X_y=False):
@@ -81,15 +88,19 @@ def load_imbalanced(name, url, names, target_names, return_X_y=False):
     if return_X_y:
         return features, target
 
-    folds, test_5fold = _load_folds(name, 5, url, names, feature_names,
-                                    target_names)
+    features5, target5, features5_test, target5_test = _load_folds(name, 5, url,
+                                                                   names,
+                                                                   feature_names,
+                                                                   target_names)
     filename_descr = fetch_file(name, url + '/names/' + name + '-names.txt')
     with open(filename_descr) as rst_file:
         fdescr = rst_file.read()
 
-    return Bunch(data=features, target=target, fold5=test_5fold,
+    return Bunch(data=features, target=target, data5=features5, target5=target5,
+                 data5_test=features5_test, target5_test=target5_test,
                  target_names=target_names, DESCR=fdescr,
                  feature_names=feature_names)
+
 
 
 def load_standard_classification(name, url, names, target_names,
@@ -130,14 +141,23 @@ def load_standard_classification(name, url, names, target_names,
     if return_X_y:
         return features, target
 
-    folds, test_5fold = _load_folds(name, 5, url, names, feature_names,
-                                    target_names)
-    folds, test_10fold = _load_folds(name, 10, url, names, feature_names,
-                                     target_names)
+    features5, target5, features5_test, target5_test = _load_folds(name, 5, url,
+                                                                   names,
+                                                                   feature_names,
+                                                                   target_names)
+    features10, target10, features10_test, target10_test = _load_folds(name, 10,
+                                                                       url,
+                                                                       names,
+                                                                       feature_names,
+                                                                       target_names)
     filename_descr = fetch_file(name, url + '/' + name + '-names.txt')
     with open(filename_descr) as rst_file:
         fdescr = rst_file.read()
 
-    return Bunch(data=features, target=target, fold5=test_5fold,
-                 fold10=test_10fold, target_names=target_names, DESCR=fdescr,
+    return Bunch(data=features, target=target, data5=features5, target5=target5,
+                 data5_test=features5_test, target5_test=target5_test,
+                 data10=features10, target10=target10,
+                 data10_test=features10_test, target10_test=target10_test,
+                 target_names=target_names, DESCR=fdescr,
                  feature_names=feature_names)
+

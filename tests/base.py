@@ -5,8 +5,6 @@ Tests.
 @license: MIT
 """
 
-import numpy as np
-
 
 def check_array(a, n_rows, n_cols=None):
     """Checks if an array has the correct number of rows and cols."""
@@ -16,10 +14,20 @@ def check_array(a, n_rows, n_cols=None):
         assert len(a) == n_rows
 
 
-def check_folds(folds, n_patterns, n_folds):
+def check_folds(bunch, n_patterns, n_folds):
     """Checks if some folds are correct."""
-    assert len(folds) == n_patterns
-    assert 1 <= len(np.unique(folds)) <= n_folds + 1
+    X = bunch['data' + str(n_folds)]
+    y = bunch['target' + str(n_folds)]
+    X_test = bunch['data' + str(n_folds) + '_test']
+    y_test = bunch['target' + str(n_folds) + '_test']
+    assert len(X) == len(y) == len(X_test) == len(y_test) == n_folds
+    for X_fold, y_fold, X_test_fold, y_test_fold in zip(X, y, X_test, y_test):
+        assert len(X_fold) == len(y_fold)
+        assert len(X_fold) < n_patterns
+        assert len(y_fold) < n_patterns
+        assert len(X_test_fold) == len(y_test_fold)
+        assert len(X_test_fold) < n_patterns
+        assert len(y_test_fold) < n_patterns
 
 
 def check_load_dataset(load, n_patterns, n_variables, array_names,
@@ -45,5 +53,5 @@ def check_load_dataset(load, n_patterns, n_variables, array_names,
         check_array(bunch[y_name], n_pattern, n_cols=n_targets)
     if n_folds is not None:
         for n_fold in n_folds:
-            check_folds(bunch['fold' + str(n_fold)], n_patterns[0],
-                        n_folds=n_fold)
+            check_folds(bunch, n_patterns[0], n_folds=n_fold)
+
