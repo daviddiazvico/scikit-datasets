@@ -22,8 +22,8 @@ def load_yeast_1_4_5_8_vs_7(return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     return load_imbalanced('yeast-1-4-5-8_vs_7',

@@ -22,9 +22,9 @@ def load_dna(return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test)): list of arrays
-                                                              If return_X_y is
-                                                              True
+    (X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test): lists of arrays
+                                                            If return_X_y is
+                                                            True
 
     """
 

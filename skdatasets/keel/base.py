@@ -73,8 +73,8 @@ def load_imbalanced(name, url, names, target_names, return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     feature_names = [n for n in names if not n in target_names]
@@ -126,8 +126,8 @@ def load_standard_classification(name, url, names, target_names,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     feature_names = [n for n in names if not n in target_names]
@@ -160,4 +160,3 @@ def load_standard_classification(name, url, names, target_names,
                  data10_test=features10_test, target10_test=target10_test,
                  target_names=target_names, DESCR=fdescr,
                  feature_names=feature_names)
-

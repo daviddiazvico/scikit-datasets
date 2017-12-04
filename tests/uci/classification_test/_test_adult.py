@@ -12,7 +12,6 @@ from skdatasets.uci.classification_test import load_adult
 
 def test_adult():
     """Tests adult dataset."""
-    pass
     n_patterns = (32561, 16281)
     n_variables = 105
     array_names = (('data', 'target'), ('data_test', 'target_test'))

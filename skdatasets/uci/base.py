@@ -36,8 +36,8 @@ def load_train(name, url_data, url_names, names, target_names,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     feature_names = [n for n in names if not n in target_names]
@@ -91,8 +91,8 @@ def load_train_test(name, url_data, url_test, url_names, names, target_names,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    (X, y), (X_test, y_test): lists of arrays
+                              If return_X_y is True
 
     """
     feature_names = [n for n in names if not n in target_names]

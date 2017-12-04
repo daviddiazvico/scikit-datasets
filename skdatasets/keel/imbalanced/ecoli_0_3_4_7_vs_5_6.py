@@ -22,8 +22,8 @@ def load_ecoli_0_3_4_7_vs_5_6(return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     return load_imbalanced('ecoli-0-3-4-7_vs_5-6',

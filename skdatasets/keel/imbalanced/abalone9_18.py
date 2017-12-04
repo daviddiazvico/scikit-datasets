@@ -22,8 +22,8 @@ def load_abalone9_18(return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     return load_imbalanced('abalone9-18',

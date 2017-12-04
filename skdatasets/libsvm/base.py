@@ -28,8 +28,8 @@ def load_train(name, url, fetch_file=fetch_file, return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     filename = fetch_file(name, url)
@@ -65,8 +65,8 @@ def load_train_scale(name, url, url_scale, fetch_file=fetch_file,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     filename = fetch_file(name, url)
@@ -104,8 +104,8 @@ def load_train_test(name, url, url_test, fetch_file=fetch_file,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), (X_test, y_test)): list of arrays
-                                If return_X_y is True
+    (X, y), (X_test, y_test): lists of arrays
+                              If return_X_y is True
 
     """
     filename = fetch_file(name, url)
@@ -145,8 +145,8 @@ def load_train_test_remaining(name, url, url_test, url_remaining,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), (X_test, y_test)): list of arrays
-                                If return_X_y is True
+    (X, y), (X_test, y_test): lists of arrays
+                              If return_X_y is True
 
     """
     filename = fetch_file(name, url)
@@ -193,9 +193,9 @@ def load_train_val_test(name, url, url_tr, url_val, url_test,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test)): list of arrays
-                                                              If return_X_y is
-                                                              True
+    (X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test): lists of arrays
+                                                            If return_X_y is
+                                                            True
 
     """
     filename = fetch_file(name, url)
@@ -245,8 +245,8 @@ def load_train_test_scale(name, url, url_test, url_scale, url_test_scale,
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), (X_test, y_test)): list of arrays
-                                If return_X_y is True
+    (X, y), (X_test, y_test): lists of arrays
+                              If return_X_y is True
 
     """
     filename = fetch_file(name, url)

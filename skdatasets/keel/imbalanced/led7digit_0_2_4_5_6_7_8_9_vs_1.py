@@ -22,8 +22,8 @@ def load_led7digit_0_2_4_5_6_7_8_9_vs_1(return_X_y=False):
     -------
     data: Bunch
           Dictionary-like object with all the data and metadata.
-    ((X, y), ): list of arrays
-                If return_X_y is True
+    X, y: arrays
+          If return_X_y is True
 
     """
     return load_imbalanced('led7digit-0-2-4-5-6-7-8-9_vs_1',
