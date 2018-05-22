@@ -4,31 +4,24 @@ matrix:
     include:
         - python: 3.5
         - python: 3.6
-        - python: 2.7
 install:
-  - if [["$TRAVIS_PYTHON_VERSION" == "2.7"]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh;
-      bash Miniconda-latest-Linux-x86_64.sh -b;
-      export PATH="$HOME/miniconda2/bin:$PATH";
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh;
-      bash Miniconda3-latest-Linux-x86_64.sh -b;
-      export PATH="$HOME/miniconda3/bin:$PATH";
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh;
+  - bash Miniconda3-latest-Linux-x86_64.sh -b;
+  - export PATH="$HOME/miniconda3/bin:$PATH";
   - conda env create -f environment.yml
   - source activate scikit-datasets
   - conda install -y coverage nose sphinx
-  - pip install codeclimate-test-reporter coveralls recommonmark sphinxcontrib-napoleon travis-sphinx
+  - pip install recommonmark sphinxcontrib-napoleon travis-sphinx
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
 script:
-  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets tests/keel/standard_classification/test_*
-  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets tests/libsvm/classification_scale/test_*
-  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets tests/uci/classification/test_*
-  - coveralls
+  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets --cover-xml tests/*/*/test_abalone*
   - mkdir docs
   - export PYTHONPATH=`pwd`
   - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.9 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
   - sphinx-apidoc -o docs/_static/ skdatasets -F -a -l
   - travis-sphinx -v build -s docs -n
 after_success:
-  - codeclimate-test-reporter
+  - if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then ./cc-test-reporter after-build --debug --coverage-input-type=coverage.py --exit-code $TRAVIS_TEST_RESULT; fi
   - travis-sphinx deploy

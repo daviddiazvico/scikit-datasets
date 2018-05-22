@@ -2,11 +2,9 @@
 Scikit-learn-compatible datasets
 
 ## Status
-[![Build Status](https://travis-ci.org/daviddiazvico/scikit-datasets.svg?branch=master)](https://travis-ci.org/daviddiazvico/scikit-datasets)
-[![Coverage Status](https://coveralls.io/repos/github/daviddiazvico/scikit-datasets/badge.svg)](https://coveralls.io/github/daviddiazvico/scikit-datasets)
+[![Build Status](https://travis-ci.com/daviddiazvico/scikit-datasets.svg?branch=master)](https://travis-ci.com/daviddiazvico/scikit-datasets)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a37c9ee152b41a0cb577/maintainability)](https://codeclimate.com/github/daviddiazvico/scikit-datasets/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/a37c9ee152b41a0cb577/test_coverage)](https://codeclimate.com/github/daviddiazvico/scikit-datasets/test_coverage)
-[![Code Health](https://landscape.io/github/daviddiazvico/scikit-datasets/master/landscape.svg?style=flat)](https://landscape.io/github/daviddiazvico/scikit-datasets/master)
 
 ## Installation
 Available in [PyPI](https://pypi.python.org/pypi?:action=display&name=scikit-datasets)
