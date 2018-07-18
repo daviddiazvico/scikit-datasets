@@ -55,3 +55,10 @@ def check_load_dataset(load, n_patterns, n_variables, array_names,
         for n_fold in n_folds:
             check_folds(bunch, n_patterns[0], n_folds=n_fold)
 
+
+def check_items(not_nones, nones):
+    """Checks if items are None or not."""
+    for item in not_nones:
+        assert item is not None
+    for item in nones:
+        assert item is None
