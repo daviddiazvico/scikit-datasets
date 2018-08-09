@@ -9,12 +9,14 @@ from bz2 import decompress
 from os import environ, makedirs, remove
 from os.path import basename, exists, expanduser, join, normpath, splitext
 from shutil import copyfileobj
-from sklearn.datasets import (get_data_home, load_svmlight_file,
-                              load_svmlight_files)
-from sklearn.datasets.base import Bunch
+import tarfile
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
+
+from sklearn.datasets import (get_data_home, load_svmlight_file,
+                              load_svmlight_files)
+from sklearn.datasets.base import Bunch
 
 
 def fetch_file(dataname, urlname, data_home=None):
@@ -91,6 +93,41 @@ def fetch_zip(dataname, urlname, data_home=None):
     try:
         with ZipFile(filename, 'r') as zip_file:
             zip_file.extractall(data_home)
+    except:
+        remove(filename)
+        raise
+    return data_home
+
+
+def fetch_tgz(dataname, urlname, data_home=None):
+    """Fetch zipped dataset.
+
+    Fetch a tgz file from a given url, unzips and stores it in a given
+    directory.
+
+    Parameters
+    ----------
+    dataname: string
+              Dataset name.
+    urlname: string
+             Dataset url.
+    data_home: string, default=None
+               Dataset directory.
+
+    Returns
+    -------
+    data_home: string
+               Directory.
+
+    """
+    # fetch file
+    filename = fetch_file(dataname, urlname, data_home=data_home)
+    data_home = get_data_home(data_home=data_home)
+    data_home = join(data_home, dataname)
+    # unzip file
+    try:
+        with tarfile.open(filename, 'r:gz') as tar_file:
+            tar_file.extractall(data_home)
     except:
         remove(filename)
         raise
