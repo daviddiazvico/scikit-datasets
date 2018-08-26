@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test_remaining import load_cod_rna
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_cod_rna():
     """Tests cod-rna dataset."""
     n_patterns = (59535, 271617, 157413)

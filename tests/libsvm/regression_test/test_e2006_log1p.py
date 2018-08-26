@@ -5,11 +5,13 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.regression_test import load_e2006_log1p
+from tests.base import check_load_dataset
 
 
+@pytest.mark.slow
 def test_e2006_log1p():
     """Tests E2006-log1p dataset."""
     n_patterns = (16087, 3308)

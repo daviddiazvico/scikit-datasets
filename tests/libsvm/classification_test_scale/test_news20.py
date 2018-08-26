@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test_scale import load_news20
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_news20():
     """Tests news20 dataset."""
     pass

@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test import load_epsilon
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_epsilon():
     """Tests epsilon dataset."""
     n_patterns = (400000, 100000)

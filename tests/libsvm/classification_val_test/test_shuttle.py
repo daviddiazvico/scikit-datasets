@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_val_test import load_shuttle
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_shuttle():
     """Tests shuttle dataset."""
     n_patterns = (43500, 30450, 13050, 14500)

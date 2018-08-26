@@ -5,9 +5,9 @@ Tests.
 @license: MIT
 """
 
-from .base import check_items
-
 from skdatasets import load
+
+from .base import check_items
 
 
 def test_load():
@@ -21,8 +21,6 @@ def test_load():
         check_items([X, y, X_test, y_test], [inner_cv, outer_cv])
     except:
         pass
-    X, y, X_test, y_test, inner_cv, outer_cv = load('libsvm', 'a4a')
-    check_items([X, y, X_test, y_test], [inner_cv, outer_cv])
     X, y, X_test, y_test, inner_cv, outer_cv = load('libsvm', 'dna')
     check_items([X, y, X_test, y_test, inner_cv], [outer_cv])
     X, y, X_test, y_test, inner_cv, outer_cv = load('libsvm', 'abalone')
@@ -31,5 +29,3 @@ def test_load():
     check_items([X, y], [X_test, y_test, inner_cv, outer_cv])
     X, y, X_test, y_test, inner_cv, outer_cv = load('uci', 'abalone')
     check_items([X, y], [X_test, y_test, inner_cv, outer_cv])
-    X, y, X_test, y_test, inner_cv, outer_cv = load('uci', 'adult')
-    check_items([X, y, X_test, y_test], [inner_cv, outer_cv])

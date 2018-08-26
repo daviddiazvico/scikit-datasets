@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.uci.classification_test import load_adult
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_adult():
     """Tests adult dataset."""
     n_patterns = (32561, 16281)

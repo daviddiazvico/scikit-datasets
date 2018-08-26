@@ -43,7 +43,7 @@ def check_load_dataset(load, n_patterns, n_variables, array_names,
             partitions = ((X, y), (X_test, y_test))
         except:
             X, y = load(return_X_y=True)
-            partitions = ((X, y), )
+            partitions = ((X, y),)
     for (X, y), n_pattern in zip(partitions, n_patterns):
         check_array(X, n_pattern, n_cols=n_variables)
         check_array(y, n_pattern, n_cols=n_targets)

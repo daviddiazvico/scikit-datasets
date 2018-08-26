@@ -7,6 +7,7 @@ LIBSVM regression datasets.
 
 from .abalone import load_abalone
 from .bodyfat import load_bodyfat
+from .cadata import load_cadata
 from .cpusmall import load_cpusmall
 from .housing import load_housing
 from .mg import load_mg

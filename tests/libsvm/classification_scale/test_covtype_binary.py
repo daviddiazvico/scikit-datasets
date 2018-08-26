@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_scale import load_covtype_binary
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_covtype_binary():
     """Tests covtype.binary dataset."""
     n_patterns = (581012, 581012)

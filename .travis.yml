@@ -16,7 +16,7 @@ install:
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
 script:
-  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets --cover-xml tests/*/*/test_abalone* tests/gunnar_raetsch/test_load.py tests/test_load.py
+  - python setup.py test
   - mkdir docs
   - export PYTHONPATH=`pwd`
   - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.12 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs

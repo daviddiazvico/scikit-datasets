@@ -1,5 +1,9 @@
+import sys
+
 from setuptools import find_packages, setup
 
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 setup(name='scikit-datasets',
       packages=find_packages(),
@@ -18,4 +22,8 @@ setup(name='scikit-datasets',
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6'],
-      install_requires=['scikit-learn', 'pandas'])
+      install_requires=['scikit-learn', 'pandas', 'forex_python'],
+      setup_requires=pytest_runner,
+      tests_require=['pytest-cov'],
+      test_suite='tests',
+      )

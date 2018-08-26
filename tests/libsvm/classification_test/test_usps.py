@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test import load_usps
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_usps():
     """Tests usps dataset."""
     n_patterns = (7291, 2007)

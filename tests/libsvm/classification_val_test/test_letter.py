@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_val_test import load_letter
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_letter():
     """Tests letter dataset."""
     n_patterns = (15000, 10500, 4500, 5000)

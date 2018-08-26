@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_val_test import load_ijcnn1
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_ijcnn1():
     """Tests ijcnn1 dataset."""
     n_patterns = (49990, 35000, 14990, 91701)

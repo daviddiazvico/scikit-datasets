@@ -5,11 +5,13 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.regression_test import load_yearpredictionmsd
+from tests.base import check_load_dataset
 
 
+@pytest.mark.slow
 def test_yearpredictionmsd():
     """Tests YearPredictionMSD dataset."""
     n_patterns = (463715, 51630)

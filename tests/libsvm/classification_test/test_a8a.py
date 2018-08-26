@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test import load_a8a
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_a8a():
     """Tests a8a dataset."""
     n_patterns = (22696, 9865)

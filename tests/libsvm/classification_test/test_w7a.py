@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_test import load_w7a
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_w7a():
     """Tests w7a dataset."""
     n_patterns = (24692, 25057)

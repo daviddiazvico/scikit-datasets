@@ -5,11 +5,14 @@ Tests.
 @license: MIT
 """
 
-from ...base import check_load_dataset
+import pytest
 
 from skdatasets.libsvm.classification_val_test import load_satimage
 
+from ...base import check_load_dataset
 
+
+@pytest.mark.slow
 def test_satimage():
     """Tests satimage dataset."""
     pass
