@@ -12,6 +12,8 @@ from skdatasets import load
 
 def test_load():
     """Tests load."""
+    X, y, X_test, y_test, inner_cv, outer_cv = load('gunnar_raetsch', 'banana')
+    check_items([X, y, outer_cv], [X_test, y_test, inner_cv])
     X, y, X_test, y_test, inner_cv, outer_cv = load('keel', 'abalone9-18')
     check_items([X, y, outer_cv], [X_test, y_test, inner_cv])
     try:

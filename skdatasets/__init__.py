@@ -15,6 +15,11 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_diabetes,
                               load_digits, load_iris, load_linnerud, load_wine)
 from sklearn.model_selection import PredefinedSplit
 
+from .gunnar_raetsch import (load_banana, load_breast_cancer, load_diabetis,
+                             load_flare_solar, load_german, load_heart,
+                             load_image, load_ringnorm, load_splice,
+                             load_thyroid, load_titanic, load_twonorm,
+                             load_waveform)
 from .keel.imbalanced import (load_abalone9_18, load_abalone19,
                               load_cleveland_0_vs_4, load_ecoli4,
                               load_ecoli_0_1_3_7_vs_2_6,
@@ -58,6 +63,16 @@ from .uci.classification_test.adult import load_adult
 
 
 loader = dict()
+
+loader['gunnar_raetsch'] = {'banana': load_banana,
+                            'breast_cancer': load_breast_cancer,
+                            'diabetis': load_diabetis,
+                            'flare_solar': load_flare_solar,
+                            'german': load_german, 'heart': load_heart,
+                            'image': load_image, 'ringnorm': load_ringnorm,
+                            'splice': load_splice, 'thyroid': load_thyroid,
+                            'titanic': load_titanic, 'twonorm': load_twonorm,
+                            'waveform': load_waveform}
 
 
 loader['keel'] = {'abalone9-18': load_abalone9_18, 'abalone19': load_abalone19,
@@ -135,7 +150,13 @@ loader['uci'] = {'abalone': load_abalone, 'nursery': load_nursery,
 
 def load(collection, name):
     """ Load a dataset. """
-    if collection == 'keel':
+    if collection == 'gunnar_raetsch':
+        data = loader['gunnar_raetsch'][name]()
+        X = data.features
+        y = data.target
+        X_test = y_test = inner_cv = None
+        outer_cv = data.splits
+    elif collection == 'keel':
         data = loader['keel'][name]()
         X = np.vstack(data.data5_test)
         y = np.hstack(data.target5_test)
