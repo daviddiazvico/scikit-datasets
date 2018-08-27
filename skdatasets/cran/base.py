@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import urllib.request
+import warnings
 
 import rdata
 
@@ -52,7 +53,7 @@ def _get_url(package_name):
 
 
 def _download_package_data(package_name, *, package_url=None, folder_name=None,
-                           fetch_file=fetch_tgz):
+                           fetch_file=fetch_tgz, subdir=None):
 
     if package_url is None:
         package_url = _get_url(package_name)
@@ -60,17 +61,20 @@ def _download_package_data(package_name, *, package_url=None, folder_name=None,
     if folder_name is None:
         folder_name = os.path.basename(package_url)
 
+    if subdir is None:
+        subdir = "data"
+
     directory = fetch_file(folder_name, package_url)
     directory_path = pathlib.Path(directory)
 
-    data_path = directory_path / package_name / "data"
+    data_path = directory_path / package_name / subdir
 
     return data_path
 
 
 def load_dataset(dataset_name, package_name, *, package_url=None,
                  folder_name=None, fetch_file=fetch_tgz,
-                 converter=None):
+                 converter=None, subdir=None):
     """Load an R dataset.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -106,7 +110,8 @@ def load_dataset(dataset_name, package_name, *, package_url=None,
 
     data_path = _download_package_data(package_name, package_url=package_url,
                                        folder_name=folder_name,
-                                       fetch_file=fetch_file)
+                                       fetch_file=fetch_file,
+                                       subdir=subdir)
 
     file_path = data_path / dataset_name
 
@@ -119,7 +124,8 @@ def load_dataset(dataset_name, package_name, *, package_url=None,
 
 def load_package(package_name, *, package_url=None,
                  folder_name=None, fetch_file=fetch_tgz,
-                 converter=None, ignore_errors=False):
+                 converter=None, ignore_errors=False,
+                 subdir=None):
     """Load all datasets from a R package.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -156,7 +162,8 @@ def load_package(package_name, *, package_url=None,
 
     data_path = _download_package_data(package_name, package_url=package_url,
                                        folder_name=folder_name,
-                                       fetch_file=fetch_file)
+                                       fetch_file=fetch_file,
+                                       subdir=subdir)
 
     all_datasets = {}
 
@@ -171,5 +178,8 @@ def load_package(package_name, *, package_url=None,
         except Exception:
             if not ignore_errors:
                 raise
+            else:
+                warnings.warn(f"Error loading dataset {dataset.name}",
+                              stacklevel=2)
 
     return all_datasets

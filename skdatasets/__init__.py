@@ -10,11 +10,13 @@ try:
                                 imdb, mnist, reuters)
 except:
     pass
-import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_diabetes,
                               load_digits, load_iris, load_linnerud, load_wine)
 from sklearn.model_selection import PredefinedSplit
 
+import numpy as np
+
+from . import cran
 from .keel.imbalanced import (load_abalone9_18, load_abalone19,
                               load_cleveland_0_vs_4, load_ecoli4,
                               load_ecoli_0_1_3_7_vs_2_6,
@@ -56,9 +58,7 @@ from .uci.classification import (load_abalone, load_nursery,
                                  load_pima_indians_diabetes)
 from .uci.classification_test.adult import load_adult
 
-
 loader = dict()
-
 
 loader['keel'] = {'abalone9-18': load_abalone9_18, 'abalone19': load_abalone19,
                   'cleveland-0_vs_4': load_cleveland_0_vs_4,
@@ -103,7 +103,6 @@ try:
 except:
     pass
 
-
 loader['libsvm'] = {'skin_nonskin': load_skin_nonskin,
                     'australian': load_australian,
                     'covtype.binary': load_covtype_binary,
@@ -121,12 +120,10 @@ loader['libsvm'] = {'skin_nonskin': load_skin_nonskin,
                     'pyrim': load_pyrim, 'space_ga': load_space_ga,
                     'triazines': load_triazines}
 
-
 loader['sklearn'] = {'boston': load_boston, 'breast_cancer': load_breast_cancer,
                      'diabetes': load_diabetes, 'digits': load_digits,
                      'iris': load_iris, 'linnerud': load_linnerud,
                      'wine': load_wine}
-
 
 loader['uci'] = {'abalone': load_abalone, 'nursery': load_nursery,
                  'pima-indians-diabetes': load_pima_indians_diabetes,
@@ -140,7 +137,7 @@ def load(collection, name):
         X = np.vstack(data.data5_test)
         y = np.hstack(data.target5_test)
         X_test = y_test = inner_cv = None
-        outer_cv = PredefinedSplit([item for sublist in [[i]*len(fold) for i, fold in enumerate(data.data5_test)] for item in sublist])
+        outer_cv = PredefinedSplit([item for sublist in [[i] * len(fold) for i, fold in enumerate(data.data5_test)] for item in sublist])
     elif collection == 'keras':
         (X, y), (X_test, y_test) = loader['keras'][name]()
         if name in ['cifar10', 'cifar100', 'fashion_mnist', 'mnist']:
@@ -158,7 +155,7 @@ def load(collection, name):
         elif name in ['dna', 'ijcnn1', 'letter', 'satimage', 'shuttle']:
             (X, y), (X_tr, y_tr), (X_val, y_val), (X_test, y_test) = loader['libsvm'][name](return_X_y=True)
             y_test[y_test == -1] = 0
-            inner_cv = PredefinedSplit( [item for sublist in [[-1] * len(X_tr), [0] * len(X_val)] for item in sublist])
+            inner_cv = PredefinedSplit([item for sublist in [[-1] * len(X_tr), [0] * len(X_val)] for item in sublist])
         elif name in ['abalone', 'australian', 'bodyfat', 'covtype.binary',
                       'cpusmall', 'diabetes', 'german_numer', 'heart',
                       'housing', 'mg', 'mpg', 'pyrim', 'skin_nonskin',
