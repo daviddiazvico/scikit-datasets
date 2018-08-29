@@ -9,7 +9,7 @@ Gunnar Raetsch benchmark datasets
 from scipy.io import loadmat
 from sklearn.model_selection import BaseCrossValidator
 
-from ..base import Bunch
+from ..base import Bunch, fetch_file
 
 
 class GunnarRaetschDatasetSplit(BaseCrossValidator):
@@ -98,7 +98,9 @@ def load_dataset(name, return_X_y=False):
           If return_X_y is True
 
     """
-    features, target, train_splits, test_splits = loadmat('skdatasets/gunnar_raetsch/benchmarks')[name][0][0]
+    filename = fetch_file('gunnar_raetsch',
+                          'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat')
+    features, target, train_splits, test_splits = loadmat(filename)[name][0][0]
 
     if return_X_y:
         return features, target
