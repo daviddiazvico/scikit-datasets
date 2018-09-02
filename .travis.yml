@@ -10,7 +10,7 @@ install:
   - export PATH="$HOME/miniconda3/bin:$PATH";
   - conda env create -f environment.yml
   - source activate scikit-datasets
-  - conda install -y coverage nose sphinx
+  - conda install -y sphinx
   - pip install recommonmark sphinxcontrib-napoleon travis-sphinx
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
