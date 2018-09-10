@@ -42,7 +42,12 @@ def _get_url(package_name):
 
     url_request = urllib.request.Request(
         url="https://CRAN.R-project.org/package=" + package_name)
-    url_file = urllib.request.urlopen(url_request)
+    try:
+        url_file = urllib.request.urlopen(url_request)
+    except urllib.request.HTTPError as e:
+        if e.code == 404:
+            e.msg = f"Package '{package_name}' not found."
+        raise
     url_content = url_file.read().decode('utf-8')
 
     parser.feed(url_content)
@@ -165,21 +170,25 @@ def load_package(package_name, *, package_url=None,
                                        fetch_file=fetch_file,
                                        subdir=subdir)
 
+    if not data_path.exists():
+        return {}
+
     all_datasets = {}
 
     for dataset in data_path.iterdir():
 
-        try:
-            parsed = rdata.parser.parse_file(dataset)
+        if dataset.suffix in ['.rda', '.rdata']:
+            try:
+                parsed = rdata.parser.parse_file(dataset)
 
-            converted = converter.convert(parsed)
+                converted = converter.convert(parsed)
 
-            all_datasets.update(converted)
-        except Exception:
-            if not ignore_errors:
-                raise
-            else:
-                warnings.warn(f"Error loading dataset {dataset.name}",
-                              stacklevel=2)
+                all_datasets.update(converted)
+            except Exception:
+                if not ignore_errors:
+                    raise
+                else:
+                    warnings.warn(f"Error loading dataset {dataset.name}",
+                                  stacklevel=2)
 
     return all_datasets
