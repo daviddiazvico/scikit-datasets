@@ -177,7 +177,7 @@ def load_package(package_name, *, package_url=None,
 
     for dataset in data_path.iterdir():
 
-        if dataset.suffix in ['.rda', '.rdata']:
+        if dataset.suffix.lower() in ['.rda', '.rdata']:
             try:
                 parsed = rdata.parser.parse_file(dataset)
 
