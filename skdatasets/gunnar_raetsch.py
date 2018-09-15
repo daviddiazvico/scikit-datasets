@@ -44,6 +44,7 @@ def load(name, return_X_y=False):
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     if (len(y.shape) == 1) or (np.prod(y.shape[1:]) == 1):
         y = y.ravel()
+    y[y == -1] = 0
     inner_cv = CustomSplit(train_splits[:5] - 1, test_splits[:5] - 1)
     outer_cv = CustomSplit(train_splits - 1, test_splits - 1)
     if return_X_y:
