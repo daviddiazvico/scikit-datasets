@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
 
-
 setup(name='scikit-datasets',
       packages=find_packages(),
       version='0.1.13',
@@ -18,4 +17,7 @@ setup(name='scikit-datasets',
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6'],
-      install_requires=['scikit-learn', 'pandas'])
+      install_requires=['scikit-learn', 'pandas'],
+      extras_require={
+        'cran':  ['rdata'],
+      })

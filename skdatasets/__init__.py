@@ -17,6 +17,7 @@ except:
 
 try:
     from . import cran
+    repositories.append(cran)
 except ImportError:
     pass
 

@@ -1,3 +1,9 @@
+"""
+Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
+
+@author: Carlos Ramos Carreño
+@license: MIT
+"""
 
 from html.parser import HTMLParser
 import os
@@ -6,6 +12,9 @@ import re
 import urllib.request
 import warnings
 
+from sklearn.datasets.base import Bunch
+
+import pandas as pd
 import rdata
 
 from .base import fetch_tgz
@@ -131,7 +140,7 @@ def fetch_package(package_name, *, package_url=None,
                   folder_name=None, fetch_file=fetch_tgz,
                   converter=None, ignore_errors=False,
                   subdir=None):
-    """Load all datasets from a R package.
+    """Fetch all datasets from a R package.
 
     Only .rda datasets in community packages can be downloaded for now.
 
@@ -192,3 +201,61 @@ def fetch_package(package_name, *, package_url=None,
                                   stacklevel=2)
 
     return all_datasets
+
+
+datasets = {
+    'geyser': {
+        'load_args': (['geyser.rda', 'MASS'], {}),
+        'sklearn_args': ([], {'target_name': 'waiting'})
+        }
+    }
+
+
+def _to_sklearn(dataset, *, target_name):
+    """Transforms R datasets to Sklearn format, if possible"""
+    assert len(dataset.keys()) == 1
+    name = tuple(dataset.keys())[0]
+    obj = dataset[name]
+
+    if isinstance(obj, pd.DataFrame):
+        feature_names = list(obj.keys())
+        feature_names.remove(target_name)
+        X = pd.get_dummies(obj[feature_names]).values
+        y = obj[target_name].values
+    else:
+        raise ValueError("Dataset not automatically convertible to "
+                         "Sklearn format")
+
+    return Bunch(data=X, target=y,
+                 target_names=target_name, feature_names=feature_names)
+
+
+def load(name, return_X_y=False):
+    """Load
+
+    Load a dataset.
+
+    Parameters
+    ----------
+    name: string
+          Dataset name.
+    return_X_y: bool, default=False
+                If True, returns (data, target) instead of a Bunch object.
+
+    Returns
+    -------
+    data: Bunch
+          Dictionary-like object with all the data and metadata.
+    X, y, X_test, y_test, inner_cv, outer_cv: arrays
+                                              If return_X_y is True
+
+    """
+    load_args = datasets[name]['load_args']
+    dataset = fetch_dataset(*load_args[0], **load_args[1])
+
+    sklearn_args = datasets[name]['sklearn_args']
+    sklearn_dataset = _to_sklearn(dataset, *sklearn_args[0], **sklearn_args[1])
+    if return_X_y:
+        return (sklearn_dataset['data'], sklearn_dataset['target'], None, None,
+                None, None)
+    return sklearn_dataset
