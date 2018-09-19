@@ -20,3 +20,16 @@ for repository in repositories:
         setattr(repository,
                 'load_' + dataset.replace('-', '_').replace('.', '_'),
                 partial(repository.load, dataset))
+
+
+loader = {'gunnar_raetsch': gunnar_raetsch.load, 'keel': keel.load,
+          'libsvm': libsvm.load, 'sklearn': sklearn.load, 'uci': uci.load}
+try:
+    loader.update({'keras': keras.load})
+except:
+    pass
+
+
+def load(repository, dataset, **kwargs):
+    """ Select a dataset. """
+    return loader[repository](dataset, **kwargs)
