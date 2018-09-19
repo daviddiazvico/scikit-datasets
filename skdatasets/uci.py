@@ -5,9 +5,10 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 @license: MIT
 """
 
+from sklearn.datasets.base import Bunch
+
 import numpy as np
 import pandas as pd
-from sklearn.datasets.base import Bunch
 
 from .base import fetch_file
 
@@ -40,26 +41,36 @@ def _fetch(name, url_data, url_names, names, target_name, url_test=None):
     return (X, y, X_test, y_test, target_name, fdescr, feature_names)
 
 
-datasets = {'abalone': {'args': ['http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/abalone.data',
-                                 'http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/abalone.names',
-                                 ['Sex', 'Length', 'Diameter', 'Height',
-                                  'Whole weight', 'Shucked weight',
-                                  'Viscera weight', 'Shell weight', 'Rings'],
-                                 'Rings']},
-            'nursery': {'args': ['https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data',
-                                 'https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.names',
-                                 ['parents', 'has_nurs', 'form', 'children',
-                                  'housing', 'finance', 'social', 'health',
-                                  'target'], 'target']},
-            'adult': {'args': ['http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data',
-                               'http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.names',
-                               ['age', 'workclass', 'fnlwgt', 'education',
-                                'education-num', 'marital-status',
-                                'occupation', 'relationship', 'race', 'sex',
-                                'capital-gain', 'capital-loss',
-                                'hours-per-week', 'native-country', 'target'],
-                               'target',
-                               'http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test']}}
+BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/'
+
+datasets = {
+    'abalone': {
+        'args': [BASE_URL + 'abalone/abalone.data',
+                 BASE_URL + 'abalone/abalone.names',
+                 ['Sex', 'Length', 'Diameter', 'Height',
+                  'Whole weight', 'Shucked weight',
+                  'Viscera weight', 'Shell weight', 'Rings'],
+                 'Rings']
+        },
+    'nursery': {
+        'args': [BASE_URL + 'nursery/nursery.data',
+                 BASE_URL + 'nursery/nursery.names',
+                 ['parents', 'has_nurs', 'form', 'children',
+                  'housing', 'finance', 'social', 'health',
+                  'target'], 'target']
+        },
+    'adult': {
+        'args': [BASE_URL + 'adult/adult.data',
+                 BASE_URL + 'adult/adult.names',
+                 ['age', 'workclass', 'fnlwgt', 'education',
+                  'education-num', 'marital-status',
+                  'occupation', 'relationship', 'race', 'sex',
+                  'capital-gain', 'capital-loss',
+                  'hours-per-week', 'native-country', 'target'],
+                 'target',
+                 BASE_URL + 'adult/adult.test']
+        }
+    }
 
 
 def load(name, return_X_y=False):
@@ -82,8 +93,8 @@ def load(name, return_X_y=False):
                                               If return_X_y is True
 
     """
-    X, y, X_test, y_test, target_name, DESCR, feature_names = _fetch(name,
-                                                                     *datasets[name]['args'])
+    (X, y, X_test, y_test, target_name,
+     DESCR, feature_names) = _fetch(name, *datasets[name]['args'])
     if return_X_y:
         return X, y, X_test, y_test, None, None
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,

@@ -6,11 +6,13 @@ Forex datasets (http://forex-python.readthedocs.io/en/latest/).
 """
 
 from datetime import date, timedelta
+import time
+
 from forex_python.bitcoin import BtcConverter
 from forex_python.converter import CurrencyRates
-import numpy as np
 from sklearn.datasets.base import Bunch
-import time
+
+import numpy as np
 
 
 def _fetch(get_rate, start=date(2015, 1, 1), end=date.today()):
@@ -43,7 +45,7 @@ def _load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
         time.sleep(0.1)
         return cr.get_rate(currency_1, currency_2, day)
 
-    return  _fetch(get_rate, start=start, end=end)
+    return _fetch(get_rate, start=start, end=end)
 
 
 def load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
