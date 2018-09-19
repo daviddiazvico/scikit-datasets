@@ -6,12 +6,12 @@ Gunnar Raetsch benchmark datasets
 @license: MIT
 """
 
-import numpy as np
 from scipy.io import loadmat
 from sklearn.datasets.base import Bunch
 
-from .base import CustomSplit, fetch_file
+import numpy as np
 
+from .base import CustomSplit, fetch_file
 
 datasets = {'banana': {}, 'breast_cancer': {}, 'diabetis': {},
             'flare_solar': {}, 'german': {}, 'heart': {}, 'image': {},
@@ -40,7 +40,8 @@ def load(name, return_X_y=False):
 
     """
     filename = fetch_file('gunnar_raetsch',
-                          'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat')
+                          'https://github.com/tdiethe/gunnar_raetsch_benchmark'
+                          '_datasets/raw/master/benchmarks.mat')
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     if (len(y.shape) == 1) or (np.prod(y.shape[1:]) == 1):
         y = y.ravel()

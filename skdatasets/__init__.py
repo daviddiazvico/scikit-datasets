@@ -12,7 +12,7 @@ repositories = [gunnar_raetsch, libsvm, keel, sklearn, uci]
 try:
     from . import keras
     repositories.append(keras)
-except:
+except Exception:
     pass
 
 for repository in repositories:

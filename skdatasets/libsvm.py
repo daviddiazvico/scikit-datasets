@@ -66,15 +66,15 @@ def _load_train_val_test(name, url, url_tr, url_val, url_test,
     filename_tr = fetch_file(name, url_tr)
     filename_val = fetch_file(name, url_val)
     filename_test = fetch_file(name, url_test)
-    X, y, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([filename,
-                                                                          filename_tr,
-                                                                          filename_val,
-                                                                          filename_test])
+    X, y, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files(
+        [filename, filename_tr, filename_val, filename_test])
     X = X.todense()
     X_test = X_test.todense()
     y[y == -1] = 0
     y_test[y_test == -1] = 0
-    inner_cv = PredefinedSplit([item for sublist in [[-1] * X_tr.shape[0], [0] * X_val.shape[0]] for item in sublist])
+    inner_cv = PredefinedSplit(
+        [item for sublist in [[-1] * X_tr.shape[0],
+                              [0] * X_val.shape[0]] for item in sublist])
     return X, y, X_test, y_test, inner_cv
 
 
@@ -85,10 +85,9 @@ def _load_train_test_scale(name, url, url_test, url_scale, url_test_scale,
     filename_test = fetch_file(name, url_test)
     filename_scale = fetch_file(name, url_scale)
     filename_scale_test = fetch_file(name, url_test_scale)
-    X, y, X_test, y_test, X_scale, y_scale, X_scale_test, y_scale_test = load_svmlight_files([filename,
-                                                                                              filename_test,
-                                                                                              filename_scale,
-                                                                                              filename_scale_test])
+    (X, y, X_test, y_test, X_scale,
+     y_scale, X_scale_test, y_scale_test) = load_svmlight_files(
+         [filename, filename_test, filename_scale, filename_scale_test])
     X = X.todense()
     X_test = X_test.todense()
     y[y == -1] = 0
@@ -96,130 +95,202 @@ def _load_train_test_scale(name, url, url_test, url_scale, url_test_scale,
     return X, y, X_test, y_test, None
 
 
-datasets = {'skin_nonskin': {'loader': _load_train,
-                             'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/skin_nonskin']},
-            'australian': {'loader': _load_train_scale,
-                           'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/australian',
-                                    'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/australian_scale']},
-            'covtype.binary': {'loader': _load_train_scale,
-                               'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/covtype.libsvm.binary.bz2',
-                                        'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/covtype.libsvm.binary.scale.bz2',
-                                        fetch_bz2]},
-            'diabetes': {'loader': _load_train_scale,
-                         'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/diabetes',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/diabetes_scale']},
-            'german.numer': {'loader': _load_train_scale,
-                             'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/german.numer',
-                                      'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/german.numer_scale']},
-            'heart': {'loader': _load_train_scale,
-                      'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/heart',
-                               'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/heart_scale']},
-            'a4a': {'loader': _load_train_test,
-                    'args': ['http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a4a',
-                             'http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a4a.t']},
-            'a8a': {'loader': _load_train_test,
-                    'args': ['http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a8a',
-                             'http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a8a.t']},
-            'epsilon': {'loader': _load_train_test,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.bz2',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.t.bz2',
-                                 fetch_bz2]},
-            'pendigits': {'loader': _load_train_test,
-                          'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/pendigits',
-                                   'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/pendigits.t']},
-            'usps': {'loader': _load_train_test,
-                     'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/usps.bz2',
-                              'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/usps.t.bz2',
-                              fetch_bz2]},
-            'w7a': {'loader': _load_train_test,
-                    'args': ['http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/w7a',
-                             'http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/w7a.t']},
-            'w8a': {'loader': _load_train_test,
-                    'args': ['http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/w8a',
-                             'http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/w8a.t']},
-            'cod-rna': {'loader': _load_train_test_remaining,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/cod-rna',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/cod-rna.t',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/cod-rna.r']},
-            'combined': {'loader': _load_train_test_scale,
-                         'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/vehicle/combined.bz2',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/vehicle/combined.t.bz2',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/vehicle/combined_scale.bz2',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/vehicle/combined_scale.t.bz2',
-                                  fetch_bz2]},
-            'news20': {'loader': _load_train_test_scale,
-                       'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/news20.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/news20.t.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/news20.scale.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/news20.t.scale.bz2',
-                                fetch_bz2]},
-            'dna': {'loader': _load_train_val_test,
-                    'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/dna.scale',
-                             'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/dna.scale.tr',
-                             'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/dna.scale.val',
-                             'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/dna.scale.t']},
-            'ijcnn1': {'loader': _load_train_val_test,
-                       'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/ijcnn1.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/ijcnn1.tr.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/ijcnn1.val.bz2',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/ijcnn1.t.bz2',
-                                fetch_bz2]},
-            'letter': {'loader': _load_train_val_test,
-                       'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/letter.scale',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/letter.scale.tr',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/letter.scale.val',
-                                'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/letter.scale.t']},
-            'satimage': {'loader': _load_train_val_test,
-                         'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/satimage.scale',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/satimage.scale.tr',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/satimage.scale.val',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/satimage.scale.t']},
-            'shuttle': {'loader': _load_train_val_test,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/shuttle.scale',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/shuttle.scale.tr',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/shuttle.scale.val',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/shuttle.scale.t']},
-            'abalone': {'loader': _load_train_scale,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/abalone',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/abalone_scale']},
-            'bodyfat': {'loader': _load_train_scale,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/bodyfat',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/bodyfat_scale']},
-            'cadata': {'loader': _load_train,
-                       'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/cadata']},
-            'cpusmall': {'loader': _load_train_scale,
-                         'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/cpusmall',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/cpusmall_scale']},
-            'housing': {'loader': _load_train_scale,
-                        'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/housing',
-                                 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/housing_scale']},
-            'mg': {'loader': _load_train_scale,
-                   'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/mg',
-                            'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/mg_scale']},
-            'mpg': {'loader': _load_train_scale,
-                    'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/mpg',
-                             'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/mpg_scale']},
-            'pyrim': {'loader': _load_train_scale,
-                      'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/pyrim',
-                               'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/pyrim_scale']},
-            'space_ga': {'loader': _load_train_scale,
-                         'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/space_ga',
-                                  'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/space_ga_scale']},
-            'triazines': {'loader': _load_train_scale,
-                          'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/triazines',
-                                   'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/triazines_scale']},
-            'E2006-log1p': {'loader': _load_train_scale,
-                            'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/log1p.E2006.train.bz2',
-                                     'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/log1p.E2006.test.bz2',
-                                     fetch_bz2]},
-            'E2006-tfidf': {'loader': _load_train_scale,
-                            'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/E2006.train.bz2',
-                                     'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/E2006.test.bz2',
-                                     fetch_bz2]},
-            'YearPredictionMSD': {'loader': _load_train_scale,
-                                  'args': ['https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.bz2',
-                                           'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.t.bz2',
-                                           fetch_bz2]}}
+BASE_URL = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/'
+
+datasets = {
+    'skin_nonskin': {
+        'loader': _load_train,
+        'args': [BASE_URL + 'binary/skin_nonskin']
+        },
+    'australian': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'binary/australian',
+                 BASE_URL + 'binary/australian_scale']
+        },
+    'covtype.binary': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'binary/covtype.libsvm.binary.bz2',
+                 BASE_URL + 'binary/covtype.libsvm.binary.scale.bz2',
+                 fetch_bz2]
+        },
+    'diabetes': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'binary/diabetes',
+                 BASE_URL + 'binary/diabetes_scale']
+        },
+    'german.numer': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'binary/german.numer',
+                 BASE_URL + 'binary/german.numer_scale']
+        },
+    'heart': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'binary/heart',
+                 BASE_URL + 'binary/heart_scale']
+        },
+    'a4a': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'binary/a4a',
+                 BASE_URL + 'binary/a4a.t']
+        },
+    'a8a': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'binary/a8a',
+                 BASE_URL + 'binary/a8a.t']
+        },
+    'epsilon': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'binary/epsilon_normalized.bz2',
+                 BASE_URL + 'binary/epsilon_normalized.t.bz2',
+                 fetch_bz2]
+        },
+    'pendigits': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'multiclass/pendigits',
+                 BASE_URL + 'multiclass/pendigits.t']
+        },
+    'usps': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'multiclass/usps.bz2',
+                 BASE_URL + 'multiclass/usps.t.bz2',
+                 fetch_bz2]
+        },
+    'w7a': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'binary/w7a',
+                 BASE_URL + 'binary/w7a.t']
+        },
+    'w8a': {
+        'loader': _load_train_test,
+        'args': [BASE_URL + 'binary/w8a',
+                 BASE_URL + 'binary/w8a.t']
+        },
+    'cod-rna': {
+        'loader': _load_train_test_remaining,
+        'args': [BASE_URL + 'binary/cod-rna',
+                 BASE_URL + 'binary/cod-rna.t',
+                 BASE_URL + 'binary/cod-rna.r']
+        },
+    'combined': {
+        'loader': _load_train_test_scale,
+        'args': [BASE_URL + 'multiclass/vehicle/combined.bz2',
+                 BASE_URL + 'multiclass/vehicle/combined.t.bz2',
+                 BASE_URL + 'multiclass/vehicle/combined_scale.bz2',
+                 BASE_URL + 'multiclass/vehicle/combined_scale.t.bz2',
+                 fetch_bz2]
+        },
+    'news20': {
+        'loader': _load_train_test_scale,
+        'args': [BASE_URL + 'multiclass/news20.bz2',
+                 BASE_URL + 'multiclass/news20.t.bz2',
+                 BASE_URL + 'multiclass/news20.scale.bz2',
+                 BASE_URL + 'multiclass/news20.t.scale.bz2',
+                 fetch_bz2]
+        },
+    'dna': {
+        'loader': _load_train_val_test,
+        'args': [BASE_URL + 'multiclass/dna.scale',
+                 BASE_URL + 'multiclass/dna.scale.tr',
+                 BASE_URL + 'multiclass/dna.scale.val',
+                 BASE_URL + 'multiclass/dna.scale.t']
+        },
+    'ijcnn1': {
+        'loader': _load_train_val_test,
+        'args': [BASE_URL + 'binary/ijcnn1.bz2',
+                 BASE_URL + 'binary/ijcnn1.tr.bz2',
+                 BASE_URL + 'binary/ijcnn1.val.bz2',
+                 BASE_URL + 'binary/ijcnn1.t.bz2',
+                 fetch_bz2]
+        },
+    'letter': {
+        'loader': _load_train_val_test,
+        'args': [BASE_URL + 'multiclass/letter.scale',
+                 BASE_URL + 'multiclass/letter.scale.tr',
+                 BASE_URL + 'multiclass/letter.scale.val',
+                 BASE_URL + 'multiclass/letter.scale.t']
+        },
+    'satimage': {
+        'loader': _load_train_val_test,
+        'args': [BASE_URL + 'multiclass/satimage.scale',
+                 BASE_URL + 'multiclass/satimage.scale.tr',
+                 BASE_URL + 'multiclass/satimage.scale.val',
+                 BASE_URL + 'multiclass/satimage.scale.t']
+        },
+    'shuttle': {
+        'loader': _load_train_val_test,
+        'args': [BASE_URL + 'multiclass/shuttle.scale',
+                 BASE_URL + 'multiclass/shuttle.scale.tr',
+                 BASE_URL + 'multiclass/shuttle.scale.val',
+                 BASE_URL + 'multiclass/shuttle.scale.t']
+        },
+    'abalone': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/abalone',
+                 BASE_URL + 'regression/abalone_scale']
+        },
+    'bodyfat': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/bodyfat',
+                 BASE_URL + 'regression/bodyfat_scale']
+        },
+    'cadata': {
+        'loader': _load_train,
+        'args': [BASE_URL + 'regression/cadata']
+        },
+    'cpusmall': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/cpusmall',
+                 BASE_URL + 'regression/cpusmall_scale']
+        },
+    'housing': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/housing',
+                 BASE_URL + 'regression/housing_scale']
+        },
+    'mg': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/mg',
+                 BASE_URL + 'regression/mg_scale']
+        },
+    'mpg': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/mpg',
+                 BASE_URL + 'regression/mpg_scale']
+        },
+    'pyrim': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/pyrim',
+                 BASE_URL + 'regression/pyrim_scale']
+        },
+    'space_ga': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/space_ga',
+                 BASE_URL + 'regression/space_ga_scale']
+        },
+    'triazines': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/triazines',
+                 BASE_URL + 'regression/triazines_scale']
+        },
+    'E2006-log1p': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/log1p.E2006.train.bz2',
+                 BASE_URL + 'regression/log1p.E2006.test.bz2',
+                 fetch_bz2]
+        },
+    'E2006-tfidf': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/E2006.train.bz2',
+                 BASE_URL + 'regression/E2006.test.bz2',
+                 fetch_bz2]
+        },
+    'YearPredictionMSD': {
+        'loader': _load_train_scale,
+        'args': [BASE_URL + 'regression/YearPredictionMSD.bz2',
+                 BASE_URL + 'regression/YearPredictionMSD.t.bz2',
+                 fetch_bz2]
+        }
+    }
 
 
 def load(name, return_X_y=False):
@@ -242,7 +313,8 @@ def load(name, return_X_y=False):
                                               If return_X_y is True
 
     """
-    X, y, X_test, y_test, inner_cv = datasets[name]['loader'](name, *datasets[name]['args'])
+    X, y, X_test, y_test, inner_cv = datasets[name]['loader'](
+        name, *datasets[name]['args'])
     if return_X_y:
         return X, y, X_test, y_test, inner_cv, None
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,

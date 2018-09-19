@@ -8,12 +8,10 @@ Scikit-learn datasets
 
 from sklearn.datasets import (load_boston, load_breast_cancer, load_diabetes,
                               load_digits, load_iris, load_linnerud, load_wine)
-from sklearn.datasets.base import Bunch
-
 
 datasets = {'boston': load_boston, 'breast_cancer': load_breast_cancer,
-            'diabetes': load_diabetes, 'digits': load_digits, 'iris': load_iris,
-            'linnerud': load_linnerud, 'wine': load_wine}
+            'diabetes': load_diabetes, 'digits': load_digits,
+            'iris': load_iris, 'linnerud': load_linnerud, 'wine': load_wine}
 
 
 def load(name, return_X_y=False):
