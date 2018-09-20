@@ -5,27 +5,15 @@ Tests.
 @license: MIT
 """
 
-from skdatasets import load
+from functools import partial
 
-from .base import check_items
+from .base import load, use
+
+from skdatasets import load as load_global
 
 
 def test_load():
-    """Tests load."""
-    X, y, X_test, y_test, inner_cv, outer_cv = load('gunnar_raetsch', 'banana')
-    check_items([X, y, outer_cv], [X_test, y_test, inner_cv])
-    X, y, X_test, y_test, inner_cv, outer_cv = load('keel', 'abalone9-18')
-    check_items([X, y, outer_cv], [X_test, y_test, inner_cv])
-    try:
-        X, y, X_test, y_test, inner_cv, outer_cv = load('keras', 'mnist')
-        check_items([X, y, X_test, y_test], [inner_cv, outer_cv])
-    except:
-        pass
-    X, y, X_test, y_test, inner_cv, outer_cv = load('libsvm', 'dna')
-    check_items([X, y, X_test, y_test, inner_cv], [outer_cv])
-    X, y, X_test, y_test, inner_cv, outer_cv = load('libsvm', 'abalone')
-    check_items([X, y], [X_test, y_test, inner_cv, outer_cv])
-    X, y, X_test, y_test, inner_cv, outer_cv = load('sklearn', 'iris')
-    check_items([X, y], [X_test, y_test, inner_cv, outer_cv])
-    X, y, X_test, y_test, inner_cv, outer_cv = load('uci', 'abalone')
-    check_items([X, y], [X_test, y_test, inner_cv, outer_cv])
+    """Tests global load function."""
+    load_abalone9_18 = partial(load_global, 'keel', 'abalone9-18')
+    load(load_abalone9_18)
+    use(load_abalone9_18)
