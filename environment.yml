@@ -7,3 +7,4 @@ dependencies:
 - scikit-learn>=0.19.1
 - pip:
   - forex-python>=1.1
+  - rdata>=0.2 
