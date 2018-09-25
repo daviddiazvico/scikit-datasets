@@ -10,16 +10,16 @@ install:
   - export PATH="$HOME/miniconda3/bin:$PATH";
   - conda env create -f environment.yml
   - source activate scikit-datasets
-  - conda install -y coverage nose sphinx
+  - conda install -y sphinx
   - pip install recommonmark sphinxcontrib-napoleon travis-sphinx
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
 script:
-  - nosetests -x -v -d --with-coverage --cover-erase --cover-package=skdatasets --cover-xml tests/test_gunnar_raetsch.py tests/test_keel.py tests/test_libsvm.py tests/test_sklearn.py tests/test_uci.py
+  - python setup.py test
   - mkdir docs
   - export PYTHONPATH=`pwd`
-  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.13 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
+  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.14 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
   - sphinx-apidoc -o docs/_static/ skdatasets -F -a -l
   - travis-sphinx -v build -s docs -n
 after_success:

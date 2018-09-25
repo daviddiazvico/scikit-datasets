@@ -4,7 +4,6 @@ Scikit-learn-compatible datasets.
 @author: David Diaz Vico
 @license: MIT
 """
-
 from bz2 import decompress
 from os import makedirs, remove
 from os.path import basename, exists, join, normpath, splitext
@@ -59,7 +58,8 @@ class CustomSplit(BaseCrossValidator):
               The testing set indices for that split.
 
         """
-        for train_indices, test_indices in zip(self.train_splits, self.test_splits):
+        for train_indices, test_indices in zip(self.train_splits,
+                                               self.test_splits):
             yield (train_indices, test_indices)
 
     def get_n_splits(self, X=None, y=None, groups=None):
@@ -122,7 +122,7 @@ def fetch_file(dataname, urlname, data_home=None):
         try:
             with open(filename, 'w+b') as data_file:
                 copyfileobj(data_url, data_file)
-        except:
+        except Exception:
             remove(filename)
             raise
         data_url.close()
@@ -158,7 +158,7 @@ def fetch_zip(dataname, urlname, data_home=None):
     try:
         with ZipFile(filename, 'r') as zip_file:
             zip_file.extractall(data_home)
-    except:
+    except Exception:
         remove(filename)
         raise
     return data_home
@@ -229,7 +229,7 @@ def fetch_bz2(dataname, urlname, data_home=None):
         data_name = splitext(filename)[0]
         with open(data_name, 'w+b') as data_file:
             data_file.write(decompressed)
-    except:
+    except Exception:
         remove(filename)
         raise
     return data_name

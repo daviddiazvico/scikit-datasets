@@ -5,10 +5,11 @@ Tests.
 @license: MIT
 """
 
-import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import (BaseCrossValidator, cross_val_score,
                                      GridSearchCV)
+
+import numpy as np
 
 
 def load(loader):
@@ -21,7 +22,8 @@ def load(loader):
     if y is not None:
         assert isinstance(y, np.ndarray)
         assert isinstance(bunch.target, np.ndarray)
-        assert X.shape[0] == y.shape[0] == bunch.data.shape[0] == bunch.target.shape[0]
+        assert (X.shape[0] == y.shape[0] ==
+                bunch.data.shape[0] == bunch.target.shape[0])
     if X_test is not None:
         assert isinstance(X_test, np.ndarray)
         assert isinstance(bunch.data_test, np.ndarray)
@@ -29,7 +31,8 @@ def load(loader):
     if y_test is not None:
         assert isinstance(y_test, np.ndarray)
         assert isinstance(bunch.target_test, np.ndarray)
-        assert X_test.shape[0] == y_test.shape[0] == bunch.data_test.shape[0] == bunch.target_test.shape[0]
+        assert (X_test.shape[0] == y_test.shape[0] ==
+                bunch.data_test.shape[0] == bunch.target_test.shape[0])
     if inner_cv is not None:
         assert isinstance(inner_cv, BaseCrossValidator)
         assert isinstance(bunch.inner_cv, BaseCrossValidator)
@@ -50,7 +53,8 @@ def use(loader):
         estimator.score(X_test, y_test)
     else:
         # CV scoring
-        if isinstance(inner_cv, BaseCrossValidator) or hasattr(inner_cv, '__iter__'):
+        if isinstance(inner_cv,
+                      BaseCrossValidator) or hasattr(inner_cv, '__iter__'):
             # Validation split for hyperparameter tuning
             estimator.fit(X, y)
             estimator = estimator.best_estimator_

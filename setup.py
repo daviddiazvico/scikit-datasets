@@ -1,13 +1,17 @@
+import sys
+
 from setuptools import find_packages, setup
 
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 setup(name='scikit-datasets',
       packages=find_packages(),
-      version='0.1.13',
+      version='0.1.14',
       description='Scikit-learn-compatible datasets',
       author='David Diaz Vico',
       author_email='david.diaz.vico@outlook.com',
       url='https://github.com/daviddiazvico/scikit-datasets',
-      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.13.tar.gz',
+      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.14.tar.gz',
       keywords=['scikit-learn', 'pandas'],
       classifiers=['Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
@@ -20,4 +24,8 @@ setup(name='scikit-datasets',
       install_requires=['scikit-learn', 'pandas'],
       extras_require={
         'cran':  ['rdata'],
-      })
+      },
+      setup_requires=pytest_runner,
+      tests_require=['pytest-cov'],
+      test_suite='tests',
+      )
