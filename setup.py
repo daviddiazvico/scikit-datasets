@@ -4,7 +4,6 @@ from setuptools import find_packages, setup
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
-
 setup(name='scikit-datasets',
       packages=find_packages(),
       version='0.1.14',
@@ -23,6 +22,9 @@ setup(name='scikit-datasets',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6'],
       install_requires=['scikit-learn', 'pandas'],
+      extras_require={
+        'cran':  ['rdata'],
+      },
       setup_requires=pytest_runner,
       tests_require=['pytest-cov'],
       test_suite='tests',

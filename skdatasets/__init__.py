@@ -15,6 +15,12 @@ try:
 except Exception:
     pass
 
+try:
+    from . import cran
+    repositories.append(cran)
+except ImportError:
+    pass
+
 for repository in repositories:
     for dataset in repository.datasets.keys():
         setattr(repository,
@@ -25,6 +31,11 @@ loader = {'gunnar_raetsch': gunnar_raetsch.load, 'keel': keel.load,
           'libsvm': libsvm.load, 'sklearn': sklearn.load, 'uci': uci.load}
 try:
     loader.update({'keras': keras.load})
+except:
+    pass
+
+try:
+    loader.update({'cran': cran.load})
 except:
     pass
 

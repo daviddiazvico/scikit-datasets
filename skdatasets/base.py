@@ -4,11 +4,11 @@ Scikit-learn-compatible datasets.
 @author: David Diaz Vico
 @license: MIT
 """
-
 from bz2 import decompress
 from os import makedirs, remove
 from os.path import basename, exists, join, normpath, splitext
 from shutil import copyfileobj
+import tarfile
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
@@ -158,6 +158,41 @@ def fetch_zip(dataname, urlname, data_home=None):
     try:
         with ZipFile(filename, 'r') as zip_file:
             zip_file.extractall(data_home)
+    except Exception:
+        remove(filename)
+        raise
+    return data_home
+
+
+def fetch_tgz(dataname, urlname, data_home=None):
+    """Fetch zipped dataset.
+
+    Fetch a tgz file from a given url, unzips and stores it in a given
+    directory.
+
+    Parameters
+    ----------
+    dataname: string
+              Dataset name.
+    urlname: string
+             Dataset url.
+    data_home: string, default=None
+               Dataset directory.
+
+    Returns
+    -------
+    data_home: string
+               Directory.
+
+    """
+    # fetch file
+    filename = fetch_file(dataname, urlname, data_home=data_home)
+    data_home = get_data_home(data_home=data_home)
+    data_home = join(data_home, dataname)
+    # unzip file
+    try:
+        with tarfile.open(filename, 'r:gz') as tar_file:
+            tar_file.extractall(data_home)
     except Exception:
         remove(filename)
         raise
