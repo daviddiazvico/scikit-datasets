@@ -34,6 +34,11 @@ try:
 except:
     pass
 
+try:
+    loader.update({'cran': cran.load})
+except:
+    pass
+
 
 def load(repository, dataset, **kwargs):
     """ Select a dataset. """
