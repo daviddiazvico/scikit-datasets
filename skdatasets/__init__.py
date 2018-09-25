@@ -21,7 +21,6 @@ for repository in repositories:
                 'load_' + dataset.replace('-', '_').replace('.', '_'),
                 partial(repository.load, dataset))
 
-
 loader = {'gunnar_raetsch': gunnar_raetsch.load, 'keel': keel.load,
           'libsvm': libsvm.load, 'sklearn': sklearn.load, 'uci': uci.load}
 try:

@@ -5,9 +5,9 @@ Tests.
 @license: MIT
 """
 
-from .base import load, use
-
 from skdatasets.keras import load_mnist
+
+from .base import load, use
 
 
 def test_keras():
