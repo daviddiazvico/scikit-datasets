@@ -24,6 +24,8 @@ setup(name='scikit-datasets',
       install_requires=['scikit-learn', 'pandas'],
       extras_require={
         'cran':  ['rdata'],
+        'forex': ['forex_python'],
+        'keras': ['keras'],
       },
       setup_requires=pytest_runner,
       tests_require=['pytest-cov'],
