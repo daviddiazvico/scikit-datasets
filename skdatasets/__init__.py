@@ -16,6 +16,11 @@ except Exception:
     pass
 
 try:
+    from . import forex
+except ImportError:
+    pass
+
+try:
     from . import cran
     repositories.append(cran)
 except ImportError:
