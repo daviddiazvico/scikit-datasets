@@ -129,6 +129,14 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
 
     file_path = data_path / dataset_name
 
+    if not file_path.suffix:
+        possible_names = list(data_path.glob(dataset_name + ".*"))
+        if len(possible_names) != 1:
+            raise FileNotFoundError(f"Dataset {dataset_name} not found in "
+                                    f"package {package_name}")
+        dataset_name = possible_names[0]
+        file_path = data_path / dataset_name
+
     parsed = rdata.parser.parse_file(file_path)
 
     converted = converter.convert(parsed)
