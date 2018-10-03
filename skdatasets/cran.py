@@ -5,6 +5,7 @@ Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
 @license: MIT
 """
 
+from distutils.version import LooseVersion
 from html.parser import HTMLParser
 import os
 import pathlib
@@ -12,7 +13,7 @@ import re
 import urllib.request
 import warnings
 
-from sklearn.datasets.base import Bunch
+from sklearn.datasets.base import Bunch, get_data_home
 
 import pandas as pd
 import rdata
@@ -20,7 +21,10 @@ import rdata
 from .base import fetch_tgz
 
 
-class LatestVersionHTMLParser(HTMLParser):
+class _LatestVersionHTMLParser(HTMLParser):
+    """
+    Class for parsing the version in the CRAN package information page.
+    """
 
     def __init__(self, *, convert_charrefs=True):
         HTMLParser.__init__(self, convert_charrefs=convert_charrefs)
@@ -46,8 +50,12 @@ class LatestVersionHTMLParser(HTMLParser):
                 self.last_is_version = True
 
 
-def _get_url(package_name):
-    parser = LatestVersionHTMLParser()
+def _get_latest_version_online(package_name):
+    """
+    Get the latest version of the package from CRAN.
+
+    """
+    parser = _LatestVersionHTMLParser()
 
     url_request = urllib.request.Request(
         url="https://CRAN.R-project.org/package=" + package_name)
@@ -61,24 +69,90 @@ def _get_url(package_name):
 
     parser.feed(url_content)
 
-    download_url = ("https://cran.r-project.org/src/contrib/" + package_name +
-                    "_" + parser.version + ".tar.gz")
-    return download_url
+    return parser.version
 
 
-def _download_package_data(package_name, *, package_url=None, folder_name=None,
+def _get_latest_version_offline(package_name):
+    """
+    Get the latest downloaded version of the package.
+
+    Returns None if not found.
+
+    """
+    home = pathlib.Path(get_data_home())  # Should allow providing data home?
+
+    downloaded_packages = tuple(home.glob(package_name + "_*.tar.gz"))
+
+    if downloaded_packages:
+        versions = [
+            LooseVersion(p.name[(len(package_name) + 1):-len(".tar.gz")])
+            for p in downloaded_packages]
+
+        versions.sort()
+        latest_version = versions[-1]
+
+        return str(latest_version)
+    else:
+        return None
+
+
+def _get_version(package_name, *, version=None):
+    """
+    Get the version of the package.
+
+    If the version is specified, return it.
+    Otherwise, try to find the last version online.
+    If offline, try to find the downloaded version, if any.
+
+    """
+    if version is None:
+        try:
+            version = _get_latest_version_online(package_name)
+        except urllib.request.URLError:
+            version = _get_latest_version_offline(package_name)
+
+            if version is None:
+                raise
+
+    return version
+
+
+def _get_urls(package_name, *, version=None):
+
+    version = _get_version(package_name, version=version)
+
+    latest_url = ("https://cran.r-project.org/src/contrib/" + package_name +
+                  "_" + version + ".tar.gz")
+    archive_url = ("https://cran.r-project.org/src/contrib/Archive/" +
+                   package_name + "/" + package_name +
+                   "_" + version + ".tar.gz")
+    return (latest_url, archive_url)
+
+
+def _download_package_data(package_name, *, package_url=None, version=None,
+                           folder_name=None,
                            fetch_file=fetch_tgz, subdir=None):
 
     if package_url is None:
-        package_url = _get_url(package_name)
+        url_list = _get_urls(package_name, version=version)
+    else:
+        url_list = (package_url,)
 
     if folder_name is None:
-        folder_name = os.path.basename(package_url)
+        folder_name = os.path.basename(url_list[0])
 
     if subdir is None:
         subdir = "data"
 
-    directory = fetch_file(folder_name, package_url)
+    for i, url in enumerate(url_list):
+        try:
+            directory = fetch_file(folder_name, url)
+            break
+        except Exception:
+            # If it is the last url, reraise
+            if i >= len(url_list) - 1:
+                raise
+
     directory_path = pathlib.Path(directory)
 
     data_path = directory_path / package_name / subdir
@@ -87,8 +161,9 @@ def _download_package_data(package_name, *, package_url=None, folder_name=None,
 
 
 def fetch_dataset(dataset_name, package_name, *, package_url=None,
-                  folder_name=None, fetch_file=fetch_tgz,
-                  converter=None, subdir=None):
+                  version=None, folder_name=None, subdir=None,
+                  fetch_file=fetch_tgz,
+                  converter=None):
     """Fetch an R dataset.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -104,9 +179,15 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
         Name of the R package where this dataset resides.
     package_url: string
         Package url. If `None` it tries to obtain it from the package name.
+    version: string
+        If `package_url` is not specified, the version of the package to
+        download. By default is the latest one.
     folder_name: string
         Name of the folder where the downloaded package is stored. By default,
         is the last component of `package_url`.
+    subdir: string
+        Subdirectory of the package containing the datasets. By default is
+        'data'.
     fetch_file: function, default=fetch_tgz
         Dataset fetching function.
     converter: rdata.conversion.Converter
@@ -115,7 +196,7 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
     Returns
     -------
     data: dict
-          Dictionary-like object with all the data and metadata.
+        Dictionary-like object with all the data and metadata.
 
     """
 
@@ -123,11 +204,20 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
         converter = rdata.conversion.SimpleConverter()
 
     data_path = _download_package_data(package_name, package_url=package_url,
+                                       version=version,
                                        folder_name=folder_name,
                                        fetch_file=fetch_file,
                                        subdir=subdir)
 
     file_path = data_path / dataset_name
+
+    if not file_path.suffix:
+        possible_names = list(data_path.glob(dataset_name + ".*"))
+        if len(possible_names) != 1:
+            raise FileNotFoundError(f"Dataset {dataset_name} not found in "
+                                    f"package {package_name}")
+        dataset_name = possible_names[0]
+        file_path = data_path / dataset_name
 
     parsed = rdata.parser.parse_file(file_path)
 
@@ -137,9 +227,10 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
 
 
 def fetch_package(package_name, *, package_url=None,
-                  folder_name=None, fetch_file=fetch_tgz,
-                  converter=None, ignore_errors=False,
-                  subdir=None):
+                  version=None,
+                  folder_name=None, subdir=None,
+                  fetch_file=fetch_tgz,
+                  converter=None, ignore_errors=False):
     """Fetch all datasets from a R package.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -153,9 +244,15 @@ def fetch_package(package_name, *, package_url=None,
         Name of the R package.
     package_url: string
         Package url. If `None` it tries to obtain it from the package name.
+    version: string
+        If `package_url` is not specified, the version of the package to
+        download. By default is the latest one.
     folder_name: string
         Name of the folder where the downloaded package is stored. By default,
         is the last component of `package_url`.
+    subdir: string
+        Subdirectory of the package containing the datasets. By default is
+        'data'.
     fetch_file: function, default=fetch_tgz
         Dataset fetching function.
     converter: rdata.conversion.Converter
@@ -167,7 +264,7 @@ def fetch_package(package_name, *, package_url=None,
     Returns
     -------
     data: dict
-          Dictionary-like object with all the data and metadata.
+        Dictionary-like object with all the data and metadata.
 
     """
 
@@ -175,6 +272,7 @@ def fetch_package(package_name, *, package_url=None,
         converter = rdata.conversion.SimpleConverter()
 
     data_path = _download_package_data(package_name, package_url=package_url,
+                                       version=version,
                                        folder_name=folder_name,
                                        fetch_file=fetch_file,
                                        subdir=subdir)
