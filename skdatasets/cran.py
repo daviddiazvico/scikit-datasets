@@ -8,17 +8,101 @@ Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
 from distutils.version import LooseVersion
 from html.parser import HTMLParser
 import os
+from os import makedirs, remove
+from os.path import basename, exists, join, normpath, splitext
 import pathlib
 import re
+from shutil import copyfileobj
+import tarfile
 import urllib.request
+from urllib.error import HTTPError
+from urllib.request import urlopen
 import warnings
 
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets.base import Bunch, get_data_home, RemoteFileMetadata
 
 import pandas as pd
 import rdata
 
-from .base import fetch_tgz
+
+def fetch_file(dataname, urlname, data_home=None):
+    """Fetch dataset.
+
+    Fetch a file from a given url and stores it in a given directory.
+
+    Parameters
+    ----------
+    dataname: string
+              Dataset name.
+    urlname: string
+             Dataset url.
+    data_home: string, default=None
+               Dataset directory.
+
+    Returns
+    -------
+    filename: string
+              Name of the file.
+
+    """
+    # check if this data set has been already downloaded
+    data_home = get_data_home(data_home=data_home)
+    data_home = join(data_home, dataname)
+    if not exists(data_home):
+        makedirs(data_home)
+    filename = join(data_home, basename(normpath(urlname)))
+    # if the file does not exist, download it
+    if not exists(filename):
+        try:
+            data_url = urlopen(urlname)
+        except HTTPError as e:
+            if e.code == 404:
+                e.msg = "Dataset '%s' not found." % dataname
+            raise
+        # store file
+        try:
+            with open(filename, 'w+b') as data_file:
+                copyfileobj(data_url, data_file)
+        except Exception:
+            remove(filename)
+            raise
+        data_url.close()
+    return filename
+
+
+def fetch_tgz(dataname, urlname, data_home=None):
+    """Fetch zipped dataset.
+
+    Fetch a tgz file from a given url, unzips and stores it in a given
+    directory.
+
+    Parameters
+    ----------
+    dataname: string
+              Dataset name.
+    urlname: string
+             Dataset url.
+    data_home: string, default=None
+               Dataset directory.
+
+    Returns
+    -------
+    data_home: string
+               Directory.
+
+    """
+    # fetch file
+    filename = fetch_file(dataname, urlname, data_home=data_home)
+    data_home = get_data_home(data_home=data_home)
+    data_home = join(data_home, dataname)
+    # unzip file
+    try:
+        with tarfile.open(filename, 'r:gz') as tar_file:
+            tar_file.extractall(data_home)
+    except Exception:
+        remove(filename)
+        raise
+    return data_home
 
 
 class _LatestVersionHTMLParser(HTMLParser):
@@ -162,8 +246,7 @@ def _download_package_data(package_name, *, package_url=None, version=None,
 
 def fetch_dataset(dataset_name, package_name, *, package_url=None,
                   version=None, folder_name=None, subdir=None,
-                  fetch_file=fetch_tgz,
-                  converter=None):
+                  fetch_file=fetch_tgz, converter=None):
     """Fetch an R dataset.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -328,24 +411,20 @@ def _to_sklearn(dataset, *, target_name):
                  target_names=target_name, feature_names=feature_names)
 
 
-def load(name, return_X_y=False):
+def fetch_cran(name):
     """Load
 
     Load a dataset.
 
     Parameters
     ----------
-    name: string
-          Dataset name.
-    return_X_y: bool, default=False
-                If True, returns (data, target) instead of a Bunch object.
+    name : string
+        Dataset name.
 
     Returns
     -------
-    data: Bunch
+    data : Bunch
           Dictionary-like object with all the data and metadata.
-    X, y, X_test, y_test, inner_cv, outer_cv: arrays
-                                              If return_X_y is True
 
     """
     load_args = datasets[name]['load_args']
@@ -353,7 +432,4 @@ def load(name, return_X_y=False):
 
     sklearn_args = datasets[name]['sklearn_args']
     sklearn_dataset = _to_sklearn(dataset, *sklearn_args[0], **sklearn_args[1])
-    if return_X_y:
-        return (sklearn_dataset['data'], sklearn_dataset['target'], None, None,
-                None, None)
     return sklearn_dataset

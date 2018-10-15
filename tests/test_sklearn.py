@@ -1,16 +1,14 @@
 """
-Tests.
+Test the Scikit-learn loader.
 
 @author: David Diaz Vico
 @license: MIT
 """
 
-from .base import load, use
-
-from skdatasets.sklearn import load_iris
+from skdatasets.sklearn import fetch_sklearn
 
 
-def test_sklearn():
-    """Tests sklearn datasets."""
-    load(load_iris)
-    use(load_iris)
+def test_sklearn_iris():
+    """Tests Scikit-learn iris dataset."""
+    data = fetch_sklearn('iris')
+    assert data.data.shape == (150, 4)

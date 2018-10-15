@@ -1,16 +1,14 @@
 """
-Tests.
+Test the UCI loader.
 
 @author: David Diaz Vico
 @license: MIT
 """
 
-from .base import load, use
-
-from skdatasets.uci import load_abalone
+from skdatasets.uci import fetch_uci
 
 
-def test_uci():
-    """Tests uci datasets."""
-    load(load_abalone)
-    use(load_abalone)
+def test_fetch_uci_abalone():
+    """Tests UCI abalone dataset."""
+    data = fetch_uci('abalone')
+    assert data.data.shape == (4177, 8)

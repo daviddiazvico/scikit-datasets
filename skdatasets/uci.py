@@ -5,98 +5,83 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 @license: MIT
 """
 
-from sklearn.datasets.base import Bunch
-
 import numpy as np
-import pandas as pd
+import os
+from sklearn.datasets.base import Bunch, get_data_home
+from urllib.request import urlretrieve
 
-from .base import fetch_file
+
+BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
 
 
-def _load_file(filename, names, feature_names, target_name):
-    """Load a data file."""
-    data = pd.read_csv(filename, names=names, sep=',', engine='python',
-                       na_values='?')
-    X = pd.get_dummies(data[feature_names]).values
-    y = pd.factorize(data[target_name].tolist(), sort=True)[0]
-    if (len(y.shape) == 1) or (np.prod(y.shape[1:]) == 1):
-        y = y.ravel()
+def _load_csv(fname, **kwargs):
+    """Load a csv file with targets in the last column and features in the rest.
+    """
+    data = np.genfromtxt(fname, dtype=str, delimiter=',', encoding=None,
+                         **kwargs)
+    X = data[:, :-1]
+    y = data[:, -1]
     return X, y
 
 
-def _fetch(name, url_data, url_names, names, target_name, url_test=None):
+def _fetch(name, dirname=None):
     """Fetch dataset."""
-    feature_names = [n for n in names if n != target_name]
-    filename = fetch_file(name, url_data)
-    X, y = _load_file(filename, names, feature_names, target_name)
-    if url_test is not None:
-        filename_test = fetch_file(name, url_test)
-        X_test, y_test = _load_file(filename_test, names, feature_names,
-                                    target_name)
-    else:
+    filename = name + '.data'
+    url = BASE_URL + '/' + name + '/' + filename
+    filename = filename if dirname is None else os.path.join(dirname, filename)
+    urlretrieve(url, filename=filename)
+    X, y = _load_csv(filename)
+    try:
+        filename = name + '.test'
+        url = BASE_URL + '/' + name + '/' + filename
+        filename = filename if dirname is None else os.path.join(dirname,
+                                                                 filename)
+        urlretrieve(url, filename=filename)
+        X_test, y_test = _load_csv(filename)
+    except:
         X_test = y_test = None
-    filename_descr = fetch_file(name, url_names)
-    with open(filename_descr) as rst_file:
+    try:
+        filename = name + '.names'
+        url = BASE_URL + '/' + name + '/' + filename
+        filename = filename if dirname is None else os.path.join(dirname,
+                                                                 filename)
+        urlretrieve(url, filename=filename)
+    except:
+        filename = name + '.info'
+        url = BASE_URL + '/' + name + '/' + filename
+        filename = filename if dirname is None else os.path.join(dirname,
+                                                                 filename)
+        urlretrieve(url, filename=filename)
+    with open(filename) as rst_file:
         fdescr = rst_file.read()
-    return (X, y, X_test, y_test, target_name, fdescr, feature_names)
+    return X, y, X_test, y_test, fdescr
 
 
-BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/'
+def fetch_uci(name, data_home=None):
+    """Fetch UCI dataset.
 
-datasets = {
-    'abalone': {
-        'args': [BASE_URL + 'abalone/abalone.data',
-                 BASE_URL + 'abalone/abalone.names',
-                 ['Sex', 'Length', 'Diameter', 'Height',
-                  'Whole weight', 'Shucked weight',
-                  'Viscera weight', 'Shell weight', 'Rings'],
-                 'Rings']
-        },
-    'nursery': {
-        'args': [BASE_URL + 'nursery/nursery.data',
-                 BASE_URL + 'nursery/nursery.names',
-                 ['parents', 'has_nurs', 'form', 'children',
-                  'housing', 'finance', 'social', 'health',
-                  'target'], 'target']
-        },
-    'adult': {
-        'args': [BASE_URL + 'adult/adult.data',
-                 BASE_URL + 'adult/adult.names',
-                 ['age', 'workclass', 'fnlwgt', 'education',
-                  'education-num', 'marital-status',
-                  'occupation', 'relationship', 'race', 'sex',
-                  'capital-gain', 'capital-loss',
-                  'hours-per-week', 'native-country', 'target'],
-                 'target',
-                 BASE_URL + 'adult/adult.test']
-        }
-    }
-
-
-def load(name, return_X_y=False):
-    """Load dataset.
-
-    Load a dataset.
+    Fetch a UCI dataset by name. More info at
+    https://archive.ics.uci.edu/ml/datasets.html.
 
     Parameters
     ----------
-    name: string
-          Dataset name.
-    return_X_y: bool, default=False
-                If True, returns (data, target) instead of a Bunch object.
+    name : string
+        Dataset name.
+    data_home : string or None, default None
+        Specify another download and cache folder for the data sets. By default
+        all scikit-learn data is stored in ‘~/scikit_learn_data’ subfolders.
 
     Returns
     -------
-    data: Bunch
-          Dictionary-like object with all the data and metadata.
-    X, y, X_test, y_test, inner_cv, outer_cv: arrays
-                                              If return_X_y is True
+    data : Bunch
+        Dictionary-like object with all the data and metadata.
 
     """
-    (X, y, X_test, y_test, target_name,
-     DESCR, feature_names) = _fetch(name, *datasets[name]['args'])
-    if return_X_y:
-        return X, y, X_test, y_test, None, None
-    return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 target_names=target_name, DESCR=DESCR,
-                 feature_names=feature_names)
+    dirname = os.path.join(get_data_home(data_home=data_home), 'uci', name)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    X, y, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
+    data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
+                 DESCR=DESCR)
+    data = Bunch(**{k: v for k, v in data.items() if v is not None})
+    return data

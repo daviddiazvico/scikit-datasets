@@ -5,11 +5,9 @@ Tests.
 @license: MIT
 """
 
-from skdatasets.cran import load_geyser
-
-from .base import load
+from skdatasets.cran import fetch_cran
 
 
 def test_cran():
     """Tests keras datasets."""
-    load(load_geyser)
+    fetch_cran('geyser')

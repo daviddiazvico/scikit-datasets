@@ -5,46 +5,43 @@ Scikit-learn-compatible datasets.
 @license: MIT
 """
 
-from functools import partial
-
-from . import gunnar_raetsch, libsvm, keel, sklearn, uci
-repositories = [gunnar_raetsch, libsvm, keel, sklearn, uci]
+from . import libsvm, raetsch, sklearn, uci
 try:
-    from . import keras
-    repositories.append(keras)
-except Exception:
+    from . import cran
+except ImportError:
     pass
-
 try:
     from . import forex
 except ImportError:
     pass
-
 try:
-    from . import cran
-    repositories.append(cran)
+    from . import keel
+except ImportError:
+    pass
+try:
+    from . import keras
 except ImportError:
     pass
 
-for repository in repositories:
-    for dataset in repository.datasets.keys():
-        setattr(repository,
-                'load_' + dataset.replace('-', '_').replace('.', '_'),
-                partial(repository.load, dataset))
 
-loader = {'gunnar_raetsch': gunnar_raetsch.load, 'keel': keel.load,
-          'libsvm': libsvm.load, 'sklearn': sklearn.load, 'uci': uci.load}
+fetcher = {'libsvm': libsvm.fetch_libsvm, 'raetsch': raetsch.fetch_raetsch,
+           'sklearn': sklearn.fetch_sklearn, 'uci': uci.fetch_uci}
 try:
-    loader.update({'keras': keras.load})
+    fetcher['cran'] = cran.fetch_cran
 except:
     pass
-
 try:
-    loader.update({'cran': cran.load})
+    fetcher['forex'] = forex.fetch_forex
 except:
     pass
-
-
-def load(repository, dataset, **kwargs):
+try:
+    fetcher['keel'] = keel.fetch_keel
+except:
+    pass
+try:
+    fetcher['keras'] = keras.fetch_keras
+except:
+    pass
+def fetch(repository, *args, **kwargs):
     """ Select a dataset. """
-    return loader[repository](dataset, **kwargs)
+    return fetcher[repository](*args, **kwargs)
