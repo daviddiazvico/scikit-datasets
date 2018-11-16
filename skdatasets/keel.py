@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -78,13 +79,8 @@ def _load_descr(collection, name, dirname=None):
     return nattrs, fdescr
 
 
-def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
-    """Load a dataset folds."""
-    if (nfolds is None) or (nfolds == 1):
-        filename = name + '.zip'
-    elif nfolds in (5, 10):
-        fold = 'dobscv' if dobscv else 'fold'
-        filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
+def _fetch_keel_zip(collection, filename, dirname=None):
+    """Fetch Keel dataset zip file."""
     if collection == 'imbalanced':
         for url in IMBALANCED_URLS:
             url = BASE_URL + '/' + url + '/' + filename
@@ -99,14 +95,21 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
         f = filename if dirname is None else os.path.join(dirname, filename)
         urlretrieve(url, filename=f)
-    if (nfolds is None) or (nfolds == 1):
-        X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
-        cv = None
-    elif nfolds in (5, 10):
+    return f
+
+
+def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
+    """Load a dataset folds."""
+    filename = name + '.zip'
+    f = _fetch_keel_zip(collection, filename, dirname=dirname)
+    X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
+    cv = None
+    if nfolds in (5, 10):
+        fold = 'dobscv' if dobscv else 'fold'
+        filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
+        f = _fetch_keel_zip(collection, filename, dirname=dirname)
         Xs = []
         ys = []
-        Xs_test = []
-        ys_test = []
         for i in range(nfolds):
             if dobscv:
                 _name = os.path.join(name, name + '-' + str(nfolds) + 'dobscv-' + str(i + 1))
@@ -115,24 +118,9 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
             _X, _y = _load_Xy(f, _name + 'tra.dat', skiprows=nattrs + 4)
             _X_test, _y_test = _load_Xy(f, _name + 'tst.dat',
                                         skiprows=nattrs + 4)
-            Xs.append(_X)
-            ys.append(_y)
-            Xs_test.append(_X_test)
-            ys_test.append(_y_test)
-        tr_splits = []
-        ts_splits = []
-        X = np.empty((0, Xs[0].shape[1]))
-        y = []
-        for ftr, ttr, fts, tts in zip(Xs, ys, Xs_test, ys_test):
-            tr_splits.append(range(len(X), len(ttr) + len(X)))
-            X = np.vstack((X, ftr))
-            y = np.hstack((y, ttr))
-            ts_splits.append(range(len(X), len(tts) + len(X)))
-            X = np.vstack((X, fts))
-            y = np.hstack((y, tts))
-        cv = zip(tr_splits, ts_splits)
-    else:
-        raise Exception('Invalid combination of nfolds/dobscv')
+            Xs.append((_X, _X_test))
+            ys.append((_y, _y_test))
+        cv = check_cv(cv=Xs, y=ys)
     return X, y, cv
 
 
