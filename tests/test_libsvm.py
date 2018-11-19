@@ -10,13 +10,12 @@ from sklearn.model_selection import BaseCrossValidator
 from skdatasets.libsvm import fetch_libsvm
 
 
-def check(data, shape, test_shape=None):
+def check(data, shape, splits=1):
     """Check dataset properties."""
     assert data.data.shape == shape
     assert data.target.shape[0] == shape[0]
-    if test_shape is not None:
-        assert data.data_test.shape == test_shape
-        assert data.target_test.shape[0] == test_shape[0]
+    if splits > 1:
+        assert len(list(data.outer_cv.split())) == splits
     if hasattr(data, 'inner_cv'):
         assert isinstance(data.inner_cv, BaseCrossValidator)
 
@@ -30,7 +29,7 @@ def test_fetch_libsvm_australian():
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
     data = fetch_libsvm(collection='binary', name='liver-disorders')
-    check(data, (290, 5), test_shape=(145, 5))
+    check(data, (290, 5), 1)
 
 
 def test_fetch_libsvm_duke():
@@ -48,4 +47,4 @@ def test_fetch_libsvm_cod_rna():
 def test_fetch_libsvm_satimage():
     """Tests LIBSVM satimage dataset."""
     data = fetch_libsvm(collection='multiclass', name='satimage.scale')
-    check(data, (8870, 36), test_shape=(4435, 36))
+    check(data, (8870, 36), 1)

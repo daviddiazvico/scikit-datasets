@@ -3,14 +3,12 @@ language: python
 matrix:
     include:
         - python: 3.6
-        - python: 3.7
 branches:
   only:
     - master
 install:
   - python setup.py install
-  - conda install -y sphinx
-  - pip install recommonmark sphinxcontrib-napoleon travis-sphinx
+  - pip install recommonmark sphinx sphinxcontrib-napoleon travis-sphinx
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
@@ -18,9 +16,9 @@ script:
   - python setup.py test
   - mkdir docs
   - export PYTHONPATH=`pwd`
-  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.17 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
+  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.18 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
   - sphinx-apidoc -o docs/_static/ skdatasets -F -a -l
   - travis-sphinx -v build -s docs -n
 after_success:
-  - if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then ./cc-test-reporter after-build --debug --coverage-input-type=coverage.py --exit-code $TRAVIS_TEST_RESULT; fi
+  - if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then ./cc-test-reporter after-build --debug --coverage-input-type=coverage.py --exit-code $TRAVIS_TEST_RESULT; fi
   - travis-sphinx deploy
