@@ -10,7 +10,7 @@ import os
 import scipy as sp
 from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.datasets.base import Bunch, get_data_home
-from sklearn.model_selection import check_cv, PredefinedSplit
+from sklearn.model_selection import check_cv
 from urllib.request import urlretrieve
 
 
@@ -53,22 +53,18 @@ def _load(collection, name, dirname=None):
     except:
         filename_r = None
     if (filename_tr is not None) and (filename_val is not None) and (filename_t is not None):
-        _, _, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([filename,
+        X, y, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([filename,
                                                                               filename_tr,
                                                                               filename_val,
                                                                               filename_t])
-        X = sp.sparse.vstack((X_tr, X_val))
-        y = np.hstack((y_tr, y_val))
-        inner_cv = PredefinedSplit([item for sublist in [[-1] * X_tr.shape[0], [0] * X_val.shape[0]] for item in sublist])
+        inner_cv = check_cv(cv=(X_tr, X_val), y=(y_tr, y_val))
         outer_cv = check_cv(cv=(X, X_test), y=(y, y_test))
         X_remaining = y_remaining = None
     elif (filename_tr is not None) and (filename_val is not None):
-        _, _, X_tr, y_tr, X_val, y_val = load_svmlight_files([filename,
+        X, y, X_tr, y_tr, X_val, y_val = load_svmlight_files([filename,
                                                               filename_tr,
                                                               filename_val])
-        X = sp.sparse.vstack((X_tr, X_val))
-        y = np.hstack((y_tr, y_val))
-        inner_cv = PredefinedSplit([item for sublist in [[-1] * X_tr.shape[0], [0] * X_val.shape[0]] for item in sublist])
+        inner_cv = check_cv(cv=(X_tr, X_val), y=(y_tr, y_val))
         outer_cv = X_remaining = y_remaining = None
     elif (filename_t is not None) and (filename_r is not None):
         X, y, X_test, y_test, X_remaining, y_remaining = load_svmlight_files([filename,

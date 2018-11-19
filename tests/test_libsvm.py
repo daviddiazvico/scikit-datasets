@@ -24,28 +24,28 @@ def check(data, shape, splits=1):
 def test_fetch_libsvm_australian():
     """Tests LIBSVM australian dataset."""
     data = fetch_libsvm(collection='binary', name='australian')
-    check(data, (1380, 14))
+    check(data, (690, 14))
 
 
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
     data = fetch_libsvm(collection='binary', name='liver-disorders')
-    check(data, (290, 5), 1)
+    check(data, (145, 5), 1)
 
 
 def test_fetch_libsvm_duke():
     """Tests LIBSVM duke dataset."""
     data = fetch_libsvm(collection='binary', name='duke')
-    check(data, (88, 7129))
+    check(data, (44, 7129))
 
 
 def test_fetch_libsvm_cod_rna():
     """Tests LIBSVM cod-rna dataset."""
     data = fetch_libsvm(collection='binary', name='cod-rna')
-    check(data, (119070, 8))
+    check(data, (59535, 8))
 
 
 def test_fetch_libsvm_satimage():
     """Tests LIBSVM satimage dataset."""
     data = fetch_libsvm(collection='multiclass', name='satimage.scale')
-    check(data, (8870, 36), 1)
+    check(data, (4435, 36), 1)

@@ -10,6 +10,7 @@ import os
 from scipy.io import loadmat
 from sklearn.datasets.base import (_fetch_remote, get_data_home, Bunch,
                                    RemoteFileMetadata)
+from sklearn.model_selection import check_cv
 
 
 DATASETS = {'banana', 'breast_cancer', 'diabetis', 'flare_solar', 'german',
@@ -50,7 +51,9 @@ def fetch_raetsch(name, data_home=None):
         os.makedirs(dirname)
     filename = _fetch_remote(ARCHIVE, dirname=dirname)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
-    inner_cv = zip(train_splits[:5] - 1, test_splits[:5] - 1)
-    outer_cv = zip(train_splits - 1, test_splits - 1)
+    inner_cv = check_cv(cv=(X[train_splits[:5] - 1], X[test_splits[:5] - 1]),
+                        y=(y[train_splits[:5] - 1], y[test_splits[:5] - 1]))
+    outer_cv = check_cv(cv=(X[train_splits - 1], X[test_splits - 1]),
+                        y=(y[train_splits - 1], y[test_splits - 1]))
     return Bunch(data=X, target=y, inner_cv=inner_cv, outer_cv=outer_cv,
                  DESCR=name)
