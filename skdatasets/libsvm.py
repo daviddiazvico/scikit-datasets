@@ -119,5 +119,4 @@ def fetch_libsvm(collection, name, data_home=None):
     data = Bunch(data=X, target=y, inner_cv=inner_cv, outer_cv=outer_cv,
                  data_remaining=X_remaining, target_remaining=y_remaining,
                  DESCR=name)
-    data = Bunch(**{k: v for k, v in data.items() if v is not None})
     return data

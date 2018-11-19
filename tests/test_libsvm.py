@@ -17,7 +17,8 @@ def check(data, shape, splits=1):
     if splits > 1:
         assert len(list(data.outer_cv.split())) == splits
     if hasattr(data, 'inner_cv'):
-        assert isinstance(data.inner_cv, BaseCrossValidator)
+        if data.inner_cv is not None:
+            assert isinstance(data.inner_cv, BaseCrossValidator)
 
 
 def test_fetch_libsvm_australian():

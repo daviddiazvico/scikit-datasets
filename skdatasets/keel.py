@@ -163,6 +163,5 @@ def fetch_keel(collection, name, data_home=None, nfolds=None, dobscv=False):
     nattrs, DESCR = _load_descr(collection, name, dirname=dirname)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            dirname=dirname)
-    data = Bunch(data=X, target=y, outer_cv=cv, DESCR=DESCR)
-    data = Bunch(**{k: v for k, v in data.items() if v is not None})
+    data = Bunch(data=X, target=y, inner_cv=None, outer_cv=cv, DESCR=DESCR)
     return data

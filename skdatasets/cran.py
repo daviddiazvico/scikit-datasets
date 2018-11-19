@@ -407,7 +407,7 @@ def _to_sklearn(dataset, *, target_name):
         raise ValueError("Dataset not automatically convertible to "
                          "Sklearn format")
 
-    return Bunch(data=X, target=y,
+    return Bunch(data=X, target=y, inner_cv=None, outer_cv=None,
                  target_names=target_name, feature_names=feature_names)
 
 

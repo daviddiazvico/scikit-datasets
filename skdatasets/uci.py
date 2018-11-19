@@ -83,6 +83,5 @@ def fetch_uci(name, data_home=None):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     X, y, cv, DESCR = _fetch(name, dirname=dirname)
-    data = Bunch(data=X, target=y, outer_cv=cv, DESCR=DESCR)
-    data = Bunch(**{k: v for k, v in data.items() if v is not None})
+    data = Bunch(data=X, target=y, inner_cv=None, outer_cv=cv, DESCR=DESCR)
     return data
