@@ -42,6 +42,7 @@ try:
     fetcher['keras'] = keras.fetch_keras
 except:
     pass
+
 def fetch(repository, *args, **kwargs):
-    """ Select a dataset. """
+    """ Fetch a dataset. """
     return fetcher[repository](*args, **kwargs)

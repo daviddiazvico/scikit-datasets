@@ -57,25 +57,25 @@ def _load(collection, name, dirname=None):
                                                                               filename_tr,
                                                                               filename_val,
                                                                               filename_t])
-        inner_cv = check_cv(cv=(X_tr, X_val), y=(y_tr, y_val))
-        outer_cv = check_cv(cv=(X, X_test), y=(y, y_test))
+        inner_cv = check_cv(cv=[(X_tr, X_val)], y=[(y_tr, y_val)])
+        outer_cv = check_cv(cv=[(X, X_test)], y=[(y, y_test)])
         X_remaining = y_remaining = None
     elif (filename_tr is not None) and (filename_val is not None):
         X, y, X_tr, y_tr, X_val, y_val = load_svmlight_files([filename,
                                                               filename_tr,
                                                               filename_val])
-        inner_cv = check_cv(cv=(X_tr, X_val), y=(y_tr, y_val))
+        inner_cv = check_cv(cv=[(X_tr, X_val)], y=[(y_tr, y_val)])
         outer_cv = X_remaining = y_remaining = None
     elif (filename_t is not None) and (filename_r is not None):
         X, y, X_test, y_test, X_remaining, y_remaining = load_svmlight_files([filename,
                                                                               filename_t,
                                                                               filename_r])
         inner_cv = None
-        outer_cv = check_cv(cv=(X, X_test), y=(y, y_test))
+        outer_cv = check_cv(cv=[(X, X_test)], y=[(y, y_test)])
     elif filename_t is not None:
         X, y, X_test, y_test = load_svmlight_files([filename, filename_t])
         inner_cv = X_remaining = y_remaining = None
-        outer_cv = check_cv(cv=(X, X_test), y=(y, y_test))
+        outer_cv = check_cv(cv=[(X, X_test)], y=[(y, y_test)])
     else:
         X, y = load_svmlight_file(filename)
         inner_cv = outer_cv = X_remaining = y_remaining = None
