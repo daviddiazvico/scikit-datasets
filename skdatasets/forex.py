@@ -81,4 +81,5 @@ def fetch_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
                         currency_2=currency_2)
         descr = str(currency_1) + '-' + str(currency_2)
     descr = descr + start.strftime('%Y-%m-%d') + '-' + end.strftime('%Y-%m-%d')
-    return Bunch(data=X, target=None, inner_cv=None, outer_cv=None, DESCR=descr)
+    return Bunch(data=X, target=None, data_test=None, target_test=None,
+                 inner_cv=None, outer_cv=None, DESCR=descr)

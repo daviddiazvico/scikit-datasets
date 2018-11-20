@@ -9,7 +9,6 @@ import numpy as np
 from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
                             imdb, mnist, reuters)
 from sklearn.datasets.base import Bunch
-from sklearn.model_selection import check_cv
 
 
 DATASETS = {'boston_housing': boston_housing.load_data,
@@ -43,5 +42,5 @@ def fetch_keras(name, **kwargs):
         n_features = np.prod(X.shape[1:])
         X = X.reshape([X.shape[0], n_features]) / X_max
         X_test = X_test.reshape([X_test.shape[0], n_features]) / X_max
-    cv = check_cv(cv=[(X, X_test)], y=[(y, y_test)])
-    return Bunch(data=X, target=y, inner_cv=None, outer_cv=cv, DESCR=name)
+    return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
+                 inner_cv=None, outer_cv=None, DESCR=name)

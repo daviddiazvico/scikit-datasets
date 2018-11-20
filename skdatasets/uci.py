@@ -8,7 +8,6 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 import numpy as np
 import os
 from sklearn.datasets.base import Bunch, get_data_home
-from sklearn.model_selection import check_cv
 from urllib.request import urlretrieve
 
 
@@ -39,9 +38,8 @@ def _fetch(name, dirname=None):
                                                                  filename)
         urlretrieve(url, filename=filename)
         X_test, y_test = _load_csv(filename)
-        cv = check_cv(cv=(X, X_test), y=(y, y_test))
     except:
-        cv = None
+        X_test = y_test = None
     try:
         filename = name + '.names'
         url = BASE_URL + '/' + name + '/' + filename
@@ -56,7 +54,7 @@ def _fetch(name, dirname=None):
         urlretrieve(url, filename=filename)
     with open(filename) as rst_file:
         fdescr = rst_file.read()
-    return X, y, cv, fdescr
+    return X, y, X_test, y_test, fdescr
 
 
 def fetch_uci(name, data_home=None):
@@ -82,6 +80,7 @@ def fetch_uci(name, data_home=None):
     dirname = os.path.join(get_data_home(data_home=data_home), 'uci', name)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    X, y, cv, DESCR = _fetch(name, dirname=dirname)
-    data = Bunch(data=X, target=y, inner_cv=None, outer_cv=cv, DESCR=DESCR)
+    X, y, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
+    data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
+                 inner_cv=None, outer_cv=None, DESCR=DESCR)
     return data

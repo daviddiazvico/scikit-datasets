@@ -43,6 +43,12 @@ try:
 except:
     pass
 
-def fetch(repository, *args, **kwargs):
+
+def fetch(repository, collection=None, dataset=None, **kwargs):
     """ Fetch a dataset. """
+    args = []
+    if collection is not None:
+        args.append(collection)
+    if dataset is not None:
+        args.append(dataset)
     return fetcher[repository](*args, **kwargs)

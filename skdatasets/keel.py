@@ -110,6 +110,8 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
         f = _fetch_keel_zip(collection, filename, dirname=dirname)
         Xs = []
         ys = []
+        Xs_test = []
+        ys_test = []
         for i in range(nfolds):
             if dobscv:
                 _name = os.path.join(name, name + '-' + str(nfolds) + 'dobscv-' + str(i + 1))
@@ -118,9 +120,11 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
             _X, _y = _load_Xy(f, _name + 'tra.dat', skiprows=nattrs + 4)
             _X_test, _y_test = _load_Xy(f, _name + 'tst.dat',
                                         skiprows=nattrs + 4)
-            Xs.append((_X, _X_test))
-            ys.append((_y, _y_test))
-        cv = check_cv(cv=Xs, y=ys)
+            Xs.append(_X)
+            ys.append(_y)
+            Xs_test.append(_X_test)
+            ys_test.append(_y_test)
+        cv = zip(Xs, ys, Xs_test, ys_test)
     return X, y, cv
 
 
@@ -163,5 +167,6 @@ def fetch_keel(collection, name, data_home=None, nfolds=None, dobscv=False):
     nattrs, DESCR = _load_descr(collection, name, dirname=dirname)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            dirname=dirname)
-    data = Bunch(data=X, target=y, inner_cv=None, outer_cv=cv, DESCR=DESCR)
+    data = Bunch(data=X, target=y, data_test=None, target_test=None,
+                 inner_cv=None, outer_cv=cv, DESCR=DESCR)
     return data

@@ -5,46 +5,48 @@ Test the LIBSVM loader.
 @license: MIT
 """
 
-from sklearn.model_selection import BaseCrossValidator
+from . import check_estimator
 
 from skdatasets.libsvm import fetch_libsvm
 
 
-def check(data, shape):
+def check(data, shape, test_shape=None):
     """Check dataset properties."""
     assert data.data.shape == shape
     assert data.target.shape[0] == shape[0]
-    if hasattr(data, 'outer_cv') and (data.outer_cv is not None):
-        assert len(list(data.outer_cv.split())) == 1
+    if test_shape is not None:
+        assert data.data_test.shape == test_shape
+        assert data.target_test.shape[0] == test_shape[0]
     if hasattr(data, 'inner_cv') and (data.inner_cv is not None):
         assert len(list(data.inner_cv.split())) == 1
+    check_estimator(data)
 
 
 def test_fetch_libsvm_australian():
     """Tests LIBSVM australian dataset."""
     data = fetch_libsvm('binary', 'australian')
-    check(data, (690, 14))
+    check(data, (690*2, 14))
 
 
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
     data = fetch_libsvm('binary', 'liver-disorders')
-    check(data, (145, 5))
+    check(data, (145*2, 5), test_shape=(145, 5))
 
 
 def test_fetch_libsvm_duke():
     """Tests LIBSVM duke dataset."""
     data = fetch_libsvm('binary', 'duke')
-    check(data, (44, 7129))
+    check(data, (44*2, 7129))
 
 
 def test_fetch_libsvm_cod_rna():
     """Tests LIBSVM cod-rna dataset."""
     data = fetch_libsvm('binary', 'cod-rna')
-    check(data, (59535, 8))
+    check(data, (59535*2, 8))
 
 
 def test_fetch_libsvm_satimage():
     """Tests LIBSVM satimage dataset."""
     data = fetch_libsvm('multiclass', 'satimage.scale')
-    check(data, (4435, 36))
+    check(data, (4435*2, 36), test_shape=(4435, 36))

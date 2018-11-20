@@ -5,6 +5,8 @@ Test the Raetsch loader.
 @license: MIT
 """
 
+from . import check_estimator
+
 from skdatasets.raetsch import fetch_raetsch
 
 
@@ -12,7 +14,9 @@ def check(data, shape, splits=100):
     """Check dataset properties."""
     assert data.data.shape == shape
     assert data.target.shape[0] == shape[0]
-    assert len(list(data.outer_cv.split())) == splits
+    assert len(list(data.inner_cv)) == 5
+    assert len(list(data.outer_cv)) == splits
+    check_estimator(data)
 
 
 def test_fetch_raetsch_banana():

@@ -5,6 +5,8 @@ Test the Keel loader.
 @license: MIT
 """
 
+from . import check_estimator
+
 from skdatasets.keel import fetch_keel
 
 
@@ -13,7 +15,8 @@ def check(data, shape, splits=1):
     assert data.data.shape == shape
     assert data.target.shape[0] == shape[0]
     if splits > 1:
-        assert len(list(data.outer_cv.split())) == splits
+        assert len(list(data.outer_cv)) == splits
+    check_estimator(data)
 
 
 def test_fetch_keel_abalone9_18():

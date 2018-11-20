@@ -67,6 +67,5 @@ def fetch_sklearn(name, **kwargs):
 
     """
     data = DATASETS[name](**kwargs)
-    data.inner_cv = None
-    data.outer_cv = None
+    data.data_test =  data.target_test = data.inner_cv = data.outer_cv = None
     return data
