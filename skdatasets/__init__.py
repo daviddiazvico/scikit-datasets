@@ -5,7 +5,7 @@ Scikit-learn-compatible datasets.
 @license: MIT
 """
 
-from . import libsvm, raetsch, sklearn, uci
+from . import libsvm, raetsch, sklearn, uci, ucr
 try:
     from . import cran
 except ImportError:
@@ -22,7 +22,6 @@ try:
     from . import keras
 except ImportError:
     pass
-
 
 fetcher = {'libsvm': libsvm.fetch_libsvm, 'raetsch': raetsch.fetch_raetsch,
            'sklearn': sklearn.fetch_sklearn, 'uci': uci.fetch_uci}
@@ -42,6 +41,8 @@ try:
     fetcher['keras'] = keras.fetch_keras
 except:
     pass
+
+
 def fetch(repository, *args, **kwargs):
     """ Select a dataset. """
     return fetcher[repository](*args, **kwargs)
