@@ -104,6 +104,17 @@ def fetch_zip(dataname, urlname, subfolder=None, data_home=None):
     return data_home
 
 
+def _target_conversion(target):
+    try:
+        target_data = target.astype(int)
+        target_names = np.unique(target_data).astype(str).tolist()
+    except ValueError:
+        target_names = np.unique(target).tolist()
+        target_data = np.searchsorted(target_names, target)
+
+    return target_data, target_names
+
+
 def fetch(name, data_home=None):
     url = BASE_URL + name
 
@@ -122,9 +133,9 @@ def fetch(name, data_home=None):
     feature_names = column_names[column_names != 'target'].tolist()
     target_column = train[0]['target'].astype(str)
     test_target_column = test[0]['target'].astype(str)
-    target_names = np.unique(target_column).tolist()
-    target = np.searchsorted(target_names, target_column)
-    target_test = np.searchsorted(target_names, test_target_column)
+    target, target_names = _target_conversion(target_column)
+    target_test, target_names_test = _target_conversion(test_target_column)
+    assert target_names == target_names_test
     data = np.array(train[0][feature_names].tolist())
     data_test = np.array(test[0][feature_names].tolist())
 
