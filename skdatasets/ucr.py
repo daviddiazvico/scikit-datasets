@@ -125,7 +125,7 @@ def fetch(name, data_home=None):
     path_file_train = (data_home / (name + '_TRAIN')).with_suffix(".arff")
     path_file_test = (data_home / (name + '_TEST')).with_suffix(".arff")
 
-    DESCR = path_file_descr.read_text()
+    DESCR = path_file_descr.read_text(errors='surrogateescape')
     train = scipy.io.arff.loadarff(path_file_train)
     test = scipy.io.arff.loadarff(path_file_test)
     dataset_name = train[1].name
