@@ -1,32 +1,31 @@
-import sys
+"""
+@author: David Diaz Vico
+@license: MIT
+"""
 
 from setuptools import find_packages, setup
 
-needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
 setup(name='scikit-datasets',
       packages=find_packages(),
-      version='0.1.16',
+      version='0.1.23',
       description='Scikit-learn-compatible datasets',
+      long_description=open('README.md', 'r').read(),
       author='David Diaz Vico',
       author_email='david.diaz.vico@outlook.com',
       url='https://github.com/daviddiazvico/scikit-datasets',
-      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.16.tar.gz',
+      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.23.tar.gz',
       keywords=['scikit-learn'],
       classifiers=['Intended Audience :: Science/Research',
-                   'Intended Audience :: Developers',
-                   'Topic :: Software Development',
                    'Topic :: Scientific/Engineering',
                    'Programming Language :: Python',
                    'Programming Language :: Python :: 3',
-                   'Programming Language :: Python :: 3.6',
-                   'Programming Language :: Python :: 3.7'],
+                   'Programming Language :: Python :: 3.6'],
       install_requires=['scikit-learn'],
       extras_require={'cran':  ['rdata'],
                       'forex': ['forex_python'],
                       'keel': ['pandas'],
                       'keras': ['keras']},
-      setup_requires=pytest_runner,
-      tests_require=['pytest-cov'],
-      test_suite='tests',
-     )
+      setup_requires=['pytest-runner'],
+      tests_require=['coverage', 'forex_python', 'keras', 'pandas', 'pytest',
+                     'pytest-cov', 'rdata', 'tensorflow'],
+      test_suite='tests')

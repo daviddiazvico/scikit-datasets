@@ -1,15 +1,14 @@
-dist: bionic
+dist: xenial
 language: python
 matrix:
     include:
         - python: 3.6
+branches:
+  only:
+    - master
 install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh;
-  - bash Miniconda3-latest-Linux-x86_64.sh -b;
-  - export PATH="$HOME/miniconda3/bin:$PATH";
-  - conda env update -n base -f environment.yml
-  - conda install -y sphinx
-  - pip install recommonmark sphinxcontrib-napoleon travis-sphinx
+  - python setup.py install
+  - pip install recommonmark sphinx sphinxcontrib-napoleon travis-sphinx
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
@@ -17,7 +16,7 @@ script:
   - python setup.py test
   - mkdir docs
   - export PYTHONPATH=`pwd`
-  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.16 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
+  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.23 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
   - sphinx-apidoc -o docs/_static/ skdatasets -F -a -l
   - travis-sphinx -v build -s docs -n
 after_success:

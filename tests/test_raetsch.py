@@ -5,18 +5,20 @@ Test the Raetsch loader.
 @license: MIT
 """
 
+from . import check_estimator
+
 from skdatasets.raetsch import fetch_raetsch
 
 
-def check(data, shape):
+def check(data, shape, splits=100):
     """Check dataset properties."""
     assert data.data.shape == shape
     assert data.target.shape[0] == shape[0]
-    assert hasattr(data.inner_cv, '__iter__')
-    assert hasattr(data.outer_cv, '__iter__')
+    assert len(list(data.outer_cv)) == splits
+    check_estimator(data)
 
 
 def test_fetch_raetsch_banana():
     """Tests Gunnar Raetsch banana dataset."""
     data = fetch_raetsch('banana')
-    check(data, (5300, 2))
+    check(data, (5300, 2), splits=100)

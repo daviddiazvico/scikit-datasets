@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -78,13 +79,8 @@ def _load_descr(collection, name, dirname=None):
     return nattrs, fdescr
 
 
-def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
-    """Load a dataset folds."""
-    if (nfolds is None) or (nfolds == 1):
-        filename = name + '.zip'
-    elif nfolds in (5, 10):
-        fold = 'dobscv' if dobscv else 'fold'
-        filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
+def _fetch_keel_zip(collection, filename, dirname=None):
+    """Fetch Keel dataset zip file."""
     if collection == 'imbalanced':
         for url in IMBALANCED_URLS:
             url = BASE_URL + '/' + url + '/' + filename
@@ -99,10 +95,19 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
         f = filename if dirname is None else os.path.join(dirname, filename)
         urlretrieve(url, filename=f)
-    if (nfolds is None) or (nfolds == 1):
-        X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
-        cv = None
-    elif nfolds in (5, 10):
+    return f
+
+
+def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
+    """Load a dataset folds."""
+    filename = name + '.zip'
+    f = _fetch_keel_zip(collection, filename, dirname=dirname)
+    X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
+    cv = None
+    if nfolds in (5, 10):
+        fold = 'dobscv' if dobscv else 'fold'
+        filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
+        f = _fetch_keel_zip(collection, filename, dirname=dirname)
         Xs = []
         ys = []
         Xs_test = []
@@ -119,20 +124,7 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
             ys.append(_y)
             Xs_test.append(_X_test)
             ys_test.append(_y_test)
-        tr_splits = []
-        ts_splits = []
-        X = np.empty((0, Xs[0].shape[1]))
-        y = []
-        for ftr, ttr, fts, tts in zip(Xs, ys, Xs_test, ys_test):
-            tr_splits.append(range(len(X), len(ttr) + len(X)))
-            X = np.vstack((X, ftr))
-            y = np.hstack((y, ttr))
-            ts_splits.append(range(len(X), len(tts) + len(X)))
-            X = np.vstack((X, fts))
-            y = np.hstack((y, tts))
-        cv = zip(tr_splits, ts_splits)
-    else:
-        raise Exception('Invalid combination of nfolds/dobscv')
+        cv = zip(Xs, ys, Xs_test, ys_test)
     return X, y, cv
 
 
@@ -175,6 +167,6 @@ def fetch_keel(collection, name, data_home=None, nfolds=None, dobscv=False):
     nattrs, DESCR = _load_descr(collection, name, dirname=dirname)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            dirname=dirname)
-    data = Bunch(data=X, target=y, outer_cv=cv, DESCR=DESCR)
-    data = Bunch(**{k: v for k, v in data.items() if v is not None})
+    data = Bunch(data=X, target=y, data_test=None, target_test=None,
+                 inner_cv=None, outer_cv=cv, DESCR=DESCR)
     return data

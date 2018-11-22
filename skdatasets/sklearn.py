@@ -66,4 +66,6 @@ def fetch_sklearn(name, **kwargs):
         Dictionary-like object with all the data and metadata.
 
     """
-    return DATASETS[name](**kwargs)
+    data = DATASETS[name](**kwargs)
+    data.data_test =  data.target_test = data.inner_cv = data.outer_cv = None
+    return data

@@ -23,6 +23,7 @@ try:
 except ImportError:
     pass
 
+
 fetcher = {'libsvm': libsvm.fetch_libsvm, 'raetsch': raetsch.fetch_raetsch,
            'sklearn': sklearn.fetch_sklearn, 'uci': uci.fetch_uci}
 try:
@@ -43,6 +44,11 @@ except:
     pass
 
 
-def fetch(repository, *args, **kwargs):
-    """ Select a dataset. """
+def fetch(repository, collection=None, dataset=None, **kwargs):
+    """ Fetch a dataset. """
+    args = []
+    if collection is not None:
+        args.append(collection)
+    if dataset is not None:
+        args.append(dataset)
     return fetcher[repository](*args, **kwargs)

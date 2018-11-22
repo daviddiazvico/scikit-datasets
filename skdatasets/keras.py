@@ -43,4 +43,4 @@ def fetch_keras(name, **kwargs):
         X = X.reshape([X.shape[0], n_features]) / X_max
         X_test = X_test.reshape([X_test.shape[0], n_features]) / X_max
     return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 DESCR=name)
+                 inner_cv=None, outer_cv=None, DESCR=name)

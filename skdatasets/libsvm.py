@@ -80,7 +80,7 @@ def _load(collection, name, dirname=None):
     else:
         X, y = load_svmlight_file(filename)
         X_test = y_test = X_remaining = y_remaining = cv = None
-    return X, y, X_test, y_test, X_remaining, y_remaining, cv
+    return X, y, X_test, y_test, cv, X_remaining, y_remaining
 
 
 def fetch_libsvm(collection, name, data_home=None):
@@ -111,10 +111,9 @@ def fetch_libsvm(collection, name, data_home=None):
                            collection, name.replace('/', '-'))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    X, y, X_test, y_test, X_remaining, y_remaining, cv = _load(collection, name,
+    X, y, X_test, y_test, cv, X_remaining, y_remaining = _load(collection, name,
                                                                dirname=dirname)
     data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 inner_cv=cv, data_remaining=X_remaining,
+                 inner_cv=cv, outer_cv=None, data_remaining=X_remaining,
                  target_remaining=y_remaining, DESCR=name)
-    data = Bunch(**{k: v for k, v in data.items() if v is not None})
     return data

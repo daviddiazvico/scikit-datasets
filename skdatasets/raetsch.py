@@ -50,7 +50,6 @@ def fetch_raetsch(name, data_home=None):
         os.makedirs(dirname)
     filename = _fetch_remote(ARCHIVE, dirname=dirname)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
-    inner_cv = zip(train_splits[:5] - 1, test_splits[:5] - 1)
-    outer_cv = zip(train_splits - 1, test_splits - 1)
-    return Bunch(data=X, target=y, inner_cv=inner_cv, outer_cv=outer_cv,
-                 DESCR=name)
+    cv = ((X[tr - 1], y[tr - 1], X[ts - 1], y[ts - 1]) for tr, ts in zip(train_splits, test_splits))
+    return Bunch(data=X, target=y, data_test=None, target_test=None,
+                 inner_cv=None, outer_cv=cv, DESCR=name)
