@@ -23,9 +23,9 @@ try:
 except ImportError:
     pass
 
-
 fetcher = {'libsvm': libsvm.fetch_libsvm, 'raetsch': raetsch.fetch_raetsch,
-           'sklearn': sklearn.fetch_sklearn, 'uci': uci.fetch_uci}
+           'sklearn': sklearn.fetch_sklearn, 'uci': uci.fetch_uci,
+           'ucr': ucr.fetch}
 try:
     fetcher['cran'] = cran.fetch_cran
 except:
