@@ -20,7 +20,7 @@ ARCHIVE = RemoteFileMetadata(filename='benchmarks.mat',
                              checksum=('47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75'))
 
 
-def fetch_raetsch(name, data_home=None):
+def fetch(name, data_home=None):
     """Fetch Gunnar Raetsch's dataset.
 
     Fetch a Gunnar Raetsch's benchmark dataset by name. Availabe datasets are

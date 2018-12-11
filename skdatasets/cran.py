@@ -412,7 +412,7 @@ def _to_sklearn(dataset, *, target_name):
                  feature_names=feature_names)
 
 
-def fetch_cran(name):
+def fetch(name):
     """Load
 
     Load a dataset.

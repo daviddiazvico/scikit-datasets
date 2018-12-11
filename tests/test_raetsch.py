@@ -7,7 +7,7 @@ Test the Raetsch loader.
 
 from . import check_estimator
 
-from skdatasets.raetsch import fetch_raetsch
+from skdatasets.raetsch import fetch
 
 
 def check(data, shape, splits=100):
@@ -20,5 +20,5 @@ def check(data, shape, splits=100):
 
 def test_fetch_raetsch_banana():
     """Tests Gunnar Raetsch banana dataset."""
-    data = fetch_raetsch('banana')
+    data = fetch('banana')
     check(data, (5300, 2), splits=100)

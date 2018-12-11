@@ -7,7 +7,7 @@ Test the LIBSVM loader.
 
 from . import check_estimator
 
-from skdatasets.libsvm import fetch_libsvm
+from skdatasets.libsvm import fetch
 
 
 def check(data, shape, test_shape=None):
@@ -24,29 +24,29 @@ def check(data, shape, test_shape=None):
 
 def test_fetch_libsvm_australian():
     """Tests LIBSVM australian dataset."""
-    data = fetch_libsvm('binary', 'australian')
+    data = fetch('binary', 'australian')
     check(data, (690*2, 14))
 
 
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
-    data = fetch_libsvm('binary', 'liver-disorders')
+    data = fetch('binary', 'liver-disorders')
     check(data, (145*2, 5), test_shape=(145, 5))
 
 
 def test_fetch_libsvm_duke():
     """Tests LIBSVM duke dataset."""
-    data = fetch_libsvm('binary', 'duke')
+    data = fetch('binary', 'duke')
     check(data, (44*2, 7129))
 
 
 def test_fetch_libsvm_cod_rna():
     """Tests LIBSVM cod-rna dataset."""
-    data = fetch_libsvm('binary', 'cod-rna')
+    data = fetch('binary', 'cod-rna')
     check(data, (59535*2, 8))
 
 
 def test_fetch_libsvm_satimage():
     """Tests LIBSVM satimage dataset."""
-    data = fetch_libsvm('multiclass', 'satimage.scale')
+    data = fetch('multiclass', 'satimage.scale')
     check(data, (4435*2, 36), test_shape=(4435, 36))

@@ -46,8 +46,8 @@ def _load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
     return _fetch(get_rate, start=start, end=end)
 
 
-def fetch_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
-                currency_2='EUR'):
+def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
+          currency_2='EUR'):
     """Fetch Forex datasets.
 
     Fetches the ECB Forex and Coindesk Bitcoin datasets. More info at

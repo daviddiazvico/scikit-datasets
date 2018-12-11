@@ -5,10 +5,10 @@ Test the UCI loader.
 @license: MIT
 """
 
-from skdatasets.uci import fetch_uci
+from skdatasets.uci import fetch
 
 
 def test_fetch_uci_wine():
     """Tests UCI wine dataset."""
-    data = fetch_uci('wine')
+    data = fetch('wine')
     assert data.data.shape == (178, 13)

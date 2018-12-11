@@ -46,7 +46,7 @@ DATASETS = {'20newsgroups': fetch_20newsgroups,
             'wine': load_wine}
 
 
-def fetch_sklearn(name, **kwargs):
+def fetch(name, **kwargs):
     """Fetch Scikit-learn dataset.
 
     Fetch a Scikit-learn dataset by name. More info at

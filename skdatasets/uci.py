@@ -57,7 +57,7 @@ def _fetch(name, dirname=None):
     return X, y, X_test, y_test, fdescr
 
 
-def fetch_uci(name, data_home=None):
+def fetch(name, data_home=None):
     """Fetch UCI dataset.
 
     Fetch a UCI dataset by name. More info at

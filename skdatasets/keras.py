@@ -17,7 +17,7 @@ DATASETS = {'boston_housing': boston_housing.load_data,
             'mnist': mnist.load_data, 'reuters': reuters.load_data}
 
 
-def fetch_keras(name, **kwargs):
+def fetch(name, **kwargs):
     """Fetch Keras dataset.
 
     Fetch a Keras dataset by name. More info at https://keras.io/datasets.

@@ -83,7 +83,7 @@ def _load(collection, name, dirname=None):
     return X, y, X_test, y_test, cv, X_remaining, y_remaining
 
 
-def fetch_libsvm(collection, name, data_home=None):
+def fetch(collection, name, data_home=None):
     """Fetch LIBSVM dataset.
 
     Fetch a LIBSVM dataset by collection and name. More info at

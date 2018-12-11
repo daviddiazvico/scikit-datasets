@@ -7,7 +7,7 @@ Test the Keras loader.
 
 from . import check_estimator
 
-from skdatasets.keras import fetch_keras
+from skdatasets.keras import fetch
 
 
 def check(data, shape, test_shape):
@@ -20,5 +20,5 @@ def check(data, shape, test_shape):
 
 def test_keras_mnist():
     """Tests keras MNIST dataset."""
-    data = fetch_keras('mnist')
+    data = fetch('mnist')
     check(data, (60000, 28*28), (10000, 28*28))

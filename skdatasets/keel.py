@@ -128,7 +128,7 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
     return X, y, cv
 
 
-def fetch_keel(collection, name, data_home=None, nfolds=None, dobscv=False):
+def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     """Fetch Keel dataset.
 
     Fetch a Keel dataset by collection and name. More info at
