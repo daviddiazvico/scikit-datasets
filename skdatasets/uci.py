@@ -29,14 +29,13 @@ def _fetch(name, dirname=None):
     filename = name + '.data'
     url = BASE_URL + '/' + name + '/' + filename
     filename = filename if dirname is None else os.path.join(dirname, filename)
-    urlretrieve(url, filename=filename)
+    filename, _ = urlretrieve(url, filename=filename)
     X, y = _load_csv(filename)
     try:
         filename = name + '.test'
         url = BASE_URL + '/' + name + '/' + filename
-        filename = filename if dirname is None else os.path.join(dirname,
-                                                                 filename)
-        urlretrieve(url, filename=filename)
+        filename = filename if dirname is None else os.path.join(dirname, filename)
+        filename, _ = urlretrieve(url, filename=filename)
         X_test, y_test = _load_csv(filename)
     except:
         X_test = y_test = None
@@ -45,13 +44,13 @@ def _fetch(name, dirname=None):
         url = BASE_URL + '/' + name + '/' + filename
         filename = filename if dirname is None else os.path.join(dirname,
                                                                  filename)
-        urlretrieve(url, filename=filename)
+        filename, _ = urlretrieve(url, filename=filename)
     except:
         filename = name + '.info'
         url = BASE_URL + '/' + name + '/' + filename
         filename = filename if dirname is None else os.path.join(dirname,
                                                                  filename)
-        urlretrieve(url, filename=filename)
+        filename, _ = urlretrieve(url, filename=filename)
     with open(filename) as rst_file:
         fdescr = rst_file.read()
     return X, y, X_test, y_test, fdescr

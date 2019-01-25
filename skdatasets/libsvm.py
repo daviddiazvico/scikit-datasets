@@ -21,43 +21,33 @@ COLLECTIONS = {'binary', 'multiclass', 'regression', 'string'}
 def _fetch_partition(collection, name, partition, dirname=None):
     """Fetch dataset partition."""
     filename = name.replace('/', '-') + partition
-    url = BASE_URL + '/' + collection + '/' + name
+    url = BASE_URL + '/' + collection + '/' + name + partition
     try:
         f = filename + '.bz2' if dirname is None else os.path.join(dirname,
                                                                    filename + '.bz2')
-        urlretrieve(url + '.bz2', filename=f)
+        f, _ = urlretrieve(url + '.bz2', filename=f)
     except:
-        f = filename if dirname is None else os.path.join(dirname, filename)
-        urlretrieve(url, filename=f)
+        try:
+            f = filename if dirname is None else os.path.join(dirname, filename)
+            f, _ = urlretrieve(url, filename=f)
+        except:
+            f = None
     return f
 
 
 def _load(collection, name, dirname=None):
     """Load dataset."""
     filename = _fetch_partition(collection, name, '', dirname=dirname)
-    try:
-        filename_tr = _fetch_partition(collection, name, '.tr', dirname=dirname)
-    except:
-        filename_tr = None
-    try:
-        filename_val = _fetch_partition(collection, name, '.val',
-                                        dirname=dirname)
-    except:
-        filename_val = None
-    try:
-        filename_t = _fetch_partition(collection, name, '.t', dirname=dirname)
-    except:
-        filename_t = None
-    try:
-        filename_r = _fetch_partition(collection, name, '.r', dirname=dirname)
-    except:
-        filename_r = None
+    filename_tr = _fetch_partition(collection, name, '.tr', dirname=dirname)
+    filename_val = _fetch_partition(collection, name, '.val', dirname=dirname)
+    filename_t = _fetch_partition(collection, name, '.t', dirname=dirname)
+    filename_r = _fetch_partition(collection, name, '.r', dirname=dirname)
     if (filename_tr is not None) and (filename_val is not None) and (filename_t is not None):
         _, _, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([filename,
                                                                               filename_tr,
                                                                               filename_val,
                                                                               filename_t])
-        cv = PredefinedSplit([item for sublist in [[-1] * X_tr.shape[0], [0] * X_val.shape[0]] for item in sublist])
+        cv = PredefinedSplit([-1] * X_tr.shape[0] + [0] * X_val.shape[0])
         X = sp.sparse.vstack((X_tr, X_val))
         y = np.hstack((y_tr, y_val))
         X_remaining = y_remaining = None
@@ -65,7 +55,7 @@ def _load(collection, name, dirname=None):
         _, _, X_tr, y_tr, X_val, y_val = load_svmlight_files([filename,
                                                               filename_tr,
                                                               filename_val])
-        cv = PredefinedSplit([item for sublist in [[-1] * X_tr.shape[0], [0] * X_val.shape[0]] for item in sublist])
+        cv = PredefinedSplit([-1] * X_tr.shape[0] + [0] * X_val.shape[0])
         X = sp.sparse.vstack((X_tr, X_val))
         y = np.hstack((y_tr, y_val))
         X_test = y_test = X_remaining = y_remaining = None

@@ -64,7 +64,7 @@ def _load_descr(collection, name, dirname=None):
             try:
                 f = filename if dirname is None else os.path.join(dirname,
                                                                   filename)
-                urlretrieve(url, filename=f)
+                f, _ = urlretrieve(url, filename=f)
                 break
             except:
                 continue
@@ -72,7 +72,7 @@ def _load_descr(collection, name, dirname=None):
         collection = INCORRECT_DESCR_IMBALANCED_URLS[collection] if collection in INCORRECT_DESCR_IMBALANCED_URLS else collection
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
         f = filename if dirname is None else os.path.join(dirname, filename)
-        urlretrieve(url, filename=f)
+        f, _ = urlretrieve(url, filename=f)
     with open(f) as rst_file:
         fdescr = rst_file.read()
         nattrs = fdescr.count("@attribute")
@@ -87,14 +87,14 @@ def _fetch_keel_zip(collection, filename, dirname=None):
             try:
                 f = filename if dirname is None else os.path.join(dirname,
                                                                   filename)
-                urlretrieve(url, filename=f)
+                f, _ = urlretrieve(url, filename=f)
                 break
             except:
                 continue
     else:
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
         f = filename if dirname is None else os.path.join(dirname, filename)
-        urlretrieve(url, filename=f)
+        f, _ = urlretrieve(url, filename=f)
     return f
 
 

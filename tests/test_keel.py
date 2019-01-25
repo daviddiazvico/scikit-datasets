@@ -16,6 +16,11 @@ def check(data, shape, splits=1):
     assert data.target.shape[0] == shape[0]
     if splits > 1:
         assert len(list(data.outer_cv)) == splits
+    else:
+        assert data.outer_cv is None
+    assert data.data_test is None
+    assert data.target_test is None
+    assert data.inner_cv is None
     check_estimator(data)
 
 
