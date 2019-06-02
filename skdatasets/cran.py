@@ -8,101 +8,16 @@ Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
 from distutils.version import LooseVersion
 from html.parser import HTMLParser
 import os
-from os import makedirs, remove
-from os.path import basename, exists, join, normpath, splitext
-import pathlib
-import re
-from shutil import copyfileobj
-import tarfile
-import urllib.request
-from urllib.error import HTTPError
-from urllib.request import urlopen
 import warnings
+import re
+import urllib
+import pathlib
 
-from sklearn.datasets.base import Bunch, get_data_home, RemoteFileMetadata
+from sklearn.datasets.base import Bunch, get_data_home
+from .base import fetch_tgz as _fetch_tgz
 
 import pandas as pd
 import rdata
-
-
-def fetch_file(dataname, urlname, data_home=None):
-    """Fetch dataset.
-
-    Fetch a file from a given url and stores it in a given directory.
-
-    Parameters
-    ----------
-    dataname: string
-              Dataset name.
-    urlname: string
-             Dataset url.
-    data_home: string, default=None
-               Dataset directory.
-
-    Returns
-    -------
-    filename: string
-              Name of the file.
-
-    """
-    # check if this data set has been already downloaded
-    data_home = get_data_home(data_home=data_home)
-    data_home = join(data_home, dataname)
-    if not exists(data_home):
-        makedirs(data_home)
-    filename = join(data_home, basename(normpath(urlname)))
-    # if the file does not exist, download it
-    if not exists(filename):
-        try:
-            data_url = urlopen(urlname)
-        except HTTPError as e:
-            if e.code == 404:
-                e.msg = "Dataset '%s' not found." % dataname
-            raise
-        # store file
-        try:
-            with open(filename, 'w+b') as data_file:
-                copyfileobj(data_url, data_file)
-        except Exception:
-            remove(filename)
-            raise
-        data_url.close()
-    return filename
-
-
-def fetch_tgz(dataname, urlname, data_home=None):
-    """Fetch zipped dataset.
-
-    Fetch a tgz file from a given url, unzips and stores it in a given
-    directory.
-
-    Parameters
-    ----------
-    dataname: string
-              Dataset name.
-    urlname: string
-             Dataset url.
-    data_home: string, default=None
-               Dataset directory.
-
-    Returns
-    -------
-    data_home: string
-               Directory.
-
-    """
-    # fetch file
-    filename = fetch_file(dataname, urlname, data_home=data_home)
-    data_home = get_data_home(data_home=data_home)
-    data_home = join(data_home, dataname)
-    # unzip file
-    try:
-        with tarfile.open(filename, 'r:gz') as tar_file:
-            tar_file.extractall(data_home)
-    except Exception:
-        remove(filename)
-        raise
-    return data_home
 
 
 class _LatestVersionHTMLParser(HTMLParser):
@@ -215,7 +130,7 @@ def _get_urls(package_name, *, version=None):
 
 def _download_package_data(package_name, *, package_url=None, version=None,
                            folder_name=None,
-                           fetch_file=fetch_tgz, subdir=None):
+                           subdir=None):
 
     if package_url is None:
         url_list = _get_urls(package_name, version=version)
@@ -230,23 +145,21 @@ def _download_package_data(package_name, *, package_url=None, version=None,
 
     for i, url in enumerate(url_list):
         try:
-            directory = fetch_file(folder_name, url)
+            directory = _fetch_tgz(folder_name, url, subfolder='cran')
             break
         except Exception:
             # If it is the last url, reraise
             if i >= len(url_list) - 1:
                 raise
 
-    directory_path = pathlib.Path(directory)
-
-    data_path = directory_path / package_name / subdir
+    data_path = directory / package_name / subdir
 
     return data_path
 
 
 def fetch_dataset(dataset_name, package_name, *, package_url=None,
                   version=None, folder_name=None, subdir=None,
-                  fetch_file=fetch_tgz, converter=None):
+                  converter=None):
     """Fetch an R dataset.
 
     Only .rda datasets in community packages can be downloaded for now.
@@ -271,8 +184,6 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
     subdir: string
         Subdirectory of the package containing the datasets. By default is
         'data'.
-    fetch_file: function, default=fetch_tgz
-        Dataset fetching function.
     converter: rdata.conversion.Converter
         Object used to translate R objects into Python objects.
 
@@ -289,7 +200,6 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
     data_path = _download_package_data(package_name, package_url=package_url,
                                        version=version,
                                        folder_name=folder_name,
-                                       fetch_file=fetch_file,
                                        subdir=subdir)
 
     file_path = data_path / dataset_name
@@ -312,7 +222,6 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
 def fetch_package(package_name, *, package_url=None,
                   version=None,
                   folder_name=None, subdir=None,
-                  fetch_file=fetch_tgz,
                   converter=None, ignore_errors=False):
     """Fetch all datasets from a R package.
 
@@ -336,8 +245,6 @@ def fetch_package(package_name, *, package_url=None,
     subdir: string
         Subdirectory of the package containing the datasets. By default is
         'data'.
-    fetch_file: function, default=fetch_tgz
-        Dataset fetching function.
     converter: rdata.conversion.Converter
         Object used to translate R objects into Python objects.
     ignore_errors: boolean
@@ -357,7 +264,6 @@ def fetch_package(package_name, *, package_url=None,
     data_path = _download_package_data(package_name, package_url=package_url,
                                        version=version,
                                        folder_name=folder_name,
-                                       fetch_file=fetch_file,
                                        subdir=subdir)
 
     if not data_path.exists():

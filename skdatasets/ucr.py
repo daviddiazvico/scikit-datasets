@@ -5,103 +5,13 @@ Datasets from the UCR time series database.
 @license: MIT
 """
 
-from os.path import basename, normpath
-import pathlib
-from shutil import copyfileobj
-from urllib.error import HTTPError
-from urllib.request import urlopen
-import zipfile
-
 import scipy.io.arff
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets.base import Bunch
+from .base import fetch_zip as _fetch_zip
 
 import numpy as np
 
 BASE_URL = 'http://www.timeseriesclassification.com/Downloads/'
-
-
-def fetch_file(dataname, urlname, subfolder=None, data_home=None):
-    """Fetch dataset.
-
-    Fetch a file from a given url and stores it in a given directory.
-
-    Parameters
-    ----------
-    dataname: string
-              Dataset name.
-    urlname: string
-             Dataset url.
-    data_home: string, default=None
-               Dataset directory.
-
-    Returns
-    -------
-    filename: string
-              Name of the file.
-
-    """
-    # check if this data set has been already downloaded
-    data_home = pathlib.Path(get_data_home(data_home=data_home))
-
-    if subfolder:
-        data_home = data_home / subfolder
-
-    data_home = data_home / dataname
-    if not data_home.exists():
-        data_home.mkdir(parents=True)
-    filename = data_home / basename(normpath(urlname))
-    # if the file does not exist, download it
-    if not filename.exists():
-        try:
-            data_url = urlopen(urlname)
-        except HTTPError as e:
-            if e.code == 404:
-                e.msg = "Dataset '%s' not found." % dataname
-            raise
-        # store file
-        try:
-            with open(filename, 'w+b') as data_file:
-                copyfileobj(data_url, data_file)
-        except Exception:
-            filename.unlink()
-            raise
-        data_url.close()
-    return filename
-
-
-def fetch_zip(dataname, urlname, subfolder=None, data_home=None):
-    """Fetch zipped dataset.
-
-    Fetch a tgz file from a given url, unzips and stores it in a given
-    directory.
-
-    Parameters
-    ----------
-    dataname: string
-              Dataset name.
-    urlname: string
-             Dataset url.
-    data_home: string, default=None
-               Dataset directory.
-
-    Returns
-    -------
-    data_home: string
-               Directory.
-
-    """
-    # fetch file
-    filename = fetch_file(dataname, urlname, subfolder=subfolder,
-                          data_home=data_home)
-    data_home = filename.parent
-    # unzip file
-    try:
-        with zipfile.ZipFile(filename, 'r') as zip_file:
-            zip_file.extractall(data_home)
-    except Exception:
-        filename.unlink()
-        raise
-    return data_home
 
 
 def _target_conversion(target):
@@ -145,8 +55,8 @@ def data_to_matrix(struct_array):
 def fetch(name, data_home=None):
     url = BASE_URL + name
 
-    data_home = fetch_zip(name, urlname=url + '.zip', subfolder="ucr",
-                          data_home=data_home)
+    data_home = _fetch_zip(name, urlname=url + '.zip', subfolder="ucr",
+                           data_home=data_home)
 
     description_filenames = [name, name + "Description", name + "_Info"]
 
