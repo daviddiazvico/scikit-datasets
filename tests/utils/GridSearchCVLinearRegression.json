@@ -1,0 +1,27 @@
+{
+    "py/object": "sklearn.model_selection.GridSearchCV",
+    "py/state": {
+        "estimator": {
+            "py/object": "sklearn.linear_model.LinearRegression",
+            "py/state": {
+				"fit_intercept": true,
+				"normalize": false,
+				"copy_X": true,
+				"n_jobs": null
+            }
+        },
+        "param_grid": {
+            "fit_intercept": [true, false],
+            "normalize": [true, false]
+        },
+        "scoring": null,
+        "n_jobs": 1,
+        "pre_dispatch": "2*n_jobs",
+        "iid": true,
+        "cv": null,
+        "refit": true,
+        "verbose": 0,
+        "error_score": 0.0,
+        "return_train_score": false
+    }
+}

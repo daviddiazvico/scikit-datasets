@@ -5,7 +5,7 @@ Tests.
 @license: MIT
 """
 
-from skdatasets.cran import fetch
+from skdatasets.repositories.cran import fetch
 
 
 def test_cran_geyser():

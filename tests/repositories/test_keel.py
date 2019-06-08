@@ -7,7 +7,7 @@ Test the Keel loader.
 
 from . import check_estimator
 
-from skdatasets.keel import fetch
+from skdatasets.repositories.keel import fetch
 
 
 def check(data, shape, splits=1):

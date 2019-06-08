@@ -7,7 +7,7 @@ Test the LIBSVM loader.
 
 from . import check_estimator
 
-from skdatasets.libsvm import fetch
+from skdatasets.repositories.libsvm import fetch
 
 
 def check(data, shape, test_shape=None, validation_shape=None,

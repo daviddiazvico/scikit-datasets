@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """
 @author: David Diaz Vico
 @license: MIT
@@ -7,13 +9,13 @@ from setuptools import find_packages, setup
 
 setup(name='scikit-datasets',
       packages=find_packages(),
-      version='0.1.26',
+      version='0.1.27',
       description='Scikit-learn-compatible datasets',
-      long_description=open('README.md', 'r').read(),
+#      long_description=open('README.md', 'r').read(),
       author='David Diaz Vico',
       author_email='david.diaz.vico@outlook.com',
       url='https://github.com/daviddiazvico/scikit-datasets',
-      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.26.tar.gz',
+      download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.27.tar.gz',
       keywords=['scikit-learn'],
       classifiers=['Intended Audience :: Science/Research',
                    'Topic :: Scientific/Engineering',
@@ -24,8 +26,13 @@ setup(name='scikit-datasets',
       extras_require={'cran':  ['rdata'],
                       'forex': ['forex_python'],
                       'keel': ['pandas'],
-                      'keras': ['keras']},
+                      'keras': ['keras'],
+                      'utils.estimator': ['jsonpickle'],
+                      'utils.experiments': ['sacred'],
+                      'utils.scores': ['pandas', 'scipy', 'statsmodels'],
+                      'utils.validation': ['seaborn']},
       setup_requires=['pytest-runner'],
-      tests_require=['coverage', 'forex_python', 'keras', 'pandas', 'pytest',
-                     'pytest-cov', 'rdata', 'tensorflow'],
+      tests_require=['coverage', 'forex_python', 'jsonpickle', 'keras',
+                     'pandas', 'pytest', 'pytest-cov', 'rdata', 'sacred',
+                     'scipy', 'seaborn', 'statsmodels', 'tensorflow'],
       test_suite='tests')
