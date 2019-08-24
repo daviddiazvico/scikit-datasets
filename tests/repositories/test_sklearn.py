@@ -7,7 +7,7 @@ Test the Scikit-learn loader.
 
 from . import check_estimator
 
-from skdatasets.sklearn import fetch
+from skdatasets.repositories.sklearn import fetch
 
 
 def test_sklearn_iris():

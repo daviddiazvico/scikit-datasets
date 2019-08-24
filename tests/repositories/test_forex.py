@@ -7,7 +7,7 @@ Test the Forex loader.
 
 from datetime import date
 
-from skdatasets.forex import fetch
+from skdatasets.repositories.forex import fetch
 
 
 def test_forex_usd_eur():

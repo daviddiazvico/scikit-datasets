@@ -5,7 +5,7 @@ Test the UCI loader.
 @license: MIT
 """
 
-from skdatasets.uci import fetch
+from skdatasets.repositories.uci import fetch
 
 
 def test_fetch_uci_wine():

@@ -7,7 +7,7 @@ Test the Raetsch loader.
 
 from . import check_estimator
 
-from skdatasets.raetsch import fetch
+from skdatasets.repositories.raetsch import fetch
 
 
 def check(data, shape, splits=100):

@@ -5,7 +5,7 @@ Test the UCR loader.
 @license: MIT
 """
 
-from skdatasets.ucr import fetch
+from skdatasets.repositories.ucr import fetch
 
 
 def test_fetch_ucr_gunpoint():

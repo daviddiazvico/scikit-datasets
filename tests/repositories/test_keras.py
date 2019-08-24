@@ -7,7 +7,7 @@ Test the Keras loader.
 
 from . import check_estimator
 
-from skdatasets.keras import fetch
+from skdatasets.repositories.keras import fetch
 
 
 def check(data, shape, test_shape):
