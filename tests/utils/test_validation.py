@@ -43,4 +43,3 @@ def test_metaparameter_plot():
     estimator.fit(X, y)
     image_files = metaparameter_plot(estimator)
     assert len(image_files) == 1
-    assert image_files[0] == 'param_constant.pdf'

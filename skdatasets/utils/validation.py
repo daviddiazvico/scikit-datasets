@@ -15,7 +15,8 @@ from sklearn.utils.multiclass import type_of_target
 sns.set(style="white", palette="muted", color_codes=True)
 
 
-def scatter_plot(X, y, estimator, max_features=10, max_data=200, **kwargs):
+def scatter_plot(X, y, estimator, image_file='scatter.pdf', max_features=10,
+                 max_data=200, **kwargs):
     """ Scatter plot.
 
         Scatter plot of the transformations or/and predictions of the estimator.
@@ -28,6 +29,8 @@ def scatter_plot(X, y, estimator, max_features=10, max_data=200, **kwargs):
            Target values.
         estimator : estimator
             Fitted sklearn Transformer/Predictor object.
+        image_file: string, default=...
+            ...
         max_features : integer, default=10
             Maximum number of features to use in the plot
         max_data : integer, default=200
@@ -70,9 +73,9 @@ def scatter_plot(X, y, estimator, max_features=10, max_data=200, **kwargs):
             sns.pairplot(data, hue='y', x_vars=names[:-1],
                          y_vars=names[:-1])
             pass
-        image_file = 'transformer_scatter.pdf'
-        plt.savefig(image_file, **kwargs)
-        image_files.append(image_file)
+        transformer_image_file = 'transformer_' + image_file
+        plt.savefig(transformer_image_file, **kwargs)
+        image_files.append(transformer_image_file)
     if hasattr(estimator, 'predict'):
         # Predictor
         plt.figure()
@@ -100,13 +103,13 @@ def scatter_plot(X, y, estimator, max_features=10, max_data=200, **kwargs):
                                 columns=('y', 'preds', 'error'))
             sns.set()
             sns.scatterplot(x='y', y='preds', hue='error', data=data)
-        image_file = 'predictor_scatter.pdf'
-        plt.savefig(image_file, **kwargs)
-        image_files.append(image_file)
+        predictor_image_file = 'predictor_' + image_file
+        plt.savefig(predictor_image_file, **kwargs)
+        image_files.append(predictor_image_file)
     return image_files
 
 
-def metaparameter_plot(estimator, **kwargs):
+def metaparameter_plot(estimator, image_file='metaparameter.pdf', **kwargs):
     """ Metaparameter plot.
 
         Train and test metric plotted along a meta-parameter search space.
@@ -115,6 +118,8 @@ def metaparameter_plot(estimator, **kwargs):
         ----------
         estimator : estimator
             Fitted sklearn SearchCV object.
+        image_file: string, default=...
+            ...
         **kwargs : optional savefig named args
 
         Returns
@@ -158,13 +163,13 @@ def metaparameter_plot(estimator, **kwargs):
                     pass
                 plt.axvline(x=param_range[estimator.best_index_], color='r')
                 plt.legend(loc='best')
-                image_file = k + '.pdf'
+                image_file = k + '_' + image_file
                 plt.savefig(image_file, **kwargs)
                 image_files.append(image_file)
     return image_files
 
 
-def history_plot(history, **kwargs):
+def history_plot(history, image_file='history.pdf', **kwargs):
     """ History plot.
 
         Loss plotted for each training epoch.
@@ -173,6 +178,8 @@ def history_plot(history, **kwargs):
         ----------
         history : history object
             Keras-like history object returned from fit.
+        image_file: string, default=...
+            ...
         **kwargs : optional savefig named args
 
         Returns
@@ -186,6 +193,5 @@ def history_plot(history, **kwargs):
     for k, v in history.history.items():
         plt.plot(v, label=k)
     plt.legend(loc='best')
-    image_file = 'history.pdf'
     plt.savefig(image_file, **kwargs)
     return image_file

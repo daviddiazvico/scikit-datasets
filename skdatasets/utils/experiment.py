@@ -7,7 +7,7 @@ import numpy as np
 from sacred import Experiment, Ingredient
 from sklearn.model_selection import cross_validate, PredefinedSplit
 
-from .validation import (scatter_plot, metaparameter_plot, history_plot)
+from .validation import scatter_plot, metaparameter_plot, history_plot
 
 
 def experiment(dataset, estimator):
@@ -80,6 +80,18 @@ def experiment(dataset, estimator):
                 e = estimator()
             return e
 
+        def _plots(e, i, X, y):
+            """Create different descriptive plots."""
+            # Metaparameter plots
+            image_files = metaparameter_plot(e, image_file=f'metaparameter_{i}.pdf')
+            for image_file in image_files:
+                experiment.add_artifact(image_file)
+            # Scatter plots
+            image_files = scatter_plot(X, y, e, image_file=f'scatter_{i}.pdf')
+            for image_file in image_files:
+                experiment.add_artifact(image_file)
+
+
         # Inner CV for metaparameter search
         if hasattr(data.inner_cv, '__iter__'):
             # Explicit CV folds
@@ -91,10 +103,6 @@ def experiment(dataset, estimator):
         else:
             # Automatic/indexed CV folds
             e = _estimator(cv=data.inner_cv)
-        # Metaparameter plots
-        image_files = metaparameter_plot(e)
-        for image_file in image_files:
-            experiment.add_artifact(image_file)
 
         # Outer CV/test partition for model assessment
         if data.data_test is not None:
@@ -102,31 +110,30 @@ def experiment(dataset, estimator):
             e.fit(data.data, y=data.target)
             scores = {'test_score': e.score(data.data_test, y=data.target_test)}
             if return_estimator:
-                scores['estimator'] = e
-            # Scatter plots
-            image_files = scatter_plot(data.data_test, data.target_test, e)
-            for image_file in image_files:
-                experiment.add_artifact(image_file)
+                scores['estimator'] = [e]
+            _plots(e, 0, data.data_test, data.target_test)
         else:
             # Outer CV
             if hasattr(data.outer_cv, '__iter__'):
                 # Explicit CV folds
                 scores = {'test_score': []}
-                estimators = []
-                for X, y, X_test, y_test in data.outer_cv:
-                    e.fit(X, y=y)
-                    if return_estimator:
-                        estimators.append(e)
-                    scores['test_score'].append(e.score(X_test, y=y_test))
                 if return_estimator:
-                    scores['estimator'] = estimators
+                    scores['estimator'] = []
+                for i, (X, y, X_test, y_test) in enumerate(data.outer_cv):
+                    e.fit(X, y=y)
+                    scores['test_score'].append(e.score(X_test, y=y_test))
+                    if return_estimator:
+                        scores['estimator'].append(e)
+                    _plots(e, i, X_test, y_test)
             else:
                 # Automatic/indexed CV folds
                 scores = cross_validate(e, data.data, y=data.target,
                                         cv=data.outer_cv,
-                                        return_estimator=return_estimator)
-                if return_estimator:
-                    scores['estimator'] = e
+                                        return_estimator=True)
+                for i, e in enumerate(scores['estimator']):
+                    _plots(e, i, data.data, data.target)
+                if not return_estimator:
+                    scores.pop('estimator')
         experiment.info.update(scores)
 
     return experiment
