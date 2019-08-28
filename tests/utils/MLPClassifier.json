@@ -1,0 +1,68 @@
+{
+    "py/object": "sklearn.model_selection.GridSearchCV",
+    "py/state": {
+        "estimator": {
+            "py/object": "sklearn.pipeline.Pipeline",
+            "py/state": {
+                "steps": [
+                    [
+                        "std",
+                        {
+                            "py/object": "sklearn.preprocessing.StandardScaler",
+                            "py/state": {
+                                "copy": true,
+                                "with_mean": false,
+                                "with_std": true
+                            }
+                        }
+                    ],
+                    [
+                        "mlp",
+                        {
+                            "py/object": "sklearn.neural_network.MLPClassifier",
+                            "py/state": {
+                                "hidden_layer_sizes": [100],
+                                "activation": "relu",
+                                "solver": "adam",
+                                "alpha": 0.0001,
+                                "batch_size": "auto",
+                                "learning_rate": "constant",
+                                "learning_rate_init": 0.001,
+                                "power_t": 0.5,
+                                "max_iter": 200,
+                                "shuffle": true,
+                                "random_state": null,
+                                "tol": 0.0001,
+                                "verbose": false,
+                                "warm_start": false,
+                                "momentum": 0.9,
+                                "nesterovs_momentum": true,
+                                "early_stopping": false,
+                                "validation_fraction": 0.1,
+                                "beta_1": 0.9,
+                                "beta_2": 0.999,
+                                "epsilon": 1e-08,
+                                "n_iter_no_change": 10
+                            }
+                        }
+                    ]
+                ],
+                "memory": null,
+                "verbose": false
+            }
+        },
+        "param_grid": {
+            "mlp__alpha": [1e-4, 1e-3, 1e-2, 1e-1, 1e0],
+            "mlp__learning_rate_init": [0.001]
+        },
+        "scoring": null,
+        "n_jobs": 1,
+        "pre_dispatch": "2*n_jobs",
+        "iid": true,
+        "cv": null,
+        "refit": true,
+        "verbose": 0,
+        "error_score": 0.0,
+        "return_train_score": false
+    }
+}

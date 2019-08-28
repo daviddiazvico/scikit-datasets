@@ -4,10 +4,11 @@
 """
 
 import numpy as np
+import os
 from sacred import Experiment, Ingredient
 from sklearn.model_selection import cross_validate, PredefinedSplit
 
-from .validation import scatter_plot, metaparameter_plot, history_plot
+from skdatasets.utils.validation import scatter_plot, metaparameter_plot, history_plot
 
 
 def experiment(dataset, estimator):
@@ -86,11 +87,14 @@ def experiment(dataset, estimator):
             image_files = metaparameter_plot(e, image_file=f'metaparameter_{i}.pdf')
             for image_file in image_files:
                 experiment.add_artifact(image_file)
+                print("Removing " + image_file)
+                os.remove(image_file)
             # Scatter plots
             image_files = scatter_plot(X, y, e, image_file=f'scatter_{i}.pdf')
             for image_file in image_files:
                 experiment.add_artifact(image_file)
-
+                print("Removing " + image_file)
+                os.remove(image_file)
 
         # Inner CV for metaparameter search
         if hasattr(data.inner_cv, '__iter__'):

@@ -42,14 +42,16 @@ def scatter_plot(X, y, estimator, image_file='scatter.pdf', max_features=10,
         List of image filenames.
     """
     image_files = list()
+    max_data = min(X.shape[0], max_data)
+    max_features = min(X.shape[1], max_features)
+    target_type = type_of_target(y)
+    X = X[:max_data, :]
+    y = y[:max_data]
     if hasattr(estimator, 'transform'):
         # Transformer
         plt.figure()
         transfs = estimator.transform(X)
-        X = X[:max_data, :max_features]
         transfs = transfs[:max_data, :max_features]
-        y = y[:max_data]
-        target_type = type_of_target(y)
         if target_type in ('binary', 'multiclass'):
             # Classification/clustering
             names = list(range(transfs.shape[1]))
@@ -80,16 +82,18 @@ def scatter_plot(X, y, estimator, image_file='scatter.pdf', max_features=10,
         # Predictor
         plt.figure()
         preds = estimator.predict(X)
-        X = X[:max_data, :max_features]
+        X = X[:, :max_features]
+        try:
+            X = X.A
+        except:
+            X = X
         preds = preds[:max_data]
-        y = y[:max_data]
-        target_type = type_of_target(y)
         if target_type in ('binary', 'multiclass'):
             # Classification/clustering
             names = list(range(X.shape[1]))
             names.append('class')
             diffs = y
-            diffs[(y - preds) != 0] = -1
+            diffs[y != preds] = -1
             data = pd.DataFrame(data=np.hstack((X, np.reshape(diffs, (-1, 1)))),
                                 columns=names)
             sns.set()
