@@ -30,8 +30,7 @@ except ImportError:
 
 def fetch(repository, dataset, collection=None, **kwargs):
     try:
-        data = repos[repository].fetch(collection=collection, name=dataset,
-                                       **kwargs)
+        data = repos[repository].fetch(collection, dataset, **kwargs)
     except:
-        data = repos[repository].fetch(name=dataset, **kwargs)
+        data = repos[repository].fetch(dataset, **kwargs)
     return data

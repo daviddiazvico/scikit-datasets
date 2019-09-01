@@ -112,7 +112,8 @@ def experiment(dataset, estimator):
         if data.data_test is not None:
             # Test partition
             e.fit(data.data, y=data.target)
-            scores = {'test_score': e.score(data.data_test, y=data.target_test)}
+            scores = {'test_score': [e.score(data.data_test,
+                                             y=data.target_test)]}
             if return_estimator:
                 scores['estimator'] = [e]
             _plots(e, 0, data.data_test, data.target_test)
@@ -138,6 +139,8 @@ def experiment(dataset, estimator):
                     _plots(e, i, data.data, data.target)
                 if not return_estimator:
                     scores.pop('estimator')
+        experiment.log_scalar('score_mean', np.nanmean(scores['test_score']))
+        experiment.log_scalar('score_std', np.nanstd(scores['test_score']))
         experiment.info.update(scores)
 
     return experiment
