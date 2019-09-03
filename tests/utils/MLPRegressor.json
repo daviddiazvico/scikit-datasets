@@ -21,7 +21,7 @@
                         {
                             "py/object": "sklearn.neural_network.MLPRegressor",
                             "py/state": {
-                                "hidden_layer_sizes": [100],
+                                "hidden_layer_sizes": [10],
                                 "activation": "relu",
                                 "solver": "adam",
                                 "alpha": 0.0001,
@@ -29,7 +29,7 @@
                                 "learning_rate": "constant",
                                 "learning_rate_init": 0.001,
                                 "power_t": 0.5,
-                                "max_iter": 200,
+                                "max_iter": 2,
                                 "shuffle": true,
                                 "random_state": null,
                                 "tol": 0.0001,

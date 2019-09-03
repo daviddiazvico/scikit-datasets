@@ -22,10 +22,13 @@ def test_multiclass_classification():
     assert ret == 0
     ret = subprocess.call(['skdatasets/utils/run.py', '-r', 'uci', '-d', 'wine', '-e', 'tests/utils/MLPClassifier.json'])
     assert ret == 0
-    
+    ret = subprocess.call(['skdatasets/utils/run.py', '-r', 'libsvm', '-c', 'multiclass', '-d', 'shuttle', '-e', 'tests/utils/MLPClassifier.json'])
+    assert ret == 0
+    ret = subprocess.call(['skdatasets/utils/run.py', '-r', 'libsvm', '-c', 'multiclass', '-d', 'usps', '-e', 'tests/utils/MLPClassifier.json'])
+    assert ret == 0
+
 
 def test_regression():
     """Tests regression experiment."""
     ret = subprocess.call(['skdatasets/utils/run.py', '-r', 'libsvm', '-c', 'regression', '-d', 'housing', '-e', 'tests/utils/MLPRegressor.json'])
     assert ret == 0
-    

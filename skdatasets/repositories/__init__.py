@@ -29,8 +29,8 @@ except ImportError:
 
 
 def fetch(repository, dataset, collection=None, **kwargs):
-    try:
+    if collection:
         data = repos[repository].fetch(collection, dataset, **kwargs)
-    except:
+    else:
         data = repos[repository].fetch(dataset, **kwargs)
     return data
