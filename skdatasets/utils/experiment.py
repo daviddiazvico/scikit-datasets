@@ -4,9 +4,11 @@
 """
 
 import numpy as np
+import os
 from sacred import Experiment, Ingredient
 from sklearn.model_selection import cross_validate, PredefinedSplit
-from tempfile import NamedTemporaryFile
+from tempfile import mkdtemp
+from time import process_time
 from warnings import warn
 
 
@@ -39,18 +41,27 @@ def experiment(dataset, estimator):
     estimator = _estimator.capture(estimator)
     experiment = Experiment(ingredients=(_dataset, _estimator))
 
+    def _add_np_artifact(name, np_object):
+        """Add a numpy artifact."""
+        with open(os.path.join(mkdtemp(), name), 'wb+') as tmpfile:
+            np.save(tmpfile, np_object)
+            experiment.add_artifact(tmpfile.name)
+
+    def _log_score_scalar(mean, std):
+        """Log score mean and std."""
+        experiment.log_scalar('score_mean', mean)
+        experiment.log_scalar('score_std', std)
+
     @experiment.automain
     def run():
-        """Run the experiment.
-
-        Run the experiment.
-
-        """
+        """Run the experiment."""
         data = dataset()
 
         # Metaparameter search
         X = data.data
         y = data.target
+        cv = None
+        explicit_cv_folds = False
         if hasattr(data, 'inner_cv'):
             cv = data.inner_cv
             explicit_cv_folds = hasattr(data.inner_cv, '__iter__')
@@ -64,95 +75,60 @@ def experiment(dataset, estimator):
                     y = np.concatenate((y, y_, y_test_))
                     cv = cv + [-1]*len(X_) + [i]*len(X_test_)
                 cv = PredefinedSplit(cv)
-        else:
-            cv = None
-            explicit_cv_folds = False
         try:
             e = estimator(cv=cv)
         except Exception as exception:
-            warn(str(exception))
+            warn(f'The estimator does not accept cv: {exception}')
             e = estimator()
-        e.fit(X, y=y)
-        with NamedTemporaryFile() as tmpfile:
-            np.save(tmpfile, e)
-            experiment.add_artifact(tmpfile.name, name='estimator.npy')
-        items = dict()
-        for item in ['cv_results_', 'best_score_', 'best_params_',
-                    'best_index_', 'n_splits_', 'refit_time_']:
-            if hasattr(e, item):
-                items[item] = getattr(e, item)
-        if items:
-            experiment.info.update({'inner_cv': items})
         if explicit_cv_folds:
-            e = e.best_estimator_
+            e.fit(X, y=y)
+            e.fit = e.best_estimator_.fit
 
         # Model assessment
         if hasattr(data, 'data_test') and (data.data_test is not None):
             # Test partition
-            experiment.log_scalar('score', e.score(data.data_test,
-                                                   y=data.target_test))
+            e.fit(X, y=y)
+            _add_np_artifact('estimator.npy', e)
+            _log_score_scalar(e.score(data.data_test, y=data.target_test), 0.0)
             for output in ('transform', 'predict'):
                 if hasattr(e, output):
-                    with NamedTemporaryFile() as tmpfile:
-                        np.save(tmpfile,
-                                getattr(e, output)(data.data_test))
-                        experiment.add_artifact(tmpfile.name,
-                                                name=f'{output}.npy')
+                    _add_np_artifact(f'{output}.npy',
+                                     getattr(e, output)(data.data_test))
         elif hasattr(data, 'outer_cv'):
             # Outer CV
             if hasattr(data.outer_cv, '__iter__'):
                 # Explicit CV folds
-                items = dict()
-                for i, (X, y, X_test, y_test) in enumerate(data.outer_cv):
+                scores = {'test_score': list(), 'train_score': list(),
+                          'fit_time': list(), 'score_time': list(),
+                          'estimator': list()}
+                outputs = {'transform': list(), 'predict': list()}
+                for X, y, X_test, y_test in data.outer_cv:
+                    t0 = process_time()
                     e.fit(X, y=y)
-                    with NamedTemporaryFile() as tmpfile:
-                        np.save(tmpfile, e)
-                        experiment.add_artifact(tmpfile.name,
-                                                name=f'estimator_{i}.npy')
-                    experiment.log_scalar('score', e.score(X_test, y=y_test))
-                    items_i = dict()
-                    for item in ['cv_results_', 'best_score_', 'best_params_',
-                                'best_index_', 'n_splits_', 'refit_time_']:
-                        if hasattr(e, item):
-                            items_i[item] = getattr(e, item)
-                    if items_i:
-                        items[i] = items_i
+                    t1 = process_time()
+                    test_score = e.score(X_test, y=y_test)
+                    t2 = process_time()
+                    scores['test_score'].append(test_score)
+                    scores['train_score'].append(e.score(X, y=y))
+                    scores['fit_time'].append(t1 - t0)
+                    scores['score_time'].append(t2 - t1)
+                    scores['estimator'].append(e)
                     for output in ('transform', 'predict'):
                         if hasattr(e, output):
-                            with NamedTemporaryFile() as tmpfile:
-                                np.save(tmpfile, getattr(e, output)(X_test))
-                                experiment.add_artifact(tmpfile.name,
-                                                        name=f'{output}_{i}.npy')
-                if items:
-                    experiment.info.update({'outer_cv': items})
+                            outputs[output].append(
+                                [getattr(e, output)(X_test)])
+                for output in ('transform', 'predict'):
+                    if outputs[output]:
+                        _add_np_artifact(f'{output}.npy',
+                                         np.array(outputs[output]))
             else:
                 # Automatic/indexed CV folds
                 scores = cross_validate(e, data.data, y=data.target,
                                         cv=data.outer_cv,
                                         return_train_score=True,
                                         return_estimator=True)
-                with NamedTemporaryFile() as tmpfile:
-                    np.save(tmpfile, scores)
-                    experiment.add_artifact(tmpfile.name, name=f'scores.npy')
-                experiment.log_scalar('score', scores['test_score'])
-                items = dict()
-                for item in ['test_score', 'train_score', 'fit_time',
-                             'score_time']:
-                    items[item] = scores[item]
-                estimators = dict()
-                for i, e in enumerate(scores['estimator']):
-                    with NamedTemporaryFile() as tmpfile:
-                        np.save(tmpfile, e)
-                        experiment.add_artifact(tmpfile.name,
-                                                name=f'estimator_{i}.npy')
-                    items_i = dict()
-                    for item in ['cv_results_', 'best_score_', 'best_params_',
-                                'best_index_', 'n_splits_', 'refit_time_']:
-                        if hasattr(e, item):
-                            items_i[item] = getattr(e, item)
-                    if items_i:
-                        estimators[i] = items_i
-                items['estimator'] = estimators
-                experiment.info.update({'outer_cv': items})
+            _add_np_artifact('scores.npy', scores)
+            _log_score_scalar(np.nanmean(scores['test_score']),
+                              np.nanstd(scores['test_score']))
 
     return experiment
