@@ -3,6 +3,7 @@
 @license: MIT
 """
 
+import joblib
 import numpy as np
 import os
 from sacred import Experiment, Ingredient
@@ -41,17 +42,6 @@ def experiment(dataset, estimator):
     estimator = _estimator.capture(estimator)
     experiment = Experiment(ingredients=(_dataset, _estimator))
 
-    def _add_np_artifact(name, np_object):
-        """Add a numpy artifact."""
-        with open(os.path.join(mkdtemp(), name), 'wb+') as tmpfile:
-            np.save(tmpfile, np_object)
-            experiment.add_artifact(tmpfile.name)
-
-    def _log_score_scalar(mean, std):
-        """Log score mean and std."""
-        experiment.log_scalar('score_mean', mean)
-        experiment.log_scalar('score_std', std)
-
     @experiment.automain
     def run():
         """Run the experiment."""
@@ -88,12 +78,17 @@ def experiment(dataset, estimator):
         if hasattr(data, 'data_test') and (data.data_test is not None):
             # Test partition
             e.fit(X, y=y)
-            _add_np_artifact('estimator.npy', e)
-            _log_score_scalar(e.score(data.data_test, y=data.target_test), 0.0)
+            joblib.dump(e, 'estimator.joblib')
+            experiment.log_scalar('score_mean', e.score(data.data_test,
+                                  y=data.target_test))
+            experiment.log_scalar('score_std', 0.0)
             for output in ('transform', 'predict'):
                 if hasattr(e, output):
-                    _add_np_artifact(f'{output}.npy',
-                                     getattr(e, output)(data.data_test))
+                    with open(os.path.join(mkdtemp(), f'{output}.npy'),
+                              'wb+') as tmpfile:
+                        np.save(tmpfile, getattr(e, output)(data.data_test))
+                        experiment.add_artifact(tmpfile.name)
+
         elif hasattr(data, 'outer_cv'):
             # Outer CV
             if hasattr(data.outer_cv, '__iter__'):
@@ -119,16 +114,19 @@ def experiment(dataset, estimator):
                                 [getattr(e, output)(X_test)])
                 for output in ('transform', 'predict'):
                     if outputs[output]:
-                        _add_np_artifact(f'{output}.npy',
-                                         np.array(outputs[output]))
+                        with open(os.path.join(mkdtemp(), f'{output}.npy'),
+                                  'wb+') as tmpfile:
+                            np.save(tmpfile, np.array(outputs[output]))
+                            experiment.add_artifact(tmpfile.name)
             else:
                 # Automatic/indexed CV folds
                 scores = cross_validate(e, data.data, y=data.target,
                                         cv=data.outer_cv,
                                         return_train_score=True,
                                         return_estimator=True)
-            _add_np_artifact('scores.npy', scores)
-            _log_score_scalar(np.nanmean(scores['test_score']),
-                              np.nanstd(scores['test_score']))
+            joblib.dump(scores, 'scores.joblib')
+            experiment.log_scalar('score_mean',
+                                  np.nanmean(scores['test_score']))
+            experiment.log_scalar('score_std', np.nanstd(scores['test_score']))
 
     return experiment
