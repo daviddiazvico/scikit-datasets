@@ -16,7 +16,7 @@ script:
   - python setup.py test
   - mkdir docs
   - export PYTHONPATH=`pwd`
-  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.35 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
+  - sphinx-quickstart -q -p scikit-datasets -a "David Diaz Vico" -v 0.1 -r 0.1.36 -l en --ext-autodoc --ext-viewcode --ext-githubpages --extensions sphinxcontrib.napoleon --no-makefile --no-batchfile docs
   - sphinx-apidoc -o docs/_static/ skdatasets -F -a -l
   - travis-sphinx -v build -s docs -n
 after_success:

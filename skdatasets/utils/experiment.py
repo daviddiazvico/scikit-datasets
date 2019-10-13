@@ -8,7 +8,7 @@ import numpy as np
 import os
 from sacred import Experiment, Ingredient
 from sklearn.model_selection import cross_validate, PredefinedSplit
-from tempfile import mkdtemp
+from tempfile import mkdtemp, NamedTemporaryFile
 from time import process_time
 from warnings import warn
 
@@ -78,7 +78,9 @@ def experiment(dataset, estimator):
         if hasattr(data, 'data_test') and (data.data_test is not None):
             # Test partition
             e.fit(X, y=y)
-            joblib.dump(e, 'estimator.joblib')
+            with NamedTemporaryFile() as tmpfile:
+                joblib.dump(e, tmpfile.name)
+                experiment.add_artifact(tmpfile.name, name='estimator.joblib')
             experiment.log_scalar('score_mean', e.score(data.data_test,
                                   y=data.target_test))
             experiment.log_scalar('score_std', 0.0)
@@ -88,7 +90,6 @@ def experiment(dataset, estimator):
                               'wb+') as tmpfile:
                         np.save(tmpfile, getattr(e, output)(data.data_test))
                         experiment.add_artifact(tmpfile.name)
-
         elif hasattr(data, 'outer_cv'):
             # Outer CV
             if hasattr(data.outer_cv, '__iter__'):
@@ -110,8 +111,7 @@ def experiment(dataset, estimator):
                     scores['estimator'].append(e)
                     for output in ('transform', 'predict'):
                         if hasattr(e, output):
-                            outputs[output].append(
-                                [getattr(e, output)(X_test)])
+                            outputs[output].append([getattr(e, output)(X_test)])
                 for output in ('transform', 'predict'):
                     if outputs[output]:
                         with open(os.path.join(mkdtemp(), f'{output}.npy'),
@@ -124,7 +124,9 @@ def experiment(dataset, estimator):
                                         cv=data.outer_cv,
                                         return_train_score=True,
                                         return_estimator=True)
-            joblib.dump(scores, 'scores.joblib')
+            with NamedTemporaryFile() as tmpfile:
+                joblib.dump(e, tmpfile.name)
+                experiment.add_artifact(tmpfile.name, name='scores.joblib')
             experiment.log_scalar('score_mean',
                                   np.nanmean(scores['test_score']))
             experiment.log_scalar('score_std', np.nanstd(scores['test_score']))

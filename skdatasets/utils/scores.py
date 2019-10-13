@@ -6,13 +6,14 @@
 import itertools as it
 import numpy as np
 import pandas as pd
-from scipy.stats import kruskal, friedmanchisquare, mannwhitneyu, rankdata, wilcoxon
+from scipy.stats import (kruskal, friedmanchisquare, mannwhitneyu, rankdata,
+                         wilcoxon)
 from statsmodels.sandbox.stats.multicomp import multipletests
 
 
 def scores_table(datasets, estimators, scores, stds=None,
-                 greater_is_better=True, method='average',
-                 score_decimals=2, rank_decimals=0):
+                 greater_is_better=True, method='average', score_decimals=2,
+                 rank_decimals=0):
     """ Scores table.
 
         Prints a table where each row represents a dataset and each column
@@ -49,7 +50,8 @@ def scores_table(datasets, estimators, scores, stds=None,
             if stds is not None:
                 table.loc[d, e] += f' ±{stds[i, j]:.{score_decimals}f}'
             table.loc[d, e] += f' ({ranks[i, j]:.{rank_decimals}f})'
-    table.loc['rank mean'] = np.around(np.mean(ranks, axis=0), decimals=score_decimals)
+    table.loc['rank mean'] = np.around(np.mean(ranks, axis=0),
+                                       decimals=score_decimals)
     return table
 
 
@@ -99,8 +101,8 @@ def hypotheses_table(samples, models, alpha=0.05, multitest=None,
     tests = {'mannwhitneyu': mannwhitneyu, 'wilcoxon': wilcoxon}
     multitest_table = None
     if multitest is not None:
-        multitest_table = pd.DataFrame(index=[multitest], columns=['p-value',
-                                                                   'Hypothesis'])
+        multitest_table = pd.DataFrame(index=[multitest],
+                                       columns=['p-value', 'Hypothesis'])
         statistic, pvalue = multitests[multitest](*samples, **multitest_args)
         reject = 'Rejected' if pvalue <= alpha else 'Not rejected'
         multitest_table.loc[multitest] = ['{0:.2f}'.format(pvalue), reject]
@@ -108,9 +110,7 @@ def hypotheses_table(samples, models, alpha=0.05, multitest=None,
             return multitest_table, None
     pvalues = [tests[test](samples[:, vs[0]], samples[:, vs[1]], **test_args)[1] for vs in versus]
     if correction is not None:
-        reject, pvalues, alphac_sidak, alphac_bonf = multipletests(pvalues,
-                                                                   alpha,
-                                                                   method=correction)
+        reject, pvalues, _, _ = multipletests(pvalues, alpha, method=correction)
     else:
         reject = ['Rejected' if pvalue <= alpha else 'Not rejected' for pvalue in pvalues]
     test_table = pd.DataFrame(index=comparisons, columns=['p-value',
