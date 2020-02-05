@@ -8,7 +8,7 @@ Keras datasets (https://keras.io/datasets).
 import numpy as np
 from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
                             imdb, mnist, reuters)
-from sklearn.datasets.base import Bunch
+from sklearn.utils import Bunch
 
 
 DATASETS = {'boston_housing': boston_housing.load_data,

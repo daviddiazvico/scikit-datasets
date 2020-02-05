@@ -28,13 +28,12 @@ def _dataset(inner_cv=None, outer_cv=None):
 
 
 def _estimator(cv):
-    return GridSearchCV(DecisionTreeRegressor(), {'max_depth': [2, 4]},
-                        iid=True, cv=cv)
+    return GridSearchCV(DecisionTreeRegressor(), {'max_depth': [2, 4]}, cv=cv)
 
 
 def _experiment(inner_cv, outer_cv):
     e = experiment(_dataset, _estimator)
-    e.observers.append(FileStorageObserver.create('.results'))
+    e.observers.append(FileStorageObserver('.results'))
     e.run(config_updates={'dataset': {'inner_cv': inner_cv,
                                       'outer_cv': outer_cv}})
 

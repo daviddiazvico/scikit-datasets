@@ -14,7 +14,7 @@ from skdatasets.utils.experiment import experiment
 
 
 def main(dataset=fetch, estimator=json2estimator,
-         observers=[FileStorageObserver.create('.results')]):
+         observers=[FileStorageObserver('.results')]):
     parser = argparse.ArgumentParser(description='Run an experiment.')
     parser.add_argument('-r', '--repository', type=str, help='repository')
     parser.add_argument('-c', '--collection', type=str, default=None,

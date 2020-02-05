@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from forex_python.bitcoin import BtcConverter
 from forex_python.converter import CurrencyRates
 import numpy as np
-from sklearn.datasets.base import Bunch
+from sklearn.utils import Bunch
 import time
 
 

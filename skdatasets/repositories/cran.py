@@ -13,7 +13,8 @@ import re
 import urllib
 import pathlib
 
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
 from .base import fetch_tgz as _fetch_tgz
 
 import pandas as pd

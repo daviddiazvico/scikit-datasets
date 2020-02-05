@@ -9,7 +9,7 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 import zipfile
 import tarfile
-from sklearn.datasets.base import get_data_home
+from sklearn.datasets import get_data_home
 
 
 def fetch_file(dataname, urlname, subfolder=None, data_home=None):

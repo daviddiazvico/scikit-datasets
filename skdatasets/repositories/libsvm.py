@@ -8,8 +8,9 @@ LIBSVM datasets (https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets).
 import numpy as np
 import os
 import scipy as sp
-from sklearn.datasets import load_svmlight_file, load_svmlight_files
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets import (get_data_home, load_svmlight_file,
+                              load_svmlight_files)
+from sklearn.utils import Bunch
 from sklearn.model_selection import PredefinedSplit
 from urllib.request import urlretrieve
 
