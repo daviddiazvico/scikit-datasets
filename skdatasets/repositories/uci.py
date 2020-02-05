@@ -7,7 +7,8 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 
 import numpy as np
 import os
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
 from urllib.request import urlretrieve
 
 

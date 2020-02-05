@@ -9,7 +9,8 @@ import io
 import numpy as np
 import os
 import pandas as pd
-from sklearn.datasets.base import Bunch, get_data_home
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from urllib.request import urlretrieve

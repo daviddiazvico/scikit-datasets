@@ -6,18 +6,51 @@ Gunnar Raetsch benchmark datasets
 @license: MIT
 """
 
+import hashlib
 import os
 from scipy.io import loadmat
-from sklearn.datasets.base import (_fetch_remote, get_data_home, Bunch,
-                                   RemoteFileMetadata)
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
+from urllib.request import urlretrieve
 
 
 DATASETS = {'banana', 'breast_cancer', 'diabetis', 'flare_solar', 'german',
             'heart', 'image', 'ringnorm', 'splice', 'thyroid', 'titanic',
             'twonorm', 'waveform'}
-ARCHIVE = RemoteFileMetadata(filename='benchmarks.mat',
-                             url='https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat',
-                             checksum=('47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75'))
+
+
+def _fetch_remote(dirname=None):
+    """Helper function to download the remote dataset into path
+
+    Fetch the remote dataset, save into path using remote's filename and ensure
+    its integrity based on the SHA256 Checksum of the downloaded file.
+
+    Parameters
+    ----------
+    dirname : string
+        Directory to save the file to.
+
+    Returns
+    -------
+    file_path: string
+        Full path of the created file.
+    """
+    file_path = 'benchmarks.mat'
+    if dirname is not None:
+        file_path = os.path.join(dirname, file_path)
+    urlretrieve('https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat', file_path)
+    sha256hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while True:
+            buffer = f.read(8192)
+            if not buffer:
+                break
+            sha256hash.update(buffer)
+    checksum = sha256hash.hexdigest()
+    remote_checksum = ('47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75')
+    if remote_checksum != checksum:
+        raise IOError(f"{file_path} has an SHA256 checksum ({checksum}) differing from expected ({remote_checksum}), file may be corrupted.")
+    return file_path
 
 
 def fetch(name, data_home=None):
@@ -48,7 +81,7 @@ def fetch(name, data_home=None):
     dirname = os.path.join(get_data_home(data_home=data_home), 'raetsch')
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    filename = _fetch_remote(ARCHIVE, dirname=dirname)
+    filename = _fetch_remote(dirname=dirname)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     cv = ((X[tr - 1], y[tr - 1], X[ts - 1], y[ts - 1]) for tr, ts in zip(train_splits, test_splits))
     return Bunch(data=X, target=y, data_test=None, target_test=None,

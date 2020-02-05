@@ -6,7 +6,7 @@ Datasets from the UCR time series database.
 """
 
 import scipy.io.arff
-from sklearn.datasets.base import Bunch
+from sklearn.utils import Bunch
 from .base import fetch_zip as _fetch_zip
 
 import numpy as np
