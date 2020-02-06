@@ -78,9 +78,13 @@ def experiment(dataset, estimator):
         if hasattr(data, 'data_test') and (data.data_test is not None):
             # Test partition
             e.fit(X, y=y)
-            with NamedTemporaryFile() as tmpfile:
-                joblib.dump(e, tmpfile.name)
-                experiment.add_artifact(tmpfile.name, name='estimator.joblib')
+            try:
+                with NamedTemporaryFile() as tmpfile:
+                    joblib.dump(e, tmpfile.name)
+                    experiment.add_artifact(tmpfile.name,
+                                            name='estimator.joblib')
+            except Exception as exception:
+                warn(f'Artifact save failed: {exception}')
             experiment.log_scalar('score_mean', e.score(data.data_test,
                                   y=data.target_test))
             experiment.log_scalar('score_std', 0.0)
@@ -124,9 +128,12 @@ def experiment(dataset, estimator):
                                         cv=data.outer_cv,
                                         return_train_score=True,
                                         return_estimator=True)
-            with NamedTemporaryFile() as tmpfile:
-                joblib.dump(e, tmpfile.name)
-                experiment.add_artifact(tmpfile.name, name='scores.joblib')
+            try:
+                with NamedTemporaryFile() as tmpfile:
+                    joblib.dump(e, tmpfile.name)
+                    experiment.add_artifact(tmpfile.name, name='scores.joblib')
+            except Exception as exception:
+                warn(f'Artifact save failed: {exception}')
             experiment.log_scalar('score_mean',
                                   np.nanmean(scores['test_score']))
             experiment.log_scalar('score_std', np.nanstd(scores['test_score']))
