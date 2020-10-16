@@ -42,13 +42,16 @@ def scores_table(datasets, estimators, scores, stds=None,
                Table of mean and standard deviation of each estimator-dataset
                pair. A ranking of estimators is also generated.
     """
+    fillna = -np.inf if greater_is_better else np.inf
+    scores = np.array([[fillna if np.isnan(s_i) else s_i for s_i in s] for s in scores])
     ranks = np.asarray([rankdata(-m, method=method) if greater_is_better else rankdata(m, method=method) for m in scores])
     table = pd.DataFrame(data=scores, index=datasets, columns=estimators)
     for i, d in enumerate(datasets):
         for j, e in enumerate(estimators):
             table.loc[d, e] = f'{scores[i, j]:.{score_decimals}f}'
             if stds is not None:
-                table.loc[d, e] += f' ±{stds[i, j]:.{score_decimals}f}'
+                std = stds[i, j] if not np.isnan(stds[i, j]) else np.inf
+                table.loc[d, e] += f' ±{std:.{score_decimals}f}'
             table.loc[d, e] += f' ({ranks[i, j]:.{rank_decimals}f})'
     table.loc['rank mean'] = np.around(np.mean(ranks, axis=0),
                                        decimals=score_decimals)
