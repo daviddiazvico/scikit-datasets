@@ -6,10 +6,12 @@ Datasets from the UCR time series database.
 """
 
 import scipy.io.arff
-from sklearn.utils import Bunch
-from .base import fetch_zip as _fetch_zip
 
 import numpy as np
+from sklearn.utils import Bunch
+
+from .base import fetch_zip as _fetch_zip
+
 
 BASE_URL = 'http://www.timeseriesclassification.com/Downloads/'
 
@@ -17,12 +19,12 @@ BASE_URL = 'http://www.timeseriesclassification.com/Downloads/'
 def _target_conversion(target):
     try:
         target_data = target.astype(int)
-        target_names = np.unique(target_data).astype(str).tolist()
+        target_categories = np.unique(target_data).astype(str).tolist()
     except ValueError:
-        target_names = np.unique(target).tolist()
+        target_categories = np.unique(target).tolist()
         target_data = np.searchsorted(target_names, target)
 
-    return target_data, target_names
+    return target_data, target_categories
 
 
 def data_to_matrix(struct_array):
@@ -81,9 +83,10 @@ def fetch(name, data_home=None):
     feature_names = column_names[column_names != target_column_name].tolist()
     target_column = train[0][target_column_name].astype(str)
     test_target_column = test[0][target_column_name].astype(str)
-    target, target_names = _target_conversion(target_column)
-    target_test, target_names_test = _target_conversion(test_target_column)
-    assert target_names == target_names_test
+    target, target_categories = _target_conversion(target_column)
+    target_test, target_categories_test = _target_conversion(
+        test_target_column)
+    assert target_categories == target_categories_test
     data = data_to_matrix(train[0][feature_names])
     data_test = data_to_matrix(test[0][feature_names])
 
@@ -91,4 +94,5 @@ def fetch(name, data_home=None):
                  data_test=data_test, target_test=target_test,
                  name=dataset_name, DESCR=DESCR,
                  feature_names=feature_names,
-                 target_names=target_names)
+                 target_names=[target_column_name],
+                 categories={target_column_name: target_categories})
