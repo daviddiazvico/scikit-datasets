@@ -27,3 +27,16 @@ steps:
     pip install pytest-azurepipelines
     python setup.py test
   displayName: 'Test'
+
+- script: |
+    pip install recommonmark sphinx sphinxcontrib-napoleon
+    sphinx-build -b html docs build
+    git checkout gh-pages
+    mv build/* ./
+    git config --local user.name "Azure Pipelines"
+    git config --local user.email "azuredevops@microsoft.com"
+    git add -u
+    git add *.html
+    git commit -m "Docs updated"
+    git push origin gh-pages
+  displayName: 'Docs'
