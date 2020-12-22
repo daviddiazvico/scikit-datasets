@@ -5,8 +5,6 @@ Keras datasets (https://keras.io/datasets).
 @license: MIT
 """
 
-from conda._vendor.distro import name
-
 import numpy as np
 from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
                             imdb, mnist, reuters)
