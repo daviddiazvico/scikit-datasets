@@ -5,12 +5,13 @@ Forex datasets (http://forex-python.readthedocs.io).
 @license: MIT
 """
 
+import time
 from datetime import date, timedelta
+
+import numpy as np
 from forex_python.bitcoin import BtcConverter
 from forex_python.converter import CurrencyRates
-import numpy as np
 from sklearn.utils import Bunch
-import time
 
 
 def _fetch(get_rate, start=date(2015, 1, 1), end=date.today()):
@@ -81,5 +82,13 @@ def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
                         currency_2=currency_2)
         descr = str(currency_1) + '-' + str(currency_2)
     descr = descr + start.strftime('%Y-%m-%d') + '-' + end.strftime('%Y-%m-%d')
-    return Bunch(data=X, target=None, data_test=None, target_test=None,
-                 inner_cv=None, outer_cv=None, DESCR=descr)
+    return Bunch(
+        data=X,
+        target=None,
+        train_indexes=None,
+        validation_indexes=None,
+        test_indexes=None,
+        inner_cv=None,
+        outer_cv=None,
+        DESCR=descr,
+    )

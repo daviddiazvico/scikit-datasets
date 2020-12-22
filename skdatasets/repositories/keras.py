@@ -5,11 +5,12 @@ Keras datasets (https://keras.io/datasets).
 @license: MIT
 """
 
+from conda._vendor.distro import name
+
 import numpy as np
 from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
                             imdb, mnist, reuters)
 from sklearn.utils import Bunch
-
 
 DATASETS = {'boston_housing': boston_housing.load_data,
             'cifar10': cifar10.load_data, 'cifar100': cifar100.load_data,
@@ -35,12 +36,24 @@ def fetch(name, **kwargs):
         Dictionary-like object with all the data and metadata.
 
     """
-    (X, y), (X_test, y_test) = DATASETS[name](**kwargs)
-    if len(X.shape) > 2:
-        name = name + ' ' + str(X.shape[1:]) + ' shaped'
-        X_max = np.iinfo(X[0][0].dtype).max
-        n_features = np.prod(X.shape[1:])
-        X = X.reshape([X.shape[0], n_features]) / X_max
+    (X_train, y_train), (X_test, y_test) = DATASETS[name](**kwargs)
+    if len(X_train.shape) > 2:
+        name = name + ' ' + str(X_train.shape[1:]) + ' shaped'
+        X_max = np.iinfo(X_train[0][0].dtype).max
+        n_features = np.prod(X_train.shape[1:])
+        X_train = X_train.reshape([X_train.shape[0], n_features]) / X_max
         X_test = X_test.reshape([X_test.shape[0], n_features]) / X_max
-    return Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 inner_cv=None, outer_cv=None, DESCR=name)
+
+    X = np.concatenate(X_train, X_test)
+    y = np.concatenate(y_train, y_test)
+
+    return Bunch(
+        data=X,
+        target=y,
+        train_indexes=np.arange(len(X_train)),
+        validation_indexes=None,
+        test_indexes=np.arange(len(X_train), len(X)),
+        inner_cv=None,
+        outer_cv=None,
+        DESCR=name,
+    )

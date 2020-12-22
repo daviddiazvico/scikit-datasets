@@ -5,12 +5,12 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 @license: MIT
 """
 
-import numpy as np
 import os
-from sklearn.datasets import get_data_home
-from sklearn.utils import Bunch
 from urllib.request import urlretrieve
 
+import numpy as np
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
 
 BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
 
@@ -35,7 +35,8 @@ def _fetch(name, dirname=None):
     try:
         filename = name + '.test'
         url = BASE_URL + '/' + name + '/' + filename
-        filename = filename if dirname is None else os.path.join(dirname, filename)
+        filename = filename if dirname is None else os.path.join(
+            dirname, filename)
         filename, _ = urlretrieve(url, filename=filename)
         X_test, y_test = _load_csv(filename)
     except:
@@ -80,7 +81,20 @@ def fetch(name, data_home=None):
     dirname = os.path.join(get_data_home(data_home=data_home), 'uci', name)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    X, y, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
-    data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 inner_cv=None, outer_cv=None, DESCR=DESCR)
+
+    X_train, y_train, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
+
+    X = np.concatenate(X_train, X_test)
+    y = np.concatenate(y_train, y_test)
+
+    data = Bunch(
+        data=X,
+        target=y,
+        train_indexes=np.arange(len(X_train)),
+        validation_indexes=None,
+        test_indexes=np.arange(len(X_train), len(X)),
+        inner_cv=None,
+        outer_cv=None,
+        DESCR=DESCR,
+    )
     return data

@@ -6,10 +6,11 @@ Datasets from the UCR time series database.
 """
 
 import scipy.io.arff
-from sklearn.utils import Bunch
-from .base import fetch_zip as _fetch_zip
 
 import numpy as np
+from sklearn.utils import Bunch
+
+from .base import fetch_zip as _fetch_zip
 
 BASE_URL = 'http://www.timeseriesclassification.com/Downloads/'
 
@@ -81,14 +82,23 @@ def fetch(name, data_home=None):
     feature_names = column_names[column_names != target_column_name].tolist()
     target_column = train[0][target_column_name].astype(str)
     test_target_column = test[0][target_column_name].astype(str)
-    target, target_names = _target_conversion(target_column)
-    target_test, target_names_test = _target_conversion(test_target_column)
+    y_train, target_names = _target_conversion(target_column)
+    y_test, target_names_test = _target_conversion(test_target_column)
     assert target_names == target_names_test
-    data = data_to_matrix(train[0][feature_names])
-    data_test = data_to_matrix(test[0][feature_names])
+    X_train = data_to_matrix(train[0][feature_names])
+    X_test = data_to_matrix(test[0][feature_names])
 
-    return Bunch(data=data, target=target,
-                 data_test=data_test, target_test=target_test,
-                 name=dataset_name, DESCR=DESCR,
-                 feature_names=feature_names,
-                 target_names=target_names)
+    X = np.concatenate(X_train, X_test)
+    y = np.concatenate(y_train, y_test)
+
+    return Bunch(
+        data=X,
+        target=y,
+        train_indexes=np.arange(len(X_train)),
+        validation_indexes=None,
+        test_indexes=np.arange(len(X_train), len(X)),
+        name=dataset_name,
+        DESCR=DESCR,
+        feature_names=feature_names,
+        target_names=target_names,
+    )

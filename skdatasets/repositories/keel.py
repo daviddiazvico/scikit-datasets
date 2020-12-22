@@ -6,16 +6,16 @@ Keel datasets (http://sci2s.ugr.es/keel).
 """
 
 import io
-import numpy as np
 import os
-import pandas as pd
-from sklearn.datasets import get_data_home
-from sklearn.utils import Bunch
-from sklearn.model_selection import check_cv
-from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
+import numpy as np
+import pandas as pd
+from sklearn.datasets import get_data_home
+from sklearn.model_selection import check_cv
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+from sklearn.utils import Bunch
 
 BASE_URL = 'http://sci2s.ugr.es/keel'
 COLLECTIONS = {'classification', 'missing', 'imbalanced', 'multiInstance',
@@ -70,7 +70,8 @@ def _load_descr(collection, name, dirname=None):
             except:
                 continue
     else:
-        collection = INCORRECT_DESCR_IMBALANCED_URLS[collection] if collection in INCORRECT_DESCR_IMBALANCED_URLS else collection
+        collection = INCORRECT_DESCR_IMBALANCED_URLS[
+            collection] if collection in INCORRECT_DESCR_IMBALANCED_URLS else collection
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
         f = filename if dirname is None else os.path.join(dirname, filename)
         f, _ = urlretrieve(url, filename=f)
@@ -115,7 +116,8 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
         ys_test = []
         for i in range(nfolds):
             if dobscv:
-                _name = os.path.join(name, name + '-' + str(nfolds) + 'dobscv-' + str(i + 1))
+                _name = os.path.join(name, name + '-' +
+                                     str(nfolds) + 'dobscv-' + str(i + 1))
             else:
                 _name = name + '-' + str(nfolds) + '-' + str(i + 1)
             _X, _y = _load_Xy(f, _name + 'tra.dat', skiprows=nattrs + 4)
@@ -168,6 +170,14 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     nattrs, DESCR = _load_descr(collection, name, dirname=dirname)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            dirname=dirname)
-    data = Bunch(data=X, target=y, data_test=None, target_test=None,
-                 inner_cv=None, outer_cv=cv, DESCR=DESCR)
+    data = Bunch(
+        data=X,
+        target=y,
+        train_indexes=None,
+        validation_indexes=None,
+        test_indexes=None,
+        inner_cv=None,
+        outer_cv=cv,
+        DESCR=DESCR,
+    )
     return data
