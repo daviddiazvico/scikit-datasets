@@ -5,8 +5,6 @@ Scikit-learn datasets (http://scikit-learn.org/stable/datasets/index.html).
 @license: MIT
 """
 
-from builtins import None
-
 from sklearn.datasets import (fetch_20newsgroups,
                               fetch_20newsgroups_vectorized,
                               fetch_california_housing, fetch_covtype,
@@ -76,5 +74,5 @@ def fetch(name, **kwargs):
     data.test_indexes = None
     data.inner_cv = None
     data.outer_cv = None
-    
+
     return data
