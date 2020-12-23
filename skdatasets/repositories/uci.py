@@ -6,7 +6,6 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 """
 
 import os
-from builtins import None
 from urllib.request import urlretrieve
 
 import numpy as np
@@ -94,7 +93,7 @@ def fetch(name, data_home=None):
     else:
         X = X_train
         y = y_train
-        
+
         train_indexes = None
         test_indexes = None
 
