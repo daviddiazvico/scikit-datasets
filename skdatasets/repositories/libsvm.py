@@ -55,10 +55,7 @@ def _load(collection, name, dirname=None):
             filename_t,
         ])
 
-        cv = PredefinedSplit(
-            [-1] * X_tr.shape[0]
-            + [0] * X_val.shape[0]
-            + [-1] * X_test.shape[0])
+        cv = PredefinedSplit([-1] * X_tr.shape[0] + [0] * X_val.shape[0])
 
         X = sp.sparse.vstack((X_tr, X_val, X_test))
         y = np.hstack((y_tr, y_val, y_test))
@@ -67,7 +64,7 @@ def _load(collection, name, dirname=None):
         train_indexes = np.arange(X_tr.shape[0])
         validation_indexes = np.arange(
             X_tr.shape[0],
-            X_tr.shape[0] + X_val.shape[0]
+            X_tr.shape[0] + X_val.shape[0],
         )
         test_indexes = np.arange(X_tr.shape[0] + X_val.shape[0], X.shape[0])
 
