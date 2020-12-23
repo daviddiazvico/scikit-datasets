@@ -19,9 +19,19 @@ def check_estimator(data):
                              {'pred__alpha': [0.33, 0.66]},
                              cv=data.inner_cv, error_score=np.nan)
     if data.train_indexes is not None and data.test_indexes is not None:
+
+        train_indexes = data.train_indexes
+
+        if data.validation_indexes is not None:
+
+            train_indexes = np.concatenate((
+                data.train_indexes,
+                data.validation_indexes
+            ))
+
         estimator.fit(
-            data.data[data.train_indexes],
-            y=data.target[data.train_indexes],
+            data.data[train_indexes],
+            y=data.target[train_indexes],
         )
         estimator.score(
             data.data[data.test_indexes],
