@@ -6,11 +6,11 @@ LIBSVM datasets (https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets).
 """
 
 import os
+from urllib.error import HTTPError
 from urllib.request import urlretrieve
 
-import scipy as sp
-
 import numpy as np
+import scipy as sp
 from sklearn.datasets import (get_data_home, load_svmlight_file,
                               load_svmlight_files)
 from sklearn.model_selection import PredefinedSplit
@@ -28,7 +28,7 @@ def _fetch_partition(collection, name, partition, dirname=None):
         f = filename + '.bz2' if dirname is None else os.path.join(dirname,
                                                                    filename + '.bz2')
         f, _ = urlretrieve(url + '.bz2', filename=f)
-    except:
+    except HTTPError:
         try:
             f = filename if dirname is None else os.path.join(
                 dirname, filename)
