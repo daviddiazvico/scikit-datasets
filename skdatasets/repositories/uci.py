@@ -85,17 +85,17 @@ def fetch(name, data_home=None):
     X_train, y_train, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
 
     if X_test is None or y_test is None:
-        X = np.concatenate((X_train, X_test))
-        y = np.concatenate((y_train, y_test))
-
-        train_indexes = np.arange(len(X_train))
-        test_indexes = np.arange(len(X_train), len(X))
-    else:
         X = X_train
         y = y_train
 
         train_indexes = None
         test_indexes = None
+    else:
+        X = np.concatenate((X_train, X_test))
+        y = np.concatenate((y_train, y_test))
+
+        train_indexes = np.arange(len(X_train))
+        test_indexes = np.arange(len(X_train), len(X))
 
     data = Bunch(
         data=X,
