@@ -88,8 +88,8 @@ def fetch(name, data_home=None):
     X_train = data_to_matrix(train[0][feature_names])
     X_test = data_to_matrix(test[0][feature_names])
 
-    X = np.concatenate(X_train, X_test)
-    y = np.concatenate(y_train, y_test)
+    X = np.concatenate((X_train, X_test))
+    y = np.concatenate((y_train, y_test))
 
     return Bunch(
         data=X,

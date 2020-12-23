@@ -7,7 +7,7 @@ Tests.
 
 import numpy as np
 from sklearn.linear_model import Ridge
-from sklearn.model_selection import cross_validate, GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -18,9 +18,15 @@ def check_estimator(data):
                                        ('pred', Ridge(max_iter=4))]),
                              {'pred__alpha': [0.33, 0.66]},
                              cv=data.inner_cv, error_score=np.nan)
-    if data.data_test is not None:
-        estimator.fit(data.data, y=data.target)
-        estimator.score(data.data_test, y=data.target_test)
+    if data.train_indexes is not None and data.test_indexes is not None:
+        estimator.fit(
+            data.data[data.train_indexes],
+            y=data.target[data.train_indexes],
+        )
+        estimator.score(
+            data.data[data.test_indexes],
+            y=data.target[data.test_indexes]
+        )
     else:
         if hasattr(data.outer_cv, '__iter__'):
             for X, y, X_test, y_test in data.outer_cv:

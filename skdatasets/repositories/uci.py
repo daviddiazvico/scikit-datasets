@@ -6,6 +6,7 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 """
 
 import os
+from builtins import None
 from urllib.request import urlretrieve
 
 import numpy as np
@@ -84,15 +85,25 @@ def fetch(name, data_home=None):
 
     X_train, y_train, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
 
-    X = np.concatenate(X_train, X_test)
-    y = np.concatenate(y_train, y_test)
+    if X_test is None or y_test is None:
+        X = np.concatenate((X_train, X_test))
+        y = np.concatenate((y_train, y_test))
+
+        train_indexes = np.arange(len(X_train))
+        test_indexes = np.arange(len(X_train), len(X))
+    else:
+        X = X_train
+        y = y_train
+        
+        train_indexes = None
+        test_indexes = None
 
     data = Bunch(
         data=X,
         target=y,
-        train_indexes=np.arange(len(X_train)),
+        train_indexes=train_indexes,
         validation_indexes=None,
-        test_indexes=np.arange(len(X_train), len(X)),
+        test_indexes=test_indexes,
         inner_cv=None,
         outer_cv=None,
         DESCR=DESCR,

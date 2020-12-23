@@ -64,9 +64,12 @@ def _load(collection, name, dirname=None):
         y = np.hstack((y_tr, y_val, y_test))
 
         # Compute indexes
-        train_indexes = np.arange(len(X_tr))
-        validation_indexes = np.arange(len(X_tr), len(X_tr) + len(X_val))
-        test_indexes = np.arange(len(X_tr) + len(X_val), len(X))
+        train_indexes = np.arange(X_tr.shape[0])
+        validation_indexes = np.arange(
+            X_tr.shape[0],
+            X_tr.shape[0] + X_val.shape[0]
+        )
+        test_indexes = np.arange(X_tr.shape[0] + X_val.shape[0], X.shape[0])
 
     elif (filename_tr is not None) and (filename_val is not None):
 
@@ -82,8 +85,8 @@ def _load(collection, name, dirname=None):
         y = np.hstack((y_tr, y_val))
 
         # Compute indexes
-        train_indexes = np.arange(len(X_tr))
-        validation_indexes = np.arange(len(X_tr), len(X))
+        train_indexes = np.arange(X_tr.shape[0])
+        validation_indexes = np.arange(X_tr.shape[0], X.shape[0])
         test_indexes = None
 
     elif (filename_t is not None) and (filename_r is not None):
@@ -98,9 +101,10 @@ def _load(collection, name, dirname=None):
         y = np.hstack((y_tr, y_test, y_remaining))
 
         # Compute indexes
-        train_indexes = np.arange(len(X_tr))
+        train_indexes = np.arange(X_tr.shape[0])
         validation_indexes = None
-        test_indexes = np.arange(len(X_tr), len(X_tr) + len(X_test))
+        test_indexes = np.arange(
+            X_tr.shape[0], X_tr.shape[0] + X_test.shape[0])
 
         cv = None
 
@@ -115,9 +119,9 @@ def _load(collection, name, dirname=None):
         y = np.hstack((y_tr, y_test))
 
         # Compute indexes
-        train_indexes = np.arange(len(X_tr))
+        train_indexes = np.arange(X_tr.shape[0])
         validation_indexes = None
-        test_indexes = np.arange(len(X_tr), len(X))
+        test_indexes = np.arange(X_tr.shape[0], X.shape[0])
 
         cv = None
 

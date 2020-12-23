@@ -42,8 +42,8 @@ def fetch(name, **kwargs):
         X_train = X_train.reshape([X_train.shape[0], n_features]) / X_max
         X_test = X_test.reshape([X_test.shape[0], n_features]) / X_max
 
-    X = np.concatenate(X_train, X_test)
-    y = np.concatenate(y_train, y_test)
+    X = np.concatenate((X_train, X_test))
+    y = np.concatenate((y_train, y_test))
 
     return Bunch(
         data=X,
