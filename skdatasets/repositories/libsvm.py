@@ -6,7 +6,6 @@ LIBSVM datasets (https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets).
 """
 
 import os
-from urllib.request import urlretrieve
 
 import numpy as np
 import scipy as sp
@@ -23,8 +22,7 @@ COLLECTIONS = {'binary', 'multiclass', 'regression', 'string'}
 
 def _fetch_partition(collection, name, partition, data_home=None):
     """Fetch dataset partition."""
-    subfolder = os.path.join(get_data_home(data_home=data_home), 'libsvm',
-                             collection)
+    subfolder = os.path.join('libsvm', collection)
     dataname = name.replace('/', '-')
 
     url = BASE_URL + '/' + collection + '/' + name + partition
