@@ -9,8 +9,7 @@ import os
 
 import numpy as np
 import scipy as sp
-from sklearn.datasets import (get_data_home, load_svmlight_file,
-                              load_svmlight_files)
+from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
 
