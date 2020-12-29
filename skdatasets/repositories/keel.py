@@ -7,15 +7,15 @@ Keel datasets (http://sci2s.ugr.es/keel).
 
 import io
 import os
-from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import get_data_home
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from sklearn.utils import Bunch
+
+from .base import fetch_file
 
 BASE_URL = 'http://sci2s.ugr.es/keel'
 COLLECTIONS = {'classification', 'missing', 'imbalanced', 'multiInstance',
@@ -53,8 +53,9 @@ def _load_Xy(zipfile, csvfile, sep=',', header=None, engine='python',
             return X, y
 
 
-def _load_descr(collection, name, dirname=None):
+def _load_descr(collection, name, data_home=None):
     """Load a dataset description."""
+    subfolder = os.path.join('keel', collection)
     filename = name + '-names.txt'
     if collection == 'imbalanced':
         for url in IMBALANCED_URLS:
@@ -63,9 +64,12 @@ def _load_descr(collection, name, dirname=None):
             else:
                 url = BASE_URL + '/' + url + '/' + filename
             try:
-                f = filename if dirname is None else os.path.join(dirname,
-                                                                  filename)
-                f, _ = urlretrieve(url, filename=f)
+                f = fetch_file(
+                    dataname=name,
+                    urlname=url,
+                    subfolder=subfolder,
+                    data_home=data_home,
+                )
                 break
             except:
                 continue
@@ -73,43 +77,55 @@ def _load_descr(collection, name, dirname=None):
         collection = INCORRECT_DESCR_IMBALANCED_URLS[
             collection] if collection in INCORRECT_DESCR_IMBALANCED_URLS else collection
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
-        f = filename if dirname is None else os.path.join(dirname, filename)
-        f, _ = urlretrieve(url, filename=f)
+        f = fetch_file(
+            dataname=name,
+            urlname=url,
+            subfolder=subfolder,
+            data_home=data_home,
+        )
     with open(f) as rst_file:
         fdescr = rst_file.read()
         nattrs = fdescr.count("@attribute")
     return nattrs, fdescr
 
 
-def _fetch_keel_zip(collection, filename, dirname=None):
+def _fetch_keel_zip(collection, name, filename, data_home=None):
     """Fetch Keel dataset zip file."""
+    subfolder = os.path.join('keel', collection)
     if collection == 'imbalanced':
         for url in IMBALANCED_URLS:
             url = BASE_URL + '/' + url + '/' + filename
             try:
-                f = filename if dirname is None else os.path.join(dirname,
-                                                                  filename)
-                f, _ = urlretrieve(url, filename=f)
+                f = fetch_file(
+                    dataname=name,
+                    urlname=url,
+                    subfolder=subfolder,
+                    data_home=data_home,
+                )
                 break
             except:
                 continue
     else:
         url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
-        f = filename if dirname is None else os.path.join(dirname, filename)
-        f, _ = urlretrieve(url, filename=f)
+        f = fetch_file(
+            dataname=name,
+            urlname=url,
+            subfolder=subfolder,
+            data_home=data_home,
+        )
     return f
 
 
-def _load_folds(collection, name, nfolds, dobscv, nattrs, dirname=None):
+def _load_folds(collection, name, nfolds, dobscv, nattrs, data_home=None):
     """Load a dataset folds."""
     filename = name + '.zip'
-    f = _fetch_keel_zip(collection, filename, dirname=dirname)
+    f = _fetch_keel_zip(collection, name, filename, data_home=data_home)
     X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
     cv = None
     if nfolds in (5, 10):
         fold = 'dobscv' if dobscv else 'fold'
         filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
-        f = _fetch_keel_zip(collection, filename, dirname=dirname)
+        f = _fetch_keel_zip(collection, name, filename, data_home=data_home)
         Xs = []
         ys = []
         Xs_test = []
@@ -164,13 +180,9 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     """
     if collection not in COLLECTIONS:
         raise Exception('Avaliable collections are ' + str(list(COLLECTIONS)))
-    dirname = os.path.join(get_data_home(data_home=data_home), 'keel',
-                           collection, name)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    nattrs, DESCR = _load_descr(collection, name, dirname=dirname)
+    nattrs, DESCR = _load_descr(collection, name, data_home=data_home)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
-                           dirname=dirname)
+                           data_home=data_home)
     data = Bunch(data=X, target=y, data_test=None, target_test=None,
                  inner_cv=None, outer_cv=cv, DESCR=DESCR)
     return data
