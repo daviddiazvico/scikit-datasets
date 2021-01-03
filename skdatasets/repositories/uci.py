@@ -5,12 +5,12 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 @license: MIT
 """
 
-import numpy as np
 import os
-from sklearn.datasets import get_data_home
-from sklearn.utils import Bunch
-from urllib.request import urlretrieve
 
+import numpy as np
+from sklearn.utils import Bunch
+
+from .base import fetch_file
 
 BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
 
@@ -25,33 +25,50 @@ def _load_csv(fname, **kwargs):
     return X, y
 
 
-def _fetch(name, dirname=None):
+def _fetch(name, data_home=None):
     """Fetch dataset."""
+    subfolder = 'uci'
     filename = name + '.data'
     url = BASE_URL + '/' + name + '/' + filename
-    filename = filename if dirname is None else os.path.join(dirname, filename)
-    filename, _ = urlretrieve(url, filename=filename)
+
+    filename = fetch_file(
+        dataname=name,
+        urlname=url,
+        subfolder=subfolder,
+        data_home=data_home,
+    )
     X, y = _load_csv(filename)
     try:
         filename = name + '.test'
         url = BASE_URL + '/' + name + '/' + filename
-        filename = filename if dirname is None else os.path.join(dirname, filename)
-        filename, _ = urlretrieve(url, filename=filename)
+
+        filename = fetch_file(
+            dataname=name,
+            urlname=url,
+            subfolder=subfolder,
+            data_home=data_home,
+        )
         X_test, y_test = _load_csv(filename)
     except:
         X_test = y_test = None
     try:
         filename = name + '.names'
         url = BASE_URL + '/' + name + '/' + filename
-        filename = filename if dirname is None else os.path.join(dirname,
-                                                                 filename)
-        filename, _ = urlretrieve(url, filename=filename)
+        filename = fetch_file(
+            dataname=name,
+            urlname=url,
+            subfolder=subfolder,
+            data_home=data_home,
+        )
     except:
         filename = name + '.info'
         url = BASE_URL + '/' + name + '/' + filename
-        filename = filename if dirname is None else os.path.join(dirname,
-                                                                 filename)
-        filename, _ = urlretrieve(url, filename=filename)
+        filename = fetch_file(
+            dataname=name,
+            urlname=url,
+            subfolder=subfolder,
+            data_home=data_home,
+        )
     with open(filename) as rst_file:
         fdescr = rst_file.read()
     return X, y, X_test, y_test, fdescr
@@ -77,10 +94,7 @@ def fetch(name, data_home=None):
         Dictionary-like object with all the data and metadata.
 
     """
-    dirname = os.path.join(get_data_home(data_home=data_home), 'uci', name)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    X, y, X_test, y_test, DESCR = _fetch(name, dirname=dirname)
+    X, y, X_test, y_test, DESCR = _fetch(name, data_home=data_home)
     data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
                  inner_cv=None, outer_cv=None, DESCR=DESCR)
     return data
