@@ -132,8 +132,6 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, data_home=None):
         ys_test = []
         for i in range(nfolds):
             if dobscv:
-                _name = os.path.join(name, name + '-' +
-                                     str(nfolds) + 'dobscv-' + str(i + 1))
                 # Zipfiles always use fordward slashes, even in Windows.
                 _name = (name + '/' + name + '-'
                          + str(nfolds) + 'dobscv-' + str(i + 1))
