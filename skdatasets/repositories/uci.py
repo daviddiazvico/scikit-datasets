@@ -105,14 +105,14 @@ def fetch(name, data_home=None):
         X = np.concatenate((X_train, X_test))
         y = np.concatenate((y_train, y_test))
 
-        train_indexes = np.arange(len(X_train))
-        test_indexes = np.arange(len(X_train), len(X))
+        train_indexes = list(range(len(X_train)))
+        test_indexes = list(range(len(X_train), len(X)))
 
     data = Bunch(
         data=X,
         target=y,
         train_indexes=train_indexes,
-        validation_indexes=None,
+        validation_indexes=[],
         test_indexes=test_indexes,
         inner_cv=None,
         outer_cv=None,

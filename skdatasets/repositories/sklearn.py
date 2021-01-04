@@ -69,9 +69,9 @@ def fetch(name, **kwargs):
 
     """
     data = DATASETS[name](**kwargs)
-    data.train_indexes = None
-    data.validation_indexes = None
-    data.test_indexes = None
+    data.train_indexes = []
+    data.validation_indexes = []
+    data.test_indexes = []
     data.inner_cv = None
     data.outer_cv = None
 

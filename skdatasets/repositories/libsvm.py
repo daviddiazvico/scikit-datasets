@@ -12,10 +12,10 @@ import numpy as np
 import scipy as sp
 from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.model_selection import PredefinedSplit
-from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
 
 from .base import fetch_file
+
 BASE_URL = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
 COLLECTIONS = {'binary', 'multiclass', 'regression', 'string'}
 
@@ -58,7 +58,6 @@ def _load(collection, name, data_home=None):
     filename_t = _fetch_partition(collection, name, '.t', data_home)
     filename_r = _fetch_partition(collection, name, '.r', data_home)
 
-
     if (filename_tr is not None) and (filename_val is not None) and (filename_t is not None):
 
         _, _, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([
@@ -74,12 +73,12 @@ def _load(collection, name, data_home=None):
         y = np.hstack((y_tr, y_val, y_test))
 
         # Compute indexes
-        train_indexes = np.arange(X_tr.shape[0])
-        validation_indexes = np.arange(
+        train_indexes = list(range(X_tr.shape[0]))
+        validation_indexes = list(range(
             X_tr.shape[0],
             X_tr.shape[0] + X_val.shape[0],
-        )
-        test_indexes = np.arange(X_tr.shape[0] + X_val.shape[0], X.shape[0])
+        ))
+        test_indexes = list(range(X_tr.shape[0] + X_val.shape[0], X.shape[0]))
 
     elif (filename_tr is not None) and (filename_val is not None):
 
@@ -95,9 +94,9 @@ def _load(collection, name, data_home=None):
         y = np.hstack((y_tr, y_val))
 
         # Compute indexes
-        train_indexes = np.arange(X_tr.shape[0])
-        validation_indexes = np.arange(X_tr.shape[0], X.shape[0])
-        test_indexes = None
+        train_indexes = list(range(X_tr.shape[0]))
+        validation_indexes = list(range(X_tr.shape[0], X.shape[0]))
+        test_indexes = []
 
     elif (filename_t is not None) and (filename_r is not None):
 
@@ -111,10 +110,11 @@ def _load(collection, name, data_home=None):
         y = np.hstack((y_tr, y_test, y_remaining))
 
         # Compute indexes
-        train_indexes = np.arange(X_tr.shape[0])
-        validation_indexes = None
-        test_indexes = np.arange(
-            X_tr.shape[0], X_tr.shape[0] + X_test.shape[0])
+        train_indexes = list(range(X_tr.shape[0]))
+        validation_indexes = []
+        test_indexes = list(range(
+            X_tr.shape[0], X_tr.shape[0] + X_test.shape[0]
+        ))
 
         cv = None
 
@@ -129,9 +129,9 @@ def _load(collection, name, data_home=None):
         y = np.hstack((y_tr, y_test))
 
         # Compute indexes
-        train_indexes = np.arange(X_tr.shape[0])
-        validation_indexes = None
-        test_indexes = np.arange(X_tr.shape[0], X.shape[0])
+        train_indexes = list(range(X_tr.shape[0]))
+        validation_indexes = []
+        test_indexes = list(range(X_tr.shape[0], X.shape[0]))
 
         cv = None
 
@@ -140,9 +140,9 @@ def _load(collection, name, data_home=None):
         X, y = load_svmlight_file(filename)
 
         # Compute indexes
-        train_indexes = None
-        validation_indexes = None
-        test_indexes = None
+        train_indexes = []
+        validation_indexes = []
+        test_indexes = []
 
         cv = None
 

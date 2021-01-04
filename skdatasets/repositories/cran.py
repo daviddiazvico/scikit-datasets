@@ -14,9 +14,10 @@ from distutils.version import LooseVersion
 from html.parser import HTMLParser
 
 import pandas as pd
-import rdata
 from sklearn.datasets import get_data_home
 from sklearn.utils import Bunch
+
+import rdata
 
 from .base import fetch_tgz as _fetch_tgz
 
@@ -317,9 +318,9 @@ def _to_sklearn(dataset, *, target_name):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=None,
-        validation_indexes=None,
-        test_indexes=None,
+        train_indexes=[],
+        validation_indexes=[],
+        test_indexes=[],
         inner_cv=None,
         outer_cv=None,
         target_names=target_name,

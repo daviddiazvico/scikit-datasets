@@ -22,12 +22,7 @@ def check_estimator(data):
 
         train_indexes = data.train_indexes
 
-        if data.validation_indexes is not None:
-
-            train_indexes = np.concatenate((
-                data.train_indexes,
-                data.validation_indexes
-            ))
+        train_indexes += validation_indexes
 
         estimator.fit(
             data.data[train_indexes],

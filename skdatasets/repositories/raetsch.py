@@ -89,9 +89,9 @@ def fetch(name, data_home=None):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=None,
-        validation_indexes=None,
-        test_indexes=None,
+        train_indexes=[],
+        validation_indexes=[],
+        test_indexes=[],
         inner_cv=None,
         outer_cv=cv,
         DESCR=name,

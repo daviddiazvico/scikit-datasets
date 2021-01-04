@@ -6,9 +6,10 @@ Keras datasets (https://keras.io/datasets).
 """
 
 import numpy as np
+from sklearn.utils import Bunch
+
 from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
                             imdb, mnist, reuters)
-from sklearn.utils import Bunch
 
 DATASETS = {'boston_housing': boston_housing.load_data,
             'cifar10': cifar10.load_data, 'cifar100': cifar100.load_data,
@@ -48,9 +49,9 @@ def fetch(name, **kwargs):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=np.arange(len(X_train)),
-        validation_indexes=None,
-        test_indexes=np.arange(len(X_train), len(X)),
+        train_indexes=list(range(len(X_train))),
+        validation_indexes=[],
+        test_indexes=list(range(len(X_train), len(X))),
         inner_cv=None,
         outer_cv=None,
         DESCR=name,

@@ -9,9 +9,10 @@ import time
 from datetime import date, timedelta
 
 import numpy as np
+from sklearn.utils import Bunch
+
 from forex_python.bitcoin import BtcConverter
 from forex_python.converter import CurrencyRates
-from sklearn.utils import Bunch
 
 
 def _fetch(get_rate, start=date(2015, 1, 1), end=date.today()):
@@ -85,9 +86,9 @@ def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
     return Bunch(
         data=X,
         target=None,
-        train_indexes=None,
-        validation_indexes=None,
-        test_indexes=None,
+        train_indexes=[],
+        validation_indexes=[],
+        test_indexes=[],
         inner_cv=None,
         outer_cv=None,
         DESCR=descr,
