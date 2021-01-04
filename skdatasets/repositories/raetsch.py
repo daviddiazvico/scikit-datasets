@@ -8,19 +8,18 @@ Gunnar Raetsch benchmark datasets
 
 import hashlib
 import os
-from urllib.request import urlretrieve
 
 from scipy.io import loadmat
-
-from sklearn.datasets import get_data_home
 from sklearn.utils import Bunch
+
+from .base import fetch_file
 
 DATASETS = {'banana', 'breast_cancer', 'diabetis', 'flare_solar', 'german',
             'heart', 'image', 'ringnorm', 'splice', 'thyroid', 'titanic',
             'twonorm', 'waveform'}
 
 
-def _fetch_remote(dirname=None):
+def _fetch_remote(data_home=None):
     """Helper function to download the remote dataset into path
 
     Fetch the remote dataset, save into path using remote's filename and ensure
@@ -36,11 +35,11 @@ def _fetch_remote(dirname=None):
     file_path: string
         Full path of the created file.
     """
-    file_path = 'benchmarks.mat'
-    if dirname is not None:
-        file_path = os.path.join(dirname, file_path)
-    urlretrieve(
-        'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat', file_path)
+    file_path = fetch_file(
+        'raetsch',
+        'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat',
+        data_home=data_home,
+    )
     sha256hash = hashlib.sha256()
     with open(file_path, "rb") as f:
         while True:
@@ -82,10 +81,7 @@ def fetch(name, data_home=None):
     """
     if name not in DATASETS:
         raise Exception('Avaliable datasets are ' + str(list(DATASETS)))
-    dirname = os.path.join(get_data_home(data_home=data_home), 'raetsch')
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    filename = _fetch_remote(dirname=dirname)
+    filename = _fetch_remote(data_home=data_home)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     cv = ((X[tr - 1], y[tr - 1], X[ts - 1], y[ts - 1])
           for tr, ts in zip(train_splits, test_splits))
