@@ -33,17 +33,17 @@ def check(
     assert data.target.shape[0] == n_samples
 
     if n_samples_train is None:
-        assert data.train_indexes is None
+        assert not data.train_indexes
     else:
         assert data.train_indexes.shape == (n_samples_train,)
 
     if n_samples_validation is None:
-        assert data.validation_indexes is None
+        assert not data.validation_indexes
     else:
         assert data.validation_indexes.shape == (n_samples_validation,)
 
     if n_samples_test is None:
-        assert data.test_indexes is None
+        assert not data.test_indexes
     else:
         assert data.test_indexes.shape == (n_samples_test,)
 

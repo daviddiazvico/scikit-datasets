@@ -16,7 +16,7 @@ def check(data, n_samples_train, n_samples_test, n_features):
     assert data.target.shape[0] == n_samples_train + n_samples_test
     assert data.train_indexes.shape == (n_samples_train,)
     assert data.test_indexes.shape == (n_samples_test,)
-    assert data.validation_indexes == None
+    assert not data.validation_indexes
 
 
 def test_keras_mnist():
