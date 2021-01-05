@@ -14,8 +14,8 @@ def check(data, n_samples_train, n_samples_test, n_features):
     """Check dataset properties."""
     assert data.data.shape == (n_samples_train + n_samples_test, n_features)
     assert data.target.shape[0] == n_samples_train + n_samples_test
-    assert data.train_indexes.shape == (n_samples_train,)
-    assert data.test_indexes.shape == (n_samples_test,)
+    assert len(data.train_indexes) == n_samples_train
+    assert len(data.test_indexes) == n_samples_test
     assert not data.validation_indexes
 
 

@@ -22,7 +22,7 @@ def check_estimator(data):
 
         train_indexes = data.train_indexes
 
-        train_indexes += validation_indexes
+        train_indexes += data.validation_indexes
 
         estimator.fit(
             data.data[train_indexes],
