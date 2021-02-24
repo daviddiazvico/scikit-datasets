@@ -41,7 +41,6 @@ def _fetch(name, data_home=None):
     try:
         filename = name + '.test'
         url = BASE_URL + '/' + name + '/' + filename
-
         filename = fetch_file(
             dataname=name,
             urlname=url,
@@ -94,7 +93,29 @@ def fetch(name, data_home=None):
         Dictionary-like object with all the data and metadata.
 
     """
-    X, y, X_test, y_test, DESCR = _fetch(name, data_home=data_home)
-    data = Bunch(data=X, target=y, data_test=X_test, target_test=y_test,
-                 inner_cv=None, outer_cv=None, DESCR=DESCR)
+    X_train, y_train, X_test, y_test, DESCR = _fetch(name, data_home=data_home)
+
+    if X_test is None or y_test is None:
+        X = X_train
+        y = y_train
+
+        train_indexes = None
+        test_indexes = None
+    else:
+        X = np.concatenate((X_train, X_test))
+        y = np.concatenate((y_train, y_test))
+
+        train_indexes = list(range(len(X_train)))
+        test_indexes = list(range(len(X_train), len(X)))
+
+    data = Bunch(
+        data=X,
+        target=y,
+        train_indexes=train_indexes,
+        validation_indexes=[],
+        test_indexes=test_indexes,
+        inner_cv=None,
+        outer_cv=None,
+        DESCR=DESCR,
+    )
     return data
