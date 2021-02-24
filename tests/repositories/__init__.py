@@ -18,7 +18,7 @@ def check_estimator(data):
                                        ('pred', Ridge(max_iter=4))]),
                              {'pred__alpha': [0.33, 0.66]},
                              cv=data.inner_cv, error_score=np.nan)
-    if data.train_indexes is not None and data.test_indexes is not None:
+    if data.train_indexes and data.test_indexes:
 
         train_indexes = data.train_indexes
 
