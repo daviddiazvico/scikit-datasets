@@ -7,7 +7,7 @@ branches:
   only:
     - master
 install:
-  - pip install --upgrade --upgrade-strategy eager .
+  - pip install .[cran,forex,keel,keras,utils.estimator,utils.experiments,utils.scores]
   - pip install recommonmark sphinx sphinxcontrib-napoleon travis-sphinx
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
