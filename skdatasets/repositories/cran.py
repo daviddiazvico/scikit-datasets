@@ -5,20 +5,21 @@ Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
 @license: MIT
 """
 
-from distutils.version import LooseVersion
-from html.parser import HTMLParser
 import os
-import warnings
+import pathlib
 import re
 import urllib
-import pathlib
-
-from sklearn.datasets import get_data_home
-from sklearn.utils import Bunch
-from .base import fetch_tgz as _fetch_tgz
+import warnings
+from distutils.version import LooseVersion
+from html.parser import HTMLParser
 
 import pandas as pd
+from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
+
 import rdata
+
+from .base import fetch_tgz as _fetch_tgz
 
 
 class _LatestVersionHTMLParser(HTMLParser):
@@ -295,8 +296,8 @@ datasets = {
     'geyser': {
         'load_args': (['geyser.rda', 'MASS'], {}),
         'sklearn_args': ([], {'target_name': 'waiting'})
-        }
     }
+}
 
 
 def _to_sklearn(dataset, *, target_name):
@@ -314,9 +315,17 @@ def _to_sklearn(dataset, *, target_name):
         raise ValueError("Dataset not automatically convertible to "
                          "Sklearn format")
 
-    return Bunch(data=X, target=y, data_test=None, target_test=None,
-                 inner_cv=None, outer_cv=None, target_names=target_name,
-                 feature_names=feature_names)
+    return Bunch(
+        data=X,
+        target=y,
+        train_indices=[],
+        validation_indices=[],
+        test_indices=[],
+        inner_cv=None,
+        outer_cv=None,
+        target_names=target_name,
+        feature_names=feature_names,
+    )
 
 
 def fetch(name):

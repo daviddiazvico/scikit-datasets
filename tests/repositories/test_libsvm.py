@@ -5,36 +5,55 @@ Test the LIBSVM loader.
 @license: MIT
 """
 
-from . import check_estimator
-
 from skdatasets.repositories.libsvm import fetch
 
+from . import check_estimator
 
-def check(data, shape, test_shape=None, validation_shape=None,
-          remaining_shape=None, estimator=True):
+
+def check(
+    data,
+    n_features,
+    n_samples=None,
+    n_samples_train=None,
+    n_samples_validation=None,
+    n_samples_test=None,
+    n_samples_remaining=None,
+    estimator=True,
+):
     """Check dataset properties."""
-    if validation_shape is not None:
-        shape = [shape[0] + validation_shape[0], *shape[1:]]
-    for a, b in zip(data.data.shape, shape):
-        assert a == b
-    assert data.target.shape[0] == shape[0]
-    if test_shape is not None:
-        assert data.data_test.shape == test_shape
-        assert data.target_test.shape[0] == test_shape[0]
+    if n_samples is None:
+        n_samples = sum(n for n in [
+            n_samples_train,
+            n_samples_validation,
+            n_samples_test,
+            n_samples_remaining
+        ] if n is not None)
+
+    assert data.data.shape == (n_samples, n_features)
+    assert data.target.shape[0] == n_samples
+
+    if n_samples_train is None:
+        assert not data.train_indices
     else:
-        assert data.data_test is None
-        assert data.target_test is None
-    if validation_shape is not None:
-        assert data.inner_cv is not None
+        assert len(data.train_indices) == n_samples_train
+
+    if n_samples_validation is None:
+        assert not data.validation_indices
     else:
+        assert len(data.validation_indices) == n_samples_validation
+
+    if n_samples_test is None:
+        assert not data.test_indices
+    else:
+        assert len(data.test_indices) == n_samples_test
+
+    if n_samples_validation is None:
         assert data.inner_cv is None
-    assert data.outer_cv is None
-    if remaining_shape is not None:
-        assert data.data_remaining.shape == remaining_shape
-        assert data.target_remaining.shape[0] == remaining_shape[0]
     else:
-        assert data.data_remaining is None
-        assert data.target_remaining is None
+        assert data.inner_cv is not None
+
+    assert data.outer_cv is None
+
     if estimator:
         check_estimator(data)
 
@@ -42,28 +61,31 @@ def check(data, shape, test_shape=None, validation_shape=None,
 def test_fetch_libsvm_australian():
     """Tests LIBSVM australian dataset."""
     data = fetch('binary', 'australian')
-    check(data, (690, 14))
+    check(data, n_samples=690, n_features=14)
 
 
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
     data = fetch('binary', 'liver-disorders')
-    check(data, (145, 5), test_shape=(200, 5))
+    check(data, n_samples_train=145, n_samples_test=200, n_features=5)
 
 
 def test_fetch_libsvm_duke():
     """Tests LIBSVM duke dataset."""
     data = fetch('binary', 'duke')
-    check(data, (38, 7129), validation_shape=(4, 7129), estimator=False)
+    check(data, n_samples_train=38, n_samples_validation=4,
+          n_features=7129, estimator=False)
 
 
 def test_fetch_libsvm_cod_rna():
     """Tests LIBSVM cod-rna dataset."""
     data = fetch('binary', 'cod-rna')
-    check(data, (59535, 8), test_shape=(271617, 8), remaining_shape=(157413, 8))
+    check(data, n_samples_train=59535, n_samples_test=271617,
+          n_samples_remaining=157413, n_features=8)
 
 
 def test_fetch_libsvm_satimage():
     """Tests LIBSVM satimage dataset."""
     data = fetch('multiclass', 'satimage.scale')
-    check(data, (3104, 36), test_shape=(2000, 36), validation_shape=(1331, 36))
+    check(data, n_samples_train=3104, n_samples_test=2000,
+          n_samples_validation=1331, n_features=36)

@@ -5,14 +5,16 @@ Scikit-learn datasets (http://scikit-learn.org/stable/datasets/index.html).
 @license: MIT
 """
 
-from sklearn.datasets import (fetch_20newsgroups, fetch_20newsgroups_vectorized,
+from sklearn.datasets import (fetch_20newsgroups,
+                              fetch_20newsgroups_vectorized,
                               fetch_california_housing, fetch_covtype,
-                              fetch_kddcup99, fetch_lfw_people, fetch_lfw_pairs,
-                              fetch_olivetti_faces, fetch_rcv1, load_boston,
-                              load_breast_cancer, load_diabetes, load_digits,
-                              load_iris, load_linnerud, load_wine,
-                              make_biclusters, make_blobs, make_checkerboard,
-                              make_circles, make_classification, make_friedman1,
+                              fetch_kddcup99, fetch_lfw_pairs,
+                              fetch_lfw_people, fetch_olivetti_faces,
+                              fetch_rcv1, load_boston, load_breast_cancer,
+                              load_diabetes, load_digits, load_iris,
+                              load_linnerud, load_wine, make_biclusters,
+                              make_blobs, make_checkerboard, make_circles,
+                              make_classification, make_friedman1,
                               make_friedman2, make_friedman3,
                               make_gaussian_quantiles, make_hastie_10_2,
                               make_low_rank_matrix, make_moons,
@@ -67,5 +69,10 @@ def fetch(name, **kwargs):
 
     """
     data = DATASETS[name](**kwargs)
-    data.data_test =  data.target_test = data.inner_cv = data.outer_cv = None
+    data.train_indices = []
+    data.validation_indices = []
+    data.test_indices = []
+    data.inner_cv = None
+    data.outer_cv = None
+
     return data

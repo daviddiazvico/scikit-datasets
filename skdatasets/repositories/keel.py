@@ -183,6 +183,14 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     nattrs, DESCR = _load_descr(collection, name, data_home=data_home)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            data_home=data_home)
-    data = Bunch(data=X, target=y, data_test=None, target_test=None,
-                 inner_cv=None, outer_cv=cv, DESCR=DESCR)
+    data = Bunch(
+        data=X,
+        target=y,
+        train_indices=[],
+        validation_indices=[],
+        test_indices=[],
+        inner_cv=None,
+        outer_cv=cv,
+        DESCR=DESCR,
+    )
     return data
