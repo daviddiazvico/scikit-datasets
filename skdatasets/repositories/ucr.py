@@ -6,8 +6,9 @@ Datasets from the UCR time series database.
 """
 
 import numpy as np
-import scipy.io.arff
 from sklearn.utils import Bunch
+
+import scipy.io.arff
 
 from .base import fetch_zip as _fetch_zip
 
@@ -93,9 +94,9 @@ def fetch(name, data_home=None):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=list(range(len(X_train))),
-        validation_indexes=[],
-        test_indexes=list(range(len(X_train), len(X))),
+        train_indices=list(range(len(X_train))),
+        validation_indices=[],
+        test_indices=list(range(len(X_train), len(X))),
         name=dataset_name,
         DESCR=DESCR,
         feature_names=feature_names,

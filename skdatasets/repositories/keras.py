@@ -49,9 +49,9 @@ def fetch(name, **kwargs):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=list(range(len(X_train))),
-        validation_indexes=[],
-        test_indexes=list(range(len(X_train), len(X))),
+        train_indices=list(range(len(X_train))),
+        validation_indices=[],
+        test_indices=list(range(len(X_train), len(X))),
         inner_cv=None,
         outer_cv=None,
         DESCR=name,

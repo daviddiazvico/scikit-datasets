@@ -14,9 +14,9 @@ def check(data, n_samples_train, n_samples_test, n_features):
     """Check dataset properties."""
     assert data.data.shape == (n_samples_train + n_samples_test, n_features)
     assert data.target.shape[0] == n_samples_train + n_samples_test
-    assert len(data.train_indexes) == n_samples_train
-    assert len(data.test_indexes) == n_samples_test
-    assert not data.validation_indexes
+    assert len(data.train_indices) == n_samples_train
+    assert len(data.test_indices) == n_samples_test
+    assert not data.validation_indices
 
 
 def test_keras_mnist():

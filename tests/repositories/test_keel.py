@@ -18,9 +18,9 @@ def check(data, shape, splits=1):
         assert len(list(data.outer_cv)) == splits
     else:
         assert data.outer_cv is None
-    assert not data.train_indexes
-    assert not data.validation_indexes
-    assert not data.test_indexes
+    assert not data.train_indices
+    assert not data.validation_indices
+    assert not data.test_indices
     assert data.inner_cv is None
     check_estimator(data)
 

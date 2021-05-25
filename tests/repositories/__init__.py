@@ -18,19 +18,19 @@ def check_estimator(data):
                                        ('pred', Ridge(max_iter=4))]),
                              {'pred__alpha': [0.33, 0.66]},
                              cv=data.inner_cv, error_score=np.nan)
-    if data.train_indexes and data.test_indexes:
+    if data.train_indices and data.test_indices:
 
-        train_indexes = data.train_indexes
+        train_indices = data.train_indices
 
-        train_indexes += data.validation_indexes
+        train_indices += data.validation_indices
 
         estimator.fit(
-            data.data[train_indexes],
-            y=data.target[train_indexes],
+            data.data[train_indices],
+            y=data.target[train_indices],
         )
         estimator.score(
-            data.data[data.test_indexes],
-            y=data.target[data.test_indexes]
+            data.data[data.test_indices],
+            y=data.target[data.test_indices]
         )
     else:
         if hasattr(data.outer_cv, '__iter__'):

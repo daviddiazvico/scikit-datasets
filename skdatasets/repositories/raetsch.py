@@ -9,8 +9,9 @@ Gunnar Raetsch benchmark datasets
 import hashlib
 import os
 
-from scipy.io import loadmat
 from sklearn.utils import Bunch
+
+from scipy.io import loadmat
 
 from .base import fetch_file
 
@@ -89,9 +90,9 @@ def fetch(name, data_home=None):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=[],
-        validation_indexes=[],
-        test_indexes=[],
+        train_indices=[],
+        validation_indices=[],
+        test_indices=[],
         inner_cv=None,
         outer_cv=cv,
         DESCR=name,

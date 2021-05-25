@@ -9,10 +9,11 @@ import os
 from urllib.error import HTTPError
 
 import numpy as np
-import scipy as sp
 from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
+
+import scipy as sp
 
 from .base import fetch_file
 
@@ -72,13 +73,13 @@ def _load(collection, name, data_home=None):
         X = sp.sparse.vstack((X_tr, X_val, X_test))
         y = np.hstack((y_tr, y_val, y_test))
 
-        # Compute indexes
-        train_indexes = list(range(X_tr.shape[0]))
-        validation_indexes = list(range(
+        # Compute indices
+        train_indices = list(range(X_tr.shape[0]))
+        validation_indices = list(range(
             X_tr.shape[0],
             X_tr.shape[0] + X_val.shape[0],
         ))
-        test_indexes = list(range(X_tr.shape[0] + X_val.shape[0], X.shape[0]))
+        test_indices = list(range(X_tr.shape[0] + X_val.shape[0], X.shape[0]))
 
     elif (filename_tr is not None) and (filename_val is not None):
 
@@ -93,10 +94,10 @@ def _load(collection, name, data_home=None):
         X = sp.sparse.vstack((X_tr, X_val))
         y = np.hstack((y_tr, y_val))
 
-        # Compute indexes
-        train_indexes = list(range(X_tr.shape[0]))
-        validation_indexes = list(range(X_tr.shape[0], X.shape[0]))
-        test_indexes = []
+        # Compute indices
+        train_indices = list(range(X_tr.shape[0]))
+        validation_indices = list(range(X_tr.shape[0], X.shape[0]))
+        test_indices = []
 
     elif (filename_t is not None) and (filename_r is not None):
 
@@ -109,10 +110,10 @@ def _load(collection, name, data_home=None):
         X = sp.sparse.vstack((X_tr, X_test, X_remaining))
         y = np.hstack((y_tr, y_test, y_remaining))
 
-        # Compute indexes
-        train_indexes = list(range(X_tr.shape[0]))
-        validation_indexes = []
-        test_indexes = list(range(
+        # Compute indices
+        train_indices = list(range(X_tr.shape[0]))
+        validation_indices = []
+        test_indices = list(range(
             X_tr.shape[0], X_tr.shape[0] + X_test.shape[0]
         ))
 
@@ -128,10 +129,10 @@ def _load(collection, name, data_home=None):
         X = sp.sparse.vstack((X_tr, X_test))
         y = np.hstack((y_tr, y_test))
 
-        # Compute indexes
-        train_indexes = list(range(X_tr.shape[0]))
-        validation_indexes = []
-        test_indexes = list(range(X_tr.shape[0], X.shape[0]))
+        # Compute indices
+        train_indices = list(range(X_tr.shape[0]))
+        validation_indices = []
+        test_indices = list(range(X_tr.shape[0], X.shape[0]))
 
         cv = None
 
@@ -139,14 +140,14 @@ def _load(collection, name, data_home=None):
 
         X, y = load_svmlight_file(filename)
 
-        # Compute indexes
-        train_indexes = []
-        validation_indexes = []
-        test_indexes = []
+        # Compute indices
+        train_indices = []
+        validation_indices = []
+        test_indices = []
 
         cv = None
 
-    return X, y, train_indexes, validation_indexes, test_indexes, cv
+    return X, y, train_indices, validation_indices, test_indices, cv
 
 
 def fetch(collection, name, data_home=None):
@@ -174,7 +175,7 @@ def fetch(collection, name, data_home=None):
     if collection not in COLLECTIONS:
         raise Exception('Avaliable collections are ' + str(list(COLLECTIONS)))
 
-    X, y, train_indexes, validation_indexes, test_indexes, cv = _load(
+    X, y, train_indices, validation_indices, test_indices, cv = _load(
         collection,
         name,
         data_home=data_home,
@@ -183,9 +184,9 @@ def fetch(collection, name, data_home=None):
     data = Bunch(
         data=X,
         target=y,
-        train_indexes=train_indexes,
-        validation_indexes=validation_indexes,
-        test_indexes=test_indexes,
+        train_indices=train_indices,
+        validation_indices=validation_indices,
+        test_indices=test_indices,
         inner_cv=cv,
         outer_cv=None,
         DESCR=name,

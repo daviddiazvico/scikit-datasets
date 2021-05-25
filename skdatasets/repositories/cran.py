@@ -318,9 +318,9 @@ def _to_sklearn(dataset, *, target_name):
     return Bunch(
         data=X,
         target=y,
-        train_indexes=[],
-        validation_indexes=[],
-        test_indexes=[],
+        train_indices=[],
+        validation_indices=[],
+        test_indices=[],
         inner_cv=None,
         outer_cv=None,
         target_names=target_name,

@@ -186,9 +186,9 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     data = Bunch(
         data=X,
         target=y,
-        train_indexes=[],
-        validation_indexes=[],
-        test_indexes=[],
+        train_indices=[],
+        validation_indices=[],
+        test_indices=[],
         inner_cv=None,
         outer_cv=cv,
         DESCR=DESCR,

@@ -99,21 +99,21 @@ def fetch(name, data_home=None):
         X = X_train
         y = y_train
 
-        train_indexes = None
-        test_indexes = None
+        train_indices = None
+        test_indices = None
     else:
         X = np.concatenate((X_train, X_test))
         y = np.concatenate((y_train, y_test))
 
-        train_indexes = list(range(len(X_train)))
-        test_indexes = list(range(len(X_train), len(X)))
+        train_indices = list(range(len(X_train)))
+        test_indices = list(range(len(X_train), len(X)))
 
     data = Bunch(
         data=X,
         target=y,
-        train_indexes=train_indexes,
-        validation_indexes=[],
-        test_indexes=test_indexes,
+        train_indices=train_indices,
+        validation_indices=[],
+        test_indices=test_indices,
         inner_cv=None,
         outer_cv=None,
         DESCR=DESCR,
