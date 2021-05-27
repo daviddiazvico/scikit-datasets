@@ -150,7 +150,7 @@ def _load(collection, name, data_home=None):
     return X, y, train_indices, validation_indices, test_indices, cv
 
 
-def fetch(collection, name, data_home=None):
+def fetch(collection, name, data_home=None, *, return_X_y=False):
     """Fetch LIBSVM dataset.
 
     Fetch a LIBSVM dataset by collection and name. More info at
@@ -165,11 +165,15 @@ def fetch(collection, name, data_home=None):
     data_home : string or None, default None
         Specify another download and cache folder for the data sets. By default
         all scikit-learn data is stored in ‘~/scikit_learn_data’ subfolders.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
 
     Returns
     -------
     data : Bunch
         Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     if collection not in COLLECTIONS:
@@ -181,7 +185,10 @@ def fetch(collection, name, data_home=None):
         data_home=data_home,
     )
 
-    data = Bunch(
+    if return_X_y:
+        return X, y
+
+    return Bunch(
         data=X,
         target=y,
         train_indices=train_indices,
@@ -191,5 +198,3 @@ def fetch(collection, name, data_home=None):
         outer_cv=None,
         DESCR=name,
     )
-
-    return data

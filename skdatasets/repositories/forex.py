@@ -49,7 +49,7 @@ def _load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
 
 
 def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
-          currency_2='EUR'):
+          currency_2='EUR', return_X_y=False):
     """Fetch Forex datasets.
 
     Fetches the ECB Forex and Coindesk Bitcoin datasets. More info at
@@ -65,11 +65,15 @@ def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
         Currency 1.
     currency_2 : str, default='EUR'
         Currency 2.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
 
     Returns
     -------
     data : Bunch
         Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     if currency_1 == 'BTC':
@@ -83,6 +87,10 @@ def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
                         currency_2=currency_2)
         descr = str(currency_1) + '-' + str(currency_2)
     descr = descr + start.strftime('%Y-%m-%d') + '-' + end.strftime('%Y-%m-%d')
+
+    if return_X_y:
+        return X, None
+
     return Bunch(
         data=X,
         target=None,

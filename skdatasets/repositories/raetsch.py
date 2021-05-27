@@ -57,7 +57,7 @@ def _fetch_remote(data_home=None):
     return file_path
 
 
-def fetch(name, data_home=None):
+def fetch(name, data_home=None, *, return_X_y=False):
     """Fetch Gunnar Raetsch's dataset.
 
     Fetch a Gunnar Raetsch's benchmark dataset by name. Availabe datasets are
@@ -73,11 +73,15 @@ def fetch(name, data_home=None):
     data_home : string or None, default None
         Specify another download and cache folder for the data sets. By default
         all scikit-learn data is stored in ‘~/scikit_learn_data’ subfolders.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
 
     Returns
     -------
     data : Bunch
         Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     if name not in DATASETS:
@@ -86,6 +90,9 @@ def fetch(name, data_home=None):
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     cv = ((X[tr - 1], y[tr - 1], X[ts - 1], y[ts - 1])
           for tr, ts in zip(train_splits, test_splits))
+
+    if return_X_y:
+        return X, y
 
     return Bunch(
         data=X,

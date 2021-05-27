@@ -64,6 +64,13 @@ def test_fetch_libsvm_australian():
     check(data, n_samples=690, n_features=14)
 
 
+def test_fetch_libsvm_australian_return_X_y():
+    """Tests LIBSVM australian dataset."""
+    X, y = fetch('binary', 'australian', return_X_y=True)
+    assert X.shape == (690, 14)
+    assert y.shape == (690,)
+
+
 def test_fetch_libsvm_liver_disorders():
     """Tests LIBSVM liver-disorders dataset."""
     data = fetch('binary', 'liver-disorders')

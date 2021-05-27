@@ -31,6 +31,13 @@ def test_fetch_keel_abalone9_18():
     check(data, (731, 10))
 
 
+def test_fetch_keel_abalone9_18_return_X_y():
+    """Tests Keel abalone9-18 dataset."""
+    X, y = fetch('imbalanced', 'abalone9-18', return_X_y=True)
+    assert X.shape == (731, 10)
+    assert y.shape == (731,)
+
+
 def test_fetch_keel_abalone9_18_folds():
     """Tests Keel abalone9-18 dataset with folds."""
     data = fetch('imbalanced', 'abalone9-18', nfolds=5)

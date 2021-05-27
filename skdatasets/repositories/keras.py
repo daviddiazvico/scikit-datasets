@@ -17,7 +17,7 @@ DATASETS = {'boston_housing': boston_housing.load_data,
             'mnist': mnist.load_data, 'reuters': reuters.load_data}
 
 
-def fetch(name, **kwargs):
+def fetch(name, *, return_X_y=False, **kwargs):
     """Fetch Keras dataset.
 
     Fetch a Keras dataset by name. More info at https://keras.io/datasets.
@@ -26,6 +26,8 @@ def fetch(name, **kwargs):
     ----------
     name : string
         Dataset name.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
     **kwargs : dict
         Optional key-value arguments. See https://keras.io/datasets.
 
@@ -33,6 +35,8 @@ def fetch(name, **kwargs):
     -------
     data : Bunch
         Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     (X_train, y_train), (X_test, y_test) = DATASETS[name](**kwargs)
@@ -45,6 +49,9 @@ def fetch(name, **kwargs):
 
     X = np.concatenate((X_train, X_test))
     y = np.concatenate((y_train, y_test))
+
+    if return_X_y:
+        return X, y
 
     return Bunch(
         data=X,

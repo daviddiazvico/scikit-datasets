@@ -14,3 +14,10 @@ def test_fetch_ucr_gunpoint():
     assert data.data.shape == (200, 150)
     assert len(data.train_indices) == 50
     assert len(data.test_indices) == 150
+
+
+def test_fetch_ucr_gunpoint_return_X_y():
+    """Tests UCR GunPoint dataset."""
+    X, y = fetch('GunPoint', return_X_y=True)
+    assert X.shape == (200, 150)
+    assert y.shape == (200,)
