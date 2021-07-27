@@ -73,7 +73,7 @@ def _fetch(name, data_home=None):
     return X, y, X_test, y_test, fdescr
 
 
-def fetch(name, data_home=None):
+def fetch(name, data_home=None, *, return_X_y=False):
     """Fetch UCI dataset.
 
     Fetch a UCI dataset by name. More info at
@@ -86,11 +86,15 @@ def fetch(name, data_home=None):
     data_home : string or None, default None
         Specify another download and cache folder for the data sets. By default
         all scikit-learn data is stored in ‘~/scikit_learn_data’ subfolders.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
 
     Returns
     -------
     data : Bunch
         Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     X_train, y_train, X_test, y_test, DESCR = _fetch(name, data_home=data_home)
@@ -108,7 +112,10 @@ def fetch(name, data_home=None):
         train_indices = list(range(len(X_train)))
         test_indices = list(range(len(X_train), len(X)))
 
-    data = Bunch(
+    if return_X_y:
+        return X, y
+
+    return Bunch(
         data=X,
         target=y,
         train_indices=train_indices,
@@ -118,4 +125,3 @@ def fetch(name, data_home=None):
         outer_cv=None,
         DESCR=DESCR,
     )
-    return data

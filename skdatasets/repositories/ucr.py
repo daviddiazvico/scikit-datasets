@@ -53,7 +53,30 @@ def data_to_matrix(struct_array):
         return np.array(struct_array.tolist())
 
 
-def fetch(name, data_home=None):
+def fetch(name, data_home=None, *, return_X_y=False):
+    """Fetch UCR dataset.
+
+    Fetch a UCR dataset by name. More info at
+    http://www.timeseriesclassification.com/.
+
+    Parameters
+    ----------
+    name : string
+        Dataset name.
+    data_home : string or None, default None
+        Specify another download and cache folder for the data sets. By default
+        all scikit-learn data is stored in ‘~/scikit_learn_data’ subfolders.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
+
+    Returns
+    -------
+    data : Bunch
+        Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
+
+    """
     url = BASE_URL + name
 
     data_home = _fetch_zip(name, urlname=url + '.zip', subfolder="ucr",
@@ -90,6 +113,9 @@ def fetch(name, data_home=None):
 
     X = np.concatenate((X_train, X_test))
     y = np.concatenate((y_train, y_test))
+
+    if return_X_y:
+        return X, y
 
     return Bunch(
         data=X,

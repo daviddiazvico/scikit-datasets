@@ -328,20 +328,22 @@ def _to_sklearn(dataset, *, target_name):
     )
 
 
-def fetch(name):
-    """Load
-
-    Load a dataset.
+def fetch(name, *, return_X_y=False):
+    """Load a dataset.
 
     Parameters
     ----------
     name : string
         Dataset name.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
 
     Returns
     -------
     data : Bunch
           Dictionary-like object with all the data and metadata.
+
+    (data, target) : tuple if ``return_X_y`` is True
 
     """
     load_args = datasets[name]['load_args']
@@ -349,4 +351,8 @@ def fetch(name):
 
     sklearn_args = datasets[name]['sklearn_args']
     sklearn_dataset = _to_sklearn(dataset, *sklearn_args[0], **sklearn_args[1])
+
+    if return_X_y:
+        return sklearn_dataset.data, sklearn_dataset.target
+
     return sklearn_dataset

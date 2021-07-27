@@ -18,3 +18,10 @@ def test_fetch_uci_wine():
     assert not data.test_indices
     assert data.inner_cv is None
     assert data.outer_cv is None
+
+
+def test_fetch_uci_wine_return_X_y():
+    """Tests UCI wine dataset."""
+    X, y = fetch('wine', return_X_y=True)
+    assert X.shape == (178, 13)
+    assert y.shape == (178,)

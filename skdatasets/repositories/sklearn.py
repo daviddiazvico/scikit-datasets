@@ -48,7 +48,7 @@ DATASETS = {'20newsgroups': fetch_20newsgroups,
             'wine': load_wine}
 
 
-def fetch(name, **kwargs):
+def fetch(name, *, return_X_y=False, **kwargs):
     """Fetch Scikit-learn dataset.
 
     Fetch a Scikit-learn dataset by name. More info at
@@ -58,6 +58,8 @@ def fetch(name, **kwargs):
     ----------
     name : string
         Dataset name.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
     **kwargs : dict
         Optional key-value arguments. See
         scikit-learn.org/stable/modules/classes.html#module-sklearn.datasets.
@@ -67,12 +69,19 @@ def fetch(name, **kwargs):
     data : Bunch
         Dictionary-like object with all the data and metadata.
 
+    (data, target) : tuple if ``return_X_y`` is True
+
     """
+    if return_X_y:
+        kwargs["return_X_y"] = True
+
     data = DATASETS[name](**kwargs)
-    data.train_indices = []
-    data.validation_indices = []
-    data.test_indices = []
-    data.inner_cv = None
-    data.outer_cv = None
+
+    if not return_X_y:
+        data.train_indices = []
+        data.validation_indices = []
+        data.test_indices = []
+        data.inner_cv = None
+        data.outer_cv = None
 
     return data

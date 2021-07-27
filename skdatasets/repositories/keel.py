@@ -148,7 +148,8 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, data_home=None):
     return X, y, cv
 
 
-def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
+def fetch(collection, name, data_home=None, nfolds=None, dobscv=False, *,
+          return_X_y=False):
     """Fetch Keel dataset.
 
     Fetch a Keel dataset by collection and name. More info at
@@ -169,6 +170,8 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     dobscv : bool, default=False
         If folds are in {5, 10}, indicates that the cv folds are distribution
         optimally balanced stratified. Only available for some datasets.
+    return_X_y : bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
     **kwargs : dict
         Optional key-value arguments
 
@@ -177,13 +180,19 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
     data : Bunch
         Dictionary-like object with all the data and metadata.
 
+    (data, target) : tuple if ``return_X_y`` is True
+
     """
     if collection not in COLLECTIONS:
         raise Exception('Avaliable collections are ' + str(list(COLLECTIONS)))
     nattrs, DESCR = _load_descr(collection, name, data_home=data_home)
     X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
                            data_home=data_home)
-    data = Bunch(
+
+    if return_X_y:
+        return X, y
+
+    return Bunch(
         data=X,
         target=y,
         train_indices=[],
@@ -193,4 +202,3 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False):
         outer_cv=cv,
         DESCR=DESCR,
     )
-    return data
