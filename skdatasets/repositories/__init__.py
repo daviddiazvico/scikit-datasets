@@ -3,9 +3,10 @@
 @license: MIT
 """
 
-from . import libsvm, raetsch, sklearn, uci, ucr
+from . import aneurisk, libsvm, raetsch, sklearn, uci, ucr
+
 repos = {'libsvm': libsvm, 'raetsch': raetsch, 'sklearn': sklearn, 'uci': uci,
-         'ucr': ucr}
+         'ucr': ucr, 'aneurisk': aneurisk}
 try:
     from . import cran
     repos['cran'] = cran
