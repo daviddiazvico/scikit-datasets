@@ -2,17 +2,29 @@
 Common utilities.
 """
 
-from os.path import basename, normpath
 import pathlib
+import tarfile
+import zipfile
+from os.path import basename, normpath
 from shutil import copyfileobj
+from typing import Callable, Optional, Union
 from urllib.error import HTTPError
 from urllib.request import urlopen
-import zipfile
-import tarfile
+
 from sklearn.datasets import get_data_home
 
+OpenMethod = Callable[
+    [pathlib.Path, str],
+    Union[zipfile.ZipFile, tarfile.TarFile],
+]
 
-def fetch_file(dataname, urlname, subfolder=None, data_home=None):
+
+def fetch_file(
+    dataname: str,
+    urlname: str,
+    subfolder: Optional[str] = None,
+    data_home: Optional[str] = None,
+) -> pathlib.Path:
     """Fetch dataset.
 
     Fetch a file from a given url and stores it in a given directory.
@@ -30,20 +42,20 @@ def fetch_file(dataname, urlname, subfolder=None, data_home=None):
 
     Returns
     -------
-    filename: string
+    filename: Path
               Name of the file.
 
     """
     # check if this data set has been already downloaded
-    data_home = pathlib.Path(get_data_home(data_home=data_home))
+    data_home_path = pathlib.Path(get_data_home(data_home=data_home))
 
     if subfolder:
-        data_home = data_home / subfolder
+        data_home_path /= subfolder
 
-    data_home = data_home / dataname
-    if not data_home.exists():
-        data_home.mkdir(parents=True)
-    filename = data_home / basename(normpath(urlname))
+    data_home_path /= dataname
+    if not data_home_path.exists():
+        data_home_path.mkdir(parents=True)
+    filename = data_home_path / basename(normpath(urlname))
     # if the file does not exist, download it
     if not filename.exists():
         try:
@@ -63,8 +75,14 @@ def fetch_file(dataname, urlname, subfolder=None, data_home=None):
     return filename
 
 
-def fetch_compressed(dataname, urlname, compression_open,
-                     subfolder=None, data_home=None, open_format='r'):
+def fetch_compressed(
+    dataname: str,
+    urlname: str,
+    compression_open: OpenMethod,
+    subfolder: Optional[str] = None,
+    data_home: Optional[str] = None,
+    open_format: str = 'r',
+) -> pathlib.Path:
     """Fetch compressed dataset.
 
     Fetch a compressed file from a given url, unzips and stores it in a given
@@ -87,25 +105,34 @@ def fetch_compressed(dataname, urlname, compression_open,
 
     Returns
     -------
-    data_home: string
+    data_home: Path
                Directory.
 
     """
     # fetch file
-    filename = fetch_file(dataname, urlname, subfolder=subfolder,
-                          data_home=data_home)
-    data_home = filename.parent
+    filename = fetch_file(
+        dataname,
+        urlname,
+        subfolder=subfolder,
+        data_home=data_home,
+    )
+    data_home_path = filename.parent
     # unzip file
     try:
         with compression_open(filename, open_format) as compressed_file:
-            compressed_file.extractall(data_home)
+            compressed_file.extractall(data_home_path)
     except Exception:
         filename.unlink()
         raise
-    return data_home
+    return data_home_path
 
 
-def fetch_zip(dataname, urlname, subfolder=None, data_home=None):
+def fetch_zip(
+    dataname: str,
+    urlname: str,
+    subfolder: Optional[str] = None,
+    data_home: Optional[str] = None,
+) -> pathlib.Path:
     """Fetch zipped dataset.
 
     Fetch a zip file from a given url, unzips and stores it in a given
@@ -124,17 +151,25 @@ def fetch_zip(dataname, urlname, subfolder=None, data_home=None):
 
     Returns
     -------
-    data_home: string
+    data_home: Path
                Directory.
 
     """
-    return fetch_compressed(dataname=dataname, urlname=urlname,
-                            compression_open=zipfile.ZipFile,
-                            subfolder=subfolder,
-                            data_home=data_home)
+    return fetch_compressed(
+        dataname=dataname,
+        urlname=urlname,
+        compression_open=zipfile.ZipFile,
+        subfolder=subfolder,
+        data_home=data_home,
+    )
 
 
-def fetch_tgz(dataname, urlname, subfolder=None, data_home=None):
+def fetch_tgz(
+    dataname: str,
+    urlname: str,
+    subfolder: Optional[str] = None,
+    data_home: Optional[str] = None,
+) -> pathlib.Path:
     """Fetch tgz dataset.
 
     Fetch a tgz file from a given url, unzips and stores it in a given
@@ -153,12 +188,15 @@ def fetch_tgz(dataname, urlname, subfolder=None, data_home=None):
 
     Returns
     -------
-    data_home: string
+    data_home: Path
                Directory.
 
     """
-    return fetch_compressed(dataname=dataname, urlname=urlname,
-                            compression_open=tarfile.open,
-                            subfolder=subfolder,
-                            data_home=data_home,
-                            open_format='r:gz')
+    return fetch_compressed(
+        dataname=dataname,
+        urlname=urlname,
+        compression_open=tarfile.open,
+        subfolder=subfolder,
+        data_home=data_home,
+        open_format='r:gz',
+    )
