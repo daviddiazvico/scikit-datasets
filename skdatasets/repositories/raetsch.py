@@ -5,23 +5,73 @@ Gunnar Raetsch benchmark datasets
 @author: David Diaz Vico
 @license: MIT
 """
+from __future__ import annotations
 
 import hashlib
-import os
+import sys
+from pathlib import Path
+from typing import (TYPE_CHECKING, Iterator, Optional, Sequence, Tuple, Union,
+                    overload)
 
-from sklearn.utils import Bunch
-
+import numpy as np
 from scipy.io import loadmat
+from sklearn.utils import Bunch
 
 from .base import fetch_file
 
-DATASETS = {'banana', 'breast_cancer', 'diabetis', 'flare_solar', 'german',
-            'heart', 'image', 'ringnorm', 'splice', 'thyroid', 'titanic',
-            'twonorm', 'waveform'}
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 8):
+        from typing import Final, Literal
+    else:
+        from typing_extensions import Final, Literal
+
+DATASETS: Final = frozenset((
+    'banana',
+    'breast_cancer',
+    'diabetis',
+    'flare_solar',
+    'german',
+    'heart',
+    'image',
+    'ringnorm',
+    'splice',
+    'thyroid',
+    'titanic',
+    'twonorm',
+    'waveform',
+))
 
 
-def _fetch_remote(data_home=None):
-    """Helper function to download the remote dataset into path
+class RaetschOuterCV(object):
+    """Iterable over already separated CV partitions of the dataset."""
+
+    def __init__(
+        self,
+        X: np.typing.NDArray[float],
+        y: np.typing.NDArray[Union[int, float]],
+        train_splits: Sequence[np.typing.NDArray[int]],
+        test_splits: Sequence[np.typing.NDArray[int]],
+    ) -> None:
+        self.X = X
+        self.y = y
+        self.train_splits = train_splits
+        self.test_splits = test_splits
+
+    def __iter__(self) -> Iterator[Tuple[
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[int, float]],
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[int, float]],
+    ]]:
+        return (
+            (self.X[tr - 1], self.y[tr - 1], self.X[ts - 1], self.y[ts - 1])
+            for tr, ts in zip(self.train_splits, self.test_splits)
+        )
+
+
+def _fetch_remote(data_home: Optional[str] = None) -> Path:
+    """
+    Helper function to download the remote dataset into path.
 
     Fetch the remote dataset, save into path using remote's filename and ensure
     its integrity based on the SHA256 Checksum of the downloaded file.
@@ -38,7 +88,8 @@ def _fetch_remote(data_home=None):
     """
     file_path = fetch_file(
         'raetsch',
-        'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets/raw/master/benchmarks.mat',
+        'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets'
+        '/raw/master/benchmarks.mat',
         data_home=data_home,
     )
     sha256hash = hashlib.sha256()
@@ -50,14 +101,45 @@ def _fetch_remote(data_home=None):
             sha256hash.update(buffer)
     checksum = sha256hash.hexdigest()
     remote_checksum = (
-        '47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75')
+        '47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75'
+    )
     if remote_checksum != checksum:
         raise IOError(
-            f"{file_path} has an SHA256 checksum ({checksum}) differing from expected ({remote_checksum}), file may be corrupted.")
+            f"{file_path} has an SHA256 checksum ({checksum}) differing "
+            f"from expected ({remote_checksum}), file may be corrupted.",
+        )
     return file_path
 
 
-def fetch(name, data_home=None, *, return_X_y=False):
+@overload
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: Literal[False] = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: Literal[True],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]]:
+    pass
+
+
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: bool = False,
+) -> Union[
+    Bunch,
+    Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]],
+]:
     """Fetch Gunnar Raetsch's dataset.
 
     Fetch a Gunnar Raetsch's benchmark dataset by name. Availabe datasets are
@@ -88,8 +170,10 @@ def fetch(name, data_home=None, *, return_X_y=False):
         raise Exception('Avaliable datasets are ' + str(list(DATASETS)))
     filename = _fetch_remote(data_home=data_home)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
-    cv = ((X[tr - 1], y[tr - 1], X[ts - 1], y[ts - 1])
-          for tr, ts in zip(train_splits, test_splits))
+    if len(y.shape) == 2 and y.shape[1] == 1:
+        y = y.ravel()
+
+    cv = RaetschOuterCV(X, y, train_splits, test_splits)
 
     if return_X_y:
         return X, y
