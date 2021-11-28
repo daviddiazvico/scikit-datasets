@@ -4,56 +4,125 @@ Keel datasets (http://sci2s.ugr.es/keel).
 @author: David Diaz Vico
 @license: MIT
 """
+from __future__ import annotations
 
 import io
 import os
+import sys
+from pathlib import Path
+from types import MappingProxyType
+from typing import (TYPE_CHECKING, AbstractSet, Any, Iterator, Optional,
+                    Sequence, Tuple, Union, overload)
 from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import check_cv
-from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from sklearn.utils import Bunch
 
 from .base import fetch_file
 
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 8):
+        from typing import Final, Literal
+    else:
+        from typing_extensions import Final, Literal
+
 BASE_URL = 'http://sci2s.ugr.es/keel'
-COLLECTIONS = {'classification', 'missing', 'imbalanced', 'multiInstance',
-               'multilabel', 'textClassification', 'classNoise',
-               'attributeNoise', 'semisupervised', 'regression', 'timeseries',
-               'unsupervised', 'lowQuality'}
+COLLECTIONS: Final = frozenset((
+    'classification',
+    'missing',
+    'imbalanced',
+    'multiInstance',
+    'multilabel',
+    'textClassification',
+    'classNoise',
+    'attributeNoise',
+    'semisupervised',
+    'regression',
+    'timeseries',
+    'unsupervised',
+    'lowQuality',
+))
 
 
 # WTFs
-IMBALANCED_URLS = ['keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
-                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
-                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
-                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3',
-                   'dataset/data/imbalanced',
-                   'keel-dataset/datasets/imbalanced/imb_noisyBordExamples',
-                   'keel-dataset/datasets/imbalanced/preprocessed']
-IRREGULAR_DESCR_IMBALANCED_URLS = ['keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
-                                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
-                                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
-                                   'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3']
-INCORRECT_DESCR_IMBALANCED_URLS = {'semisupervised': 'classification'}
+IMBALANCED_URLS: Final = (
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3',
+    'dataset/data/imbalanced',
+    'keel-dataset/datasets/imbalanced/imb_noisyBordExamples',
+    'keel-dataset/datasets/imbalanced/preprocessed',
+)
+
+IRREGULAR_DESCR_IMBALANCED_URLS: Final = (
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
+    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3',
+)
+
+INCORRECT_DESCR_IMBALANCED_URLS: Final = MappingProxyType(
+    {'semisupervised': 'classification'},
+)
 
 
-def _load_Xy(zipfile, csvfile, sep=',', header=None, engine='python',
-             na_values={'?'}, **kwargs):
-    """Load a zippend csv file with targets in the last column and features in
-       the rest."""
+class KeelOuterCV(object):
+    """Iterable over already separated CV partitions of the dataset."""
+
+    def __init__(
+        self,
+        Xs: Sequence[np.typing.NDArray[float]],
+        ys: Sequence[np.typing.NDArray[Union[int, float]]],
+        Xs_test: Sequence[np.typing.NDArray[float]],
+        ys_test: Sequence[np.typing.NDArray[Union[int, float]]],
+    ) -> None:
+        self.Xs = Xs
+        self.ys = ys
+        self.Xs_test = Xs_test
+        self.ys_test = ys_test
+
+    def __iter__(self) -> Iterator[Tuple[
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[int, float]],
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[int, float]],
+    ]]:
+        return zip(self.Xs, self.ys, self.Xs_test, self.ys_test)
+
+
+def _load_Xy(
+    zipfile: Path,
+    csvfile: str,
+    sep: str = ',',
+    header: Optional[int] = None,
+    engine: str = 'python',
+    na_values: AbstractSet[str] = frozenset(('?')),
+    **kwargs: Any,
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]]:
+    """Load a zipped csv file with target in the last column."""
     with ZipFile(zipfile) as z:
         with z.open(csvfile) as c:
             s = io.StringIO(c.read().decode(encoding="utf8"))
-            data = pd.read_csv(s, sep=sep, header=header, engine=engine,
-                               na_values=na_values, **kwargs)
+            data = pd.read_csv(
+                s,
+                sep=sep,
+                header=header,
+                engine=engine,
+                na_values=na_values,
+                **kwargs,
+            )
             X = pd.get_dummies(data.iloc[:, :-1])
             y = pd.factorize(data.iloc[:, -1].tolist(), sort=True)[0]
             return X, y
 
 
-def _load_descr(collection, name, data_home=None):
+def _load_descr(
+    collection: str,
+    name: str,
+    data_home: Optional[str] = None,
+) -> Tuple[int, str]:
     """Load a dataset description."""
     subfolder = os.path.join('keel', collection)
     filename = name + '-names.txt'
@@ -71,12 +140,15 @@ def _load_descr(collection, name, data_home=None):
                     data_home=data_home,
                 )
                 break
-            except:
-                continue
+            except Exception:
+                pass
     else:
-        collection = INCORRECT_DESCR_IMBALANCED_URLS[
-            collection] if collection in INCORRECT_DESCR_IMBALANCED_URLS else collection
-        url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
+        collection = (
+            INCORRECT_DESCR_IMBALANCED_URLS[collection]
+            if collection in INCORRECT_DESCR_IMBALANCED_URLS
+            else collection
+        )
+        url = f"{BASE_URL}/dataset/data/{collection}/{filename}"
         f = fetch_file(
             dataname=name,
             urlname=url,
@@ -89,34 +161,49 @@ def _load_descr(collection, name, data_home=None):
     return nattrs, fdescr
 
 
-def _fetch_keel_zip(collection, name, filename, data_home=None):
+def _fetch_keel_zip(
+    collection: str,
+    name: str,
+    filename: str,
+    data_home: Optional[str] = None,
+) -> Path:
     """Fetch Keel dataset zip file."""
     subfolder = os.path.join('keel', collection)
     if collection == 'imbalanced':
         for url in IMBALANCED_URLS:
             url = BASE_URL + '/' + url + '/' + filename
             try:
-                f = fetch_file(
+                return fetch_file(
                     dataname=name,
                     urlname=url,
                     subfolder=subfolder,
                     data_home=data_home,
                 )
-                break
-            except:
-                continue
+            except Exception:
+                pass
     else:
-        url = BASE_URL + '/' + 'dataset/data' + '/' + collection + '/' + filename
-        f = fetch_file(
+        url = f"{BASE_URL}/dataset/data/{collection}/{filename}"
+        return fetch_file(
             dataname=name,
             urlname=url,
             subfolder=subfolder,
             data_home=data_home,
         )
-    return f
+    raise ValueError("Dataset not found")
 
 
-def _load_folds(collection, name, nfolds, dobscv, nattrs, data_home=None):
+def _load_folds(
+    collection: str,
+    name: str,
+    nfolds: Literal[None, 1, 5, 10],
+    dobscv: bool,
+    nattrs: int,
+    data_home: Optional[str] = None,
+) -> Tuple[
+    np.typing.NDArray[float],
+    np.typing.NDArray[Union[int, float]],
+    Optional[KeelOuterCV],
+]:
     """Load a dataset folds."""
     filename = name + '.zip'
     f = _fetch_keel_zip(collection, name, filename, data_home=data_home)
@@ -133,24 +220,65 @@ def _load_folds(collection, name, nfolds, dobscv, nattrs, data_home=None):
         for i in range(nfolds):
             if dobscv:
                 # Zipfiles always use fordward slashes, even in Windows.
-                _name = (name + '/' + name + '-'
-                         + str(nfolds) + 'dobscv-' + str(i + 1))
+                _name = f"{name}/{name}-{nfolds}dobscv-{i + 1}"
             else:
-                _name = name + '-' + str(nfolds) + '-' + str(i + 1)
-            _X, _y = _load_Xy(f, _name + 'tra.dat', skiprows=nattrs + 4)
-            _X_test, _y_test = _load_Xy(f, _name + 'tst.dat',
-                                        skiprows=nattrs + 4)
-            Xs.append(_X)
-            ys.append(_y)
-            Xs_test.append(_X_test)
-            ys_test.append(_y_test)
-        cv = zip(Xs, ys, Xs_test, ys_test)
+                _name = f"{name}-{nfolds}-{i + 1}"
+            X_fold, y_fold = _load_Xy(
+                f, _name + 'tra.dat', skiprows=nattrs + 4)
+            X_test_fold, y_test_fold = _load_Xy(
+                f,
+                _name + 'tst.dat',
+                skiprows=nattrs + 4,
+            )
+            Xs.append(X_fold)
+            ys.append(y_fold)
+            Xs_test.append(X_test_fold)
+            ys_test.append(y_test_fold)
+
+        cv = KeelOuterCV(Xs, ys, Xs_test, ys_test)
     return X, y, cv
 
 
-def fetch(collection, name, data_home=None, nfolds=None, dobscv=False, *,
-          return_X_y=False):
-    """Fetch Keel dataset.
+@overload
+def fetch(
+    collection: str,
+    name: str,
+    data_home: Optional[str] = None,
+    nfolds: Literal[None, 1, 5, 10] = None,
+    dobscv: bool = False,
+    *,
+    return_X_y: Literal[False] = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    collection: str,
+    name: str,
+    data_home: Optional[str] = None,
+    nfolds: Literal[None, 1, 5, 10] = None,
+    dobscv: bool = False,
+    *,
+    return_X_y: Literal[True],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]]:
+    pass
+
+
+def fetch(
+    collection: str,
+    name: str,
+    data_home: Optional[str] = None,
+    nfolds: Literal[None, 1, 5, 10] = None,
+    dobscv: bool = False,
+    *,
+    return_X_y: bool = False,
+) -> Union[
+    Bunch,
+    Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]],
+]:
+    """
+    Fetch Keel dataset.
 
     Fetch a Keel dataset by collection and name. More info at
     http://sci2s.ugr.es/keel.
@@ -172,7 +300,7 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False, *,
         optimally balanced stratified. Only available for some datasets.
     return_X_y : bool, default=False
         If True, returns ``(data, target)`` instead of a Bunch object.
-    **kwargs : dict
+    kwargs : dict
         Optional key-value arguments
 
     Returns
@@ -184,10 +312,16 @@ def fetch(collection, name, data_home=None, nfolds=None, dobscv=False, *,
 
     """
     if collection not in COLLECTIONS:
-        raise Exception('Avaliable collections are ' + str(list(COLLECTIONS)))
+        raise ValueError('Avaliable collections are ' + str(list(COLLECTIONS)))
     nattrs, DESCR = _load_descr(collection, name, data_home=data_home)
-    X, y, cv = _load_folds(collection, name, nfolds, dobscv, nattrs,
-                           data_home=data_home)
+    X, y, cv = _load_folds(
+        collection,
+        name,
+        nfolds,
+        dobscv,
+        nattrs,
+        data_home=data_home,
+    )
 
     if return_X_y:
         return X, y
