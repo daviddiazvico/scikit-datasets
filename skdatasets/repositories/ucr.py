@@ -4,18 +4,30 @@ Datasets from the UCR time series database.
 @author: Carlos Ramos Carreño
 @license: MIT
 """
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union, overload
 
 import numpy as np
-from sklearn.utils import Bunch
-
 import scipy.io.arff
+from sklearn.utils import Bunch
 
 from .base import fetch_zip as _fetch_zip
 
-BASE_URL = 'http://www.timeseriesclassification.com/Downloads/'
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 8):
+        from typing import Final, Literal
+    else:
+        from typing_extensions import Final, Literal
+
+BASE_URL: Final = 'http://www.timeseriesclassification.com/Downloads/'
 
 
-def _target_conversion(target):
+def _target_conversion(
+    target: np.typing.NDArray[Union[int, str]],
+) -> Tuple[np.typing.NDArray[int], Sequence[str]]:
     try:
         target_data = target.astype(int)
         target_names = np.unique(target_data).astype(str).tolist()
@@ -26,11 +38,16 @@ def _target_conversion(target):
     return target_data, target_names
 
 
-def data_to_matrix(struct_array):
-    if(len(struct_array.dtype.fields.items()) == 1 and
-       list(struct_array.dtype.fields.items())[0][1][0] == np.object_):
-        attribute = struct_array[list(
-            struct_array.dtype.fields.items())[0][0]]
+def data_to_matrix(
+    struct_array: np.typing.NDArray[object],
+) -> np.typing.NDArray[float]:
+    fields = struct_array.dtype.fields
+    assert fields
+    if(
+        len(fields.items()) == 1
+        and list(fields.items())[0][1][0] == np.dtype(np.object_)
+    ):
+        attribute = struct_array[list(fields.items())[0][0]]
 
         n_instances = len(attribute)
         n_curves = len(attribute[0])
@@ -53,8 +70,37 @@ def data_to_matrix(struct_array):
         return np.array(struct_array.tolist())
 
 
-def fetch(name, data_home=None, *, return_X_y=False):
-    """Fetch UCR dataset.
+@overload
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: Literal[False] = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: Literal[True],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]:
+    pass
+
+
+def fetch(
+    name: str,
+    data_home: Optional[str] = None,
+    *,
+    return_X_y: bool = False,
+) -> Union[
+    Bunch,
+    Tuple[np.typing.NDArray[float], np.typing.NDArray[int]],
+]:
+    """
+    Fetch UCR dataset.
 
     Fetch a UCR dataset by name. More info at
     http://www.timeseriesclassification.com/.
@@ -79,24 +125,31 @@ def fetch(name, data_home=None, *, return_X_y=False):
     """
     url = BASE_URL + name
 
-    data_home = _fetch_zip(name, urlname=url + '.zip', subfolder="ucr",
-                           data_home=data_home)
+    data_path = _fetch_zip(
+        name,
+        urlname=url + '.zip',
+        subfolder="ucr",
+        data_home=data_home,
+    )
 
     description_filenames = [name, name + "Description", name + "_Info"]
 
+    path_file_descr: Optional[Path]
     for f in description_filenames:
-        path_file_descr = (data_home / f).with_suffix(".txt")
+        path_file_descr = (data_path / f).with_suffix(".txt")
         if path_file_descr.exists():
             break
     else:
         # No description is found
         path_file_descr = None
 
-    path_file_train = (data_home / (name + '_TRAIN')).with_suffix(".arff")
-    path_file_test = (data_home / (name + '_TEST')).with_suffix(".arff")
+    path_file_train = (data_path / (name + '_TRAIN')).with_suffix(".arff")
+    path_file_test = (data_path / (name + '_TEST')).with_suffix(".arff")
 
-    DESCR = (path_file_descr.read_text(errors='surrogateescape')
-             if path_file_descr else '')
+    DESCR = (
+        path_file_descr.read_text(errors='surrogateescape')
+        if path_file_descr else ''
+    )
     train = scipy.io.arff.loadarff(path_file_train)
     test = scipy.io.arff.loadarff(path_file_test)
     dataset_name = train[1].name
