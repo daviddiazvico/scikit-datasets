@@ -28,4 +28,4 @@ def test_fetch_raetsch_banana_return_X_y():
     """Tests Gunnar Raetsch banana dataset."""
     X, y = fetch('banana', return_X_y=True)
     assert X.shape == (5300, 2)
-    assert y.shape == (5300, 1)
+    assert y.shape == (5300,)
