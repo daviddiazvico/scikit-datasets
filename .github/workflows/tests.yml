@@ -30,8 +30,11 @@ jobs:
         pip3 debug --verbose .
         pip3 install --upgrade-strategy eager -v ".[cran,forex,keel,keras,utils.estimator,utils.experiments,utils.scores]"
         coverage run --source=skdatasets/ setup.py test;
+        coverage xml -o coverage.xml # explicitely exporting coverage file to be read by coverage report command.
 
     - name: Upload coverage to CodeClimate
       uses: paambaati/codeclimate-action@v3.0.0
       env:
         CC_TEST_REPORTER_ID: d4b9d418d1033f48df24ad9f0083b8828a1ba312
+      with:
+        coverageCommand: coverage report
