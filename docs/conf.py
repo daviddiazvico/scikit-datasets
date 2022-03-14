@@ -18,6 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 import pkg_resources
+
 try:
     release = pkg_resources.get_distribution('scikit-datasets').version
 except pkg_resources.DistributionNotFound:
@@ -42,6 +43,7 @@ author = 'David Diaz Vico'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
