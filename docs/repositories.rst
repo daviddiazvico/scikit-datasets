@@ -7,7 +7,8 @@ functional data.
 
 The subpackage :mod:`~skdatasets.repositories` contains a module per available
 repository. For repositories that contain data in a regular format, that module
-has a ``fetch`` function that returns data in a standardized format.
+has a ``fetch`` function that returns data in a
+:doc:`standardized format <structure>`.
 For modules such as :mod:`~skdatasets.repositories.cran`, where data is in
 a non-regular format, specific functions are provided to return the data.
 

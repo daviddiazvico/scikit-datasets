@@ -1,5 +1,5 @@
 Welcome to scikit-datasets's documentation!
-======================================
+===========================================
 
 This package groups functions to fetch datasets from several sources,
 converting them to scikit-learn-compatible datasets.
@@ -25,6 +25,7 @@ Content tree
    :maxdepth: 2
    :caption: Contents:
 
+   structure
    repositories
 
 
