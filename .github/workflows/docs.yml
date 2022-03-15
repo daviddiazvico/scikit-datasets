@@ -11,6 +11,8 @@ jobs:
     - uses: actions/checkout@master
       with:
         fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+    - name: Install package
+      run: pip3 install --upgrade-strategy eager -v ".[cran,forex,keel,keras,utils.estimator,utils.experiments,utils.scores]"
     - name: Build and Commit
       uses: sphinx-notes/pages@v2
     - name: Push changes
