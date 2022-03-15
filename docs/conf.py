@@ -17,7 +17,10 @@
 
 # -- Project information -----------------------------------------------------
 
+import sys
+
 import pkg_resources
+
 try:
     release = pkg_resources.get_distribution('scikit-datasets').version
 except pkg_resources.DistributionNotFound:
@@ -42,9 +45,11 @@ author = 'David Diaz Vico'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -77,3 +82,13 @@ html_static_path = ['_static']
 
 
 # -- Extension configuration -------------------------------------------------
+intersphinx_mapping = {
+    'python': (
+        'https://docs.python.org/{.major}'.format(sys.version_info),
+        None,
+    ),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'sklearn': ('https://scikit-learn.org/stable', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+}
