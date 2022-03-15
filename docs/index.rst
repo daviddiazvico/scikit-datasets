@@ -27,6 +27,7 @@ Content tree
 
    structure
    repositories
+   utils
 
 
 Contributions
