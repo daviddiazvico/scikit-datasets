@@ -128,7 +128,7 @@ UCR
 
 The UCR/UEA time series classification archive.
 
-URL: www.timeseriesclassification.com
+URL: https://www.timeseriesclassification.com
 
 .. autosummary::
    :toctree: autosummary
