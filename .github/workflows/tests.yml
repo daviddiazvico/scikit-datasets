@@ -32,9 +32,8 @@ jobs:
         coverage run --source=skdatasets/ setup.py test;
         coverage xml -o coverage.xml # explicitely exporting coverage file to be read by coverage report command.
 
-    - name: Upload coverage to CodeClimate
-      uses: paambaati/codeclimate-action@v3.0.0
-      env:
-        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v3
       with:
-        coverageCommand: coverage report
+        name: code-coverage-report
+        path: coverage.xml
