@@ -7,15 +7,17 @@ import tarfile
 import zipfile
 from os.path import basename, normpath
 from shutil import copyfileobj
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Sequence, Union, overload
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
 from sklearn.datasets import get_data_home
 
+CompressedFile = Union[zipfile.ZipFile, tarfile.TarFile]
+
 OpenMethod = Callable[
     [pathlib.Path, str],
-    Union[zipfile.ZipFile, tarfile.TarFile],
+    CompressedFile,
 ]
 
 
@@ -75,6 +77,44 @@ def fetch_file(
     return filename
 
 
+@overload
+def _missing_files(
+    compressed_file: zipfile.ZipFile,
+    data_home_path: pathlib.Path,
+) -> Sequence[zipfile.ZipInfo]:
+    pass
+
+
+@overload
+def _missing_files(
+    compressed_file: tarfile.TarFile,
+    data_home_path: pathlib.Path,
+) -> Sequence[tarfile.TarInfo]:
+    pass
+
+
+def _missing_files(
+    compressed_file: CompressedFile,
+    data_home_path: pathlib.Path,
+) -> Sequence[Union[zipfile.ZipInfo, tarfile.TarInfo]]:
+
+    if isinstance(compressed_file, zipfile.ZipFile):
+
+        members_zip = compressed_file.infolist()
+
+        return [
+            info for info in members_zip
+            if not (data_home_path / info.filename).exists()
+        ]
+
+    members_tar = compressed_file.getmembers()
+
+    return [
+        info for info in members_tar
+        if not (data_home_path / info.name).exists()
+    ]
+
+
 def fetch_compressed(
     dataname: str,
     urlname: str,
@@ -120,7 +160,10 @@ def fetch_compressed(
     # unzip file
     try:
         with compression_open(filename, open_format) as compressed_file:
-            compressed_file.extractall(data_home_path)
+            compressed_file.extractall(
+                data_home_path,
+                members=_missing_files(compressed_file, data_home_path),
+            )
     except Exception:
         filename.unlink()
         raise
