@@ -73,8 +73,8 @@ def data_to_matrix(
 @overload
 def fetch(
     name: str,
-    data_home: Optional[str] = None,
     *,
+    data_home: Optional[str] = None,
     return_X_y: Literal[False] = False,
 ) -> Bunch:
     pass
@@ -83,8 +83,8 @@ def fetch(
 @overload
 def fetch(
     name: str,
-    data_home: Optional[str] = None,
     *,
+    data_home: Optional[str] = None,
     return_X_y: Literal[True],
 ) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]:
     pass
@@ -92,8 +92,8 @@ def fetch(
 
 def fetch(
     name: str,
-    data_home: Optional[str] = None,
     *,
+    data_home: Optional[str] = None,
     return_X_y: bool = False,
 ) -> Union[
     Bunch,
