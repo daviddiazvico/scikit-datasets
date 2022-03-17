@@ -4,54 +4,76 @@ LIBSVM datasets (https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets).
 @author: David Diaz Vico
 @license: MIT
 """
+from __future__ import annotations
 
 import os
+import sys
+from typing import TYPE_CHECKING, Sequence, Tuple, overload
 from urllib.error import HTTPError
 
 import numpy as np
+import scipy as sp
 from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
 
-import scipy as sp
-
 from .base import fetch_file
 
-BASE_URL = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
-COLLECTIONS = {'binary', 'multiclass', 'regression', 'string'}
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 8):
+        from typing import Final, Literal
+    else:
+        from typing_extensions import Final, Literal
+
+BASE_URL: Final = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
+COLLECTIONS: Final = frozenset((
+    'binary',
+    'multiclass',
+    'regression',
+    'string',
+))
 
 
-def _fetch_partition(collection, name, partition, data_home=None):
+def _fetch_partition(
+    collection: str,
+    name: str,
+    partition: str,
+    data_home: str | None = None,
+) -> str | None:
     """Fetch dataset partition."""
     subfolder = os.path.join('libsvm', collection)
     dataname = name.replace('/', '-')
 
-    url = BASE_URL + '/' + collection + '/' + name + partition
-    try:
-        f = fetch_file(
-            dataname,
-            urlname=url + '.bz2',
-            subfolder=subfolder,
-            data_home=data_home,
-        )
-    except HTTPError:
+    url = f"{BASE_URL}/{collection}/{name}{partition}"
+
+    for data_url in (f"{url}.bz2", url):
         try:
-            f = fetch_file(
-                dataname,
-                urlname=url,
-                subfolder=subfolder,
-                data_home=data_home,
+            return os.fspath(
+                fetch_file(
+                    dataname,
+                    urlname=data_url,
+                    subfolder=subfolder,
+                    data_home=data_home,
+                ),
             )
-        except:
-            f = None
+        except HTTPError:
+            pass
 
-    if f is not None:
-        f = os.fspath(f)
-
-    return f
+    return None
 
 
-def _load(collection, name, data_home=None):
+def _load(
+    collection: str,
+    name: str,
+    data_home: str | None = None,
+) -> Tuple[
+    np.typing.NDArray[float],
+    np.typing.NDArray[int | float],
+    Sequence[int],
+    Sequence[int],
+    Sequence[int],
+    PredefinedSplit,
+]:
     """Load dataset."""
     filename = _fetch_partition(collection, name, '', data_home)
     filename_tr = _fetch_partition(collection, name, '.tr', data_home)
@@ -101,11 +123,13 @@ def _load(collection, name, data_home=None):
 
     elif (filename_t is not None) and (filename_r is not None):
 
-        X_tr, y_tr, X_test, y_test, X_remaining, y_remaining = load_svmlight_files([
-            filename,
-            filename_t,
-            filename_r,
-        ])
+        X_tr, y_tr, X_test, y_test, X_remaining, y_remaining = (
+            load_svmlight_files([
+                filename,
+                filename_t,
+                filename_r,
+            ])
+        )
 
         X = sp.sparse.vstack((X_tr, X_test, X_remaining))
         y = np.hstack((y_tr, y_test, y_remaining))
@@ -113,9 +137,11 @@ def _load(collection, name, data_home=None):
         # Compute indices
         train_indices = list(range(X_tr.shape[0]))
         validation_indices = []
-        test_indices = list(range(
-            X_tr.shape[0], X_tr.shape[0] + X_test.shape[0]
-        ))
+        test_indices = list(
+            range(
+                X_tr.shape[0], X_tr.shape[0] + X_test.shape[0],
+            ),
+        )
 
         cv = None
 
@@ -150,8 +176,37 @@ def _load(collection, name, data_home=None):
     return X, y, train_indices, validation_indices, test_indices, cv
 
 
-def fetch(collection, name, data_home=None, *, return_X_y=False):
-    """Fetch LIBSVM dataset.
+@overload
+def fetch(
+    collection: str,
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: Literal[False] = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    collection: str,
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: Literal[True],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[int | float]]:
+    pass
+
+
+def fetch(
+    collection: str,
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: bool = False,
+) -> Bunch | Tuple[np.typing.NDArray[float], np.typing.NDArray[int | float]]:
+    """
+    Fetch LIBSVM dataset.
 
     Fetch a LIBSVM dataset by collection and name. More info at
     https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets.
