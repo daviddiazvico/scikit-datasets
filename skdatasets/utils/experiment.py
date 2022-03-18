@@ -125,7 +125,7 @@ def _benchmark_partitions(
     else:
         # Automatic/indexed CV folds
         scores = cross_validate(
-            experiment,
+            estimator,
             data.data,
             y=data.target,
             cv=data.outer_cv,
