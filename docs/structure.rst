@@ -1,8 +1,8 @@
 Dataset structure
 =================
 
-Most of the repositories available in scikit-fda have datasets in some regular
-format.
+Most of the repositories available in scikit-datasets have datasets in some
+regular format.
 In that case, its corresponding ``fetch`` function in scikit-datasets converts
 the data to a standardized format, similar to the one used in scikit-learn, but
 with new optional fields for additional features that some repositories
