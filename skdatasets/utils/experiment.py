@@ -123,7 +123,7 @@ def experiment(
                     ) as tmpfile:
                         np.save(tmpfile, getattr(e, output)(X_test))
                         experiment.add_artifact(tmpfile.name)
-        elif hasattr(data, 'outer_cv'):
+        elif getattr(data, 'outer_cv') is not None:
             # Outer CV
             # Explicit CV folds
             scores: Mapping[str, List[float]] = {
