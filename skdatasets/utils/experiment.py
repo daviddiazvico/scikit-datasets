@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import process_time
-from typing import Callable, List, Mapping
+from typing import IO, Callable, List, Mapping
 from warnings import warn
 
 import joblib
@@ -16,6 +16,125 @@ from sacred import Experiment, Ingredient
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import PredefinedSplit, cross_validate
 from sklearn.utils import Bunch
+
+
+def _benchmark_one(
+    experiment: Experiment,
+    data: Bunch,
+    estimator: BaseEstimator,
+) -> None:
+
+    X = data.data
+    y = data.target
+
+    train_indices = getattr(data, 'train_indices', [])
+    validation_indices = getattr(data, 'validation_indices', [])
+    test_indices = getattr(data, 'test_indices', [])
+
+    X_train_val = (
+        X[train_indices + validation_indices]
+        if train_indices
+        else X
+    )
+    y_train_val = (
+        y[train_indices + validation_indices]
+        if train_indices
+        else y
+    )
+
+    X_test = X[test_indices]
+    y_test = y[test_indices]
+
+    experiment.fit(X_train_val, y_train_val)
+    try:
+        with NamedTemporaryFile() as tmpfile:
+            joblib.dump(experiment, tmpfile.name)
+            experiment.add_artifact(
+                tmpfile.name,
+                name='estimator.joblib',
+            )
+    except Exception as exception:
+        warn(f'Artifact save failed: {exception}')
+    experiment.log_scalar(
+        'score_mean',
+        experiment.score(X_test, y_test),
+    )
+    experiment.log_scalar('score_std', 0.0)
+    for output in ('transform', 'predict'):
+        if hasattr(experiment, output):
+            with open(
+                os.path.join(
+                    mkdtemp(),
+                    f'{output}.npy',
+                ),
+                'wb+',
+            ) as tmpfile:
+                np.save(tmpfile, getattr(experiment, output)(X_test))
+                experiment.add_artifact(tmpfile.name)
+
+
+def _benchmark_partitions(
+    experiment: Experiment,
+    data: Bunch,
+    estimator: BaseEstimator,
+) -> None:
+    # Outer CV
+    # Explicit CV folds
+    scores: Mapping[str, List[float]] = {
+        'test_score': [],
+        'train_score': [],
+        'fit_time': [],
+        'score_time': [],
+        'estimator': [],
+    }
+    outputs: Mapping[str, List[np.typing.NDArray[float]]] = {
+        'transform': [],
+        'predict': [],
+    }
+    for X, y, X_test, y_test in data.outer_cv:
+        t0 = process_time()
+        estimator.fit(X, y=y)
+        t1 = process_time()
+        test_score = estimator.score(X_test, y=y_test)
+        t2 = process_time()
+        scores['test_score'].append(test_score)
+        scores['train_score'].append(estimator.score(X, y=y))
+        scores['fit_time'].append(t1 - t0)
+        scores['score_time'].append(t2 - t1)
+        scores['estimator'].append(estimator)
+        for output in ('transform', 'predict'):
+            if hasattr(estimator, output):
+                outputs[output].append(
+                    getattr(estimator, output)(X_test),
+                )
+
+    tmpfile: IO[bytes]
+    for output in ('transform', 'predict'):
+        if outputs[output]:
+            with open(
+                os.path.join(
+                    mkdtemp(),
+                    f'{output}.npy',
+                ),
+                'wb+',
+            ) as tmpfile:
+                np.save(tmpfile, np.array(outputs[output]))
+                experiment.add_artifact(tmpfile.name)
+
+    try:
+        with NamedTemporaryFile() as tmpfile:
+            joblib.dump(estimator, tmpfile.name)
+            experiment.add_artifact(tmpfile.name, name='scores.joblib')
+    except Exception as exception:
+        warn(f'Artifact save failed: {exception}')
+    experiment.log_scalar(
+        'score_mean',
+        np.nanmean(scores['test_score']),
+    )
+    experiment.log_scalar(
+        'score_std',
+        np.nanstd(scores['test_score']),
+    )
 
 
 def experiment(
@@ -62,27 +181,7 @@ def experiment(
         data = dataset()
 
         # Metaparameter search
-        X = data.data
-        y = data.target
         cv = getattr(data, 'inner_cv', None)
-
-        train_indices = getattr(data, 'train_indices', [])
-        validation_indices = getattr(data, 'validation_indices', [])
-        test_indices = getattr(data, 'test_indices', [])
-
-        X_train_val = (
-            X[train_indices + validation_indices]
-            if train_indices
-            else X
-        )
-        y_train_val = (
-            y[train_indices + validation_indices]
-            if train_indices
-            else y
-        )
-
-        X_test = X[test_indices]
-        y_test = y[test_indices]
 
         try:
             e = estimator(cv=cv)
@@ -90,94 +189,18 @@ def experiment(
             warn(f'The estimator does not accept cv: {exception}')
             e = estimator()
 
-        if cv is not None:
-            e.fit(X_train_val, y_train_val)
-            e.fit = e.best_estimator_.fit
-
         # Model assessment
-        if test_indices:
-            # Test partition
-            e.fit(X_train_val, y_train_val)
-            try:
-                with NamedTemporaryFile() as tmpfile:
-                    joblib.dump(e, tmpfile.name)
-                    experiment.add_artifact(
-                        tmpfile.name,
-                        name='estimator.joblib',
-                    )
-            except Exception as exception:
-                warn(f'Artifact save failed: {exception}')
-            experiment.log_scalar(
-                'score_mean',
-                e.score(X_test, y_test),
+        if getattr(data, 'test_indices', None):
+            _benchmark_one(
+                experiment=experiment,
+                data=data,
+                estimator=e,
             )
-            experiment.log_scalar('score_std', 0.0)
-            for output in ('transform', 'predict'):
-                if hasattr(e, output):
-                    with open(
-                        os.path.join(
-                            mkdtemp(),
-                            f'{output}.npy',
-                        ),
-                        'wb+',
-                    ) as tmpfile:
-                        np.save(tmpfile, getattr(e, output)(X_test))
-                        experiment.add_artifact(tmpfile.name)
-        elif getattr(data, 'outer_cv') is not None:
-            # Outer CV
-            # Explicit CV folds
-            scores: Mapping[str, List[float]] = {
-                'test_score': [],
-                'train_score': [],
-                'fit_time': [],
-                'score_time': [],
-                'estimator': [],
-            }
-            outputs: Mapping[str, List[np.typing.NDArray[float]]] = {
-                'transform': [],
-                'predict': [],
-            }
-            for X, y, X_test, y_test in data.outer_cv:
-                t0 = process_time()
-                e.fit(X, y=y)
-                t1 = process_time()
-                test_score = e.score(X_test, y=y_test)
-                t2 = process_time()
-                scores['test_score'].append(test_score)
-                scores['train_score'].append(e.score(X, y=y))
-                scores['fit_time'].append(t1 - t0)
-                scores['score_time'].append(t2 - t1)
-                scores['estimator'].append(e)
-                for output in ('transform', 'predict'):
-                    if hasattr(e, output):
-                        outputs[output].append(
-                            getattr(e, output)(X_test),
-                        )
-            for output in ('transform', 'predict'):
-                if outputs[output]:
-                    with open(
-                        os.path.join(
-                            mkdtemp(),
-                            f'{output}.npy',
-                        ),
-                        'wb+',
-                    ) as tmpfile:
-                        np.save(tmpfile, np.array(outputs[output]))
-                        experiment.add_artifact(tmpfile.name)
-
-            try:
-                with NamedTemporaryFile() as tmpfile:
-                    joblib.dump(e, tmpfile.name)
-                    experiment.add_artifact(tmpfile.name, name='scores.joblib')
-            except Exception as exception:
-                warn(f'Artifact save failed: {exception}')
-            experiment.log_scalar(
-                'score_mean',
-                np.nanmean(scores['test_score']),
-            )
-            experiment.log_scalar(
-                'score_std',
-                np.nanstd(scores['test_score']),
+        elif getattr(data, 'outer_cv', None) is not None:
+            _benchmark_partitions(
+                experiment=experiment,
+                data=data,
+                estimator=e,
             )
 
     return experiment
