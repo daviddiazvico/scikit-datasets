@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import process_time
-from typing import IO, Callable, List, Mapping
+from typing import IO, Callable, Iterable, List, Mapping
 from warnings import warn
 
 import joblib
@@ -80,46 +80,58 @@ def _benchmark_partitions(
 ) -> None:
     # Outer CV
     # Explicit CV folds
-    scores: Mapping[str, List[float]] = {
-        'test_score': [],
-        'train_score': [],
-        'fit_time': [],
-        'score_time': [],
-        'estimator': [],
-    }
-    outputs: Mapping[str, List[np.typing.NDArray[float]]] = {
-        'transform': [],
-        'predict': [],
-    }
-    for X, y, X_test, y_test in data.outer_cv:
-        t0 = process_time()
-        estimator.fit(X, y=y)
-        t1 = process_time()
-        test_score = estimator.score(X_test, y=y_test)
-        t2 = process_time()
-        scores['test_score'].append(test_score)
-        scores['train_score'].append(estimator.score(X, y=y))
-        scores['fit_time'].append(t1 - t0)
-        scores['score_time'].append(t2 - t1)
-        scores['estimator'].append(estimator)
-        for output in ('transform', 'predict'):
-            if hasattr(estimator, output):
-                outputs[output].append(
-                    getattr(estimator, output)(X_test),
-                )
+    if isinstance(data.outer_cv, Iterable):
+        scores: Mapping[str, List[float]] = {
+            'test_score': [],
+            'train_score': [],
+            'fit_time': [],
+            'score_time': [],
+            'estimator': [],
+        }
+        outputs: Mapping[str, List[np.typing.NDArray[float]]] = {
+            'transform': [],
+            'predict': [],
+        }
+        for X, y, X_test, y_test in data.outer_cv:
+            t0 = process_time()
+            estimator.fit(X, y=y)
+            t1 = process_time()
+            test_score = estimator.score(X_test, y=y_test)
+            t2 = process_time()
+            scores['test_score'].append(test_score)
+            scores['train_score'].append(estimator.score(X, y=y))
+            scores['fit_time'].append(t1 - t0)
+            scores['score_time'].append(t2 - t1)
+            scores['estimator'].append(estimator)
+            for output in ('transform', 'predict'):
+                if hasattr(estimator, output):
+                    outputs[output].append(
+                        getattr(estimator, output)(X_test),
+                    )
 
-    tmpfile: IO[bytes]
-    for output in ('transform', 'predict'):
-        if outputs[output]:
-            with open(
-                os.path.join(
-                    mkdtemp(),
-                    f'{output}.npy',
-                ),
-                'wb+',
-            ) as tmpfile:
-                np.save(tmpfile, np.array(outputs[output]))
-                experiment.add_artifact(tmpfile.name)
+        tmpfile: IO[bytes]
+        for output in ('transform', 'predict'):
+            if outputs[output]:
+                with open(
+                    os.path.join(
+                        mkdtemp(),
+                        f'{output}.npy',
+                    ),
+                    'wb+',
+                ) as tmpfile:
+                    np.save(tmpfile, np.array(outputs[output]))
+                    experiment.add_artifact(tmpfile.name)
+
+    else:
+        # Automatic/indexed CV folds
+        scores = cross_validate(
+            experiment,
+            data.data,
+            y=data.target,
+            cv=data.outer_cv,
+            return_train_score=True,
+            return_estimator=True,
+        )
 
     try:
         with NamedTemporaryFile() as tmpfile:
