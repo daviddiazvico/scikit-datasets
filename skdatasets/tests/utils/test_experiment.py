@@ -161,7 +161,7 @@ def test_explicit_nested_folds() -> None:
     _experiment(
         [
             (np.arange(3, 10), np.arange(3)),
-            (np.concatenate(np.arange(3), np.arange(7, 10)), np.arange(3, 7)),
+            (np.concatenate((np.arange(3), np.arange(7, 10))), np.arange(3, 7)),
             (np.arange(7, 10), np.arange(7)),
         ],
         [
