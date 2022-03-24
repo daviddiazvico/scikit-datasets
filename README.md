@@ -31,12 +31,6 @@ twine upload dist/*
 ```
 
 ## Citation
-If you find scikit-datasets useful, please cite it in your publications. You can use this [BibTeX](http://www.bibtex.org/) entry:
-```
-@misc{scikit-datasets,
-      title={scikit-datasets},
-      author={Diaz-Vico, David},
-      year={2017},
-      publisher={GitHub},
-      howpublished={\url{https://github.com/daviddiazvico/scikit-datasets}}}
-```
+If you find scikit-datasets useful, please cite it in your publications.
+You can find the appropriate citation format in the sidebar, in both APA and
+Bibtex.
