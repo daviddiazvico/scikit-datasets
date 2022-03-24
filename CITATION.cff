@@ -23,5 +23,7 @@ keywords:
 identifiers:
   - description: "This is the collection of archived snapshots of all versions of scikit-datasets"
     type: doi
-    value: 10.5281/zenodo.6383048
+    value: 10.5281/zenodo.6383047
   - description: "This is the archived snapshot of version 0.2 of scikit-datasets"
+    type: doi
+    value: 10.5281/zenodo.6383048
