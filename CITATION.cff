@@ -11,6 +11,8 @@ authors:
     affiliation: "Universidad Autónoma de Madrid"
     email: vnmabus@gmail.com
 title: "scikit-datasets: Scikit-learn-compatible datasets"
+date-released: 2022-03-24
+doi: 10.5281/zenodo.6383047
 url: "https://github.com/daviddiazvico/scikit-datasets"
 license: MIT
 keywords:
@@ -18,3 +20,8 @@ keywords:
   - repository
   - benchmark
   - Python
+identifiers:
+  - description: "This is the collection of archived snapshots of all versions of scikit-datasets"
+    type: doi
+    value: 10.5281/zenodo.6383048
+  - description: "This is the archived snapshot of version 0.2 of scikit-datasets"

@@ -6,6 +6,7 @@ Scikit-learn-compatible datasets
 [![Maintainability](https://api.codeclimate.com/v1/badges/a37c9ee152b41a0cb577/maintainability)](https://codeclimate.com/github/daviddiazvico/scikit-datasets/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/a37c9ee152b41a0cb577/test_coverage)](https://codeclimate.com/github/daviddiazvico/scikit-datasets/test_coverage)
 [![Build Status](https://dev.azure.com/daviddiazvico0337/daviddiazvico/_apis/build/status/daviddiazvico.scikit-datasets?branchName=master)](https://dev.azure.com/daviddiazvico0337/daviddiazvico/_build/latest?definitionId=1&branchName=master)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6383048.svg)](https://doi.org/10.5281/zenodo.6383048)
 
 ## Installation
 Available in [PyPI](https://pypi.python.org/pypi?:action=display&name=scikit-datasets)
