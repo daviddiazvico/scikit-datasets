@@ -10,12 +10,12 @@ from setuptools import find_packages, setup
 setup(
     name='scikit-datasets',
     packages=find_packages(),
-    version='0.1.38',
+    version='0.2.0',
     description='Scikit-learn-compatible datasets',
     author='David Diaz Vico',
     author_email='david.diaz.vico@outlook.com',
     url='https://github.com/daviddiazvico/scikit-datasets',
-    download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.1.38.tar.gz',
+    download_url='https://github.com/daviddiazvico/scikit-datasets/archive/v0.2.0.tar.gz',
     keywords=['scikit-learn'],
     classifiers=[
         'Intended Audience :: Science/Research',
