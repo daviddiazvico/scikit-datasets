@@ -4,7 +4,6 @@
 """
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
@@ -17,49 +16,14 @@ from sklearn.utils import Bunch
 from skdatasets.utils.experiment import experiment
 
 if TYPE_CHECKING:
-    IndicesType = np.typing.NDArray[int]
-    ExplicitSplitType = Iterable[
-        Tuple[
-            np.typing.NDArray[float],
-            np.typing.NDArray[Union[float, int]],
-            np.typing.NDArray[float],
-            np.typing.NDArray[Union[float, int]],
-        ],
+    from skdatasets.utils.experiment import CVLike
+
+    ExplicitSplitType = Tuple[
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[float, int]],
+        np.typing.NDArray[float],
+        np.typing.NDArray[Union[float, int]],
     ]
-    if sys.version_info >= (3, 8):
-        from typing import Protocol
-    else:
-        from typing_extensions import Protocol
-else:
-    IndicesType = np.ndarray
-    Protocol = object
-
-
-class CVSplitter(Protocol):
-
-    def split(
-        self,
-        X: np.typing.NDArray[float],
-        y: None = None,
-        groups: None = None,
-    ) -> Iterable[Tuple[IndicesType, IndicesType]]:
-        pass
-
-    def get_n_splits(
-        self,
-        X: np.typing.NDArray[float],
-        y: None = None,
-        groups: None = None,
-    ) -> int:
-        pass
-
-
-CVLike = Union[
-    CVSplitter,
-    Iterable[Tuple[IndicesType, IndicesType]],
-    int,
-    None,
-]
 
 
 def _dataset(
@@ -92,7 +56,7 @@ def _estimator(cv: CVLike) -> GridSearchCV:
 
 def _experiment(
     inner_cv: CVLike,
-    outer_cv: CVLike | ExplicitSplitType,
+    outer_cv: CVLike | Iterable[ExplicitSplitType],
 ) -> None:
     e = experiment(_dataset, _estimator)
     e.observers.append(FileStorageObserver('.results'))
