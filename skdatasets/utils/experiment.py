@@ -11,13 +11,13 @@ from contextlib import contextmanager
 from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time
-from typing import (IO, TYPE_CHECKING, AbstractSet, Any, Callable, Iterable,
-                    Iterator, List, Mapping, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Iterable, Iterator, List,
+                    Mapping, Sequence, Tuple, TypeVar, Union)
 from warnings import warn
 
 import numpy as np
 from sacred import Experiment, Ingredient
-from sacred.observers import RunObserver
+from sacred.observers import FileStorageObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
@@ -51,12 +51,14 @@ if TYPE_CHECKING:
         np.typing.NDArray[Union[float, int]],
     ]
 
+    ConfigLike = Union[
+        Mapping[str, Any],
+        str,
+    ]
+
     class EstimatorProtocol(Protocol[DataType, TargetType]):
 
         def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
-            pass
-
-        def predict(self, X: DataType) -> TargetType:
             pass
 
     class CVSplitter(Protocol):
@@ -141,17 +143,27 @@ def _benchmark_from_data(
     with _add_timing(experiment, "score_time"):
         test_score = estimator.score(X_test, y_test)
 
-    _append_info(experiment, "test_score", test_score)
+    _append_info(experiment, "test_score", float(test_score))
 
     if save_train:
         train_score = estimator.score(X_train, y_train)
-        _append_info(experiment, "train_score", train_score)
+        _append_info(experiment, "train_score", float(train_score))
 
     for output in ("transform", "predict"):
         method = getattr(estimator, output, None)
         if method is not None:
             with _add_timing(experiment, f"{output}_time"):
                 _append_info(experiment, f"{output}", method(X_test))
+
+
+def _compute_means(experiment: Experiment):
+
+    experiment.info["score_mean"] = float(
+        np.nanmean(experiment.info["test_score"])
+    )
+    experiment.info["score_std"] = float(
+        np.nanstd(experiment.info["test_score"])
+    )
 
 
 def _benchmark_one(
@@ -193,8 +205,7 @@ def _benchmark_one(
         save_train=save_train,
     )
 
-    experiment.info["score_mean"] = np.nanmean(experiment.info["test_score"])
-    experiment.info["score_std"] = np.nanstd(experiment.info["test_score"])
+    _compute_means(experiment)
 
 
 def _benchmark_partitions(
@@ -206,7 +217,7 @@ def _benchmark_partitions(
 ) -> None:
     """Use several partitions."""
     for X_train, y_train, X_test, y_test in _iterate_outer_cv(
-        outer_cv=data.outer_cv,
+        outer_cv=getattr(data, "outer_cv", None),
         estimator=estimator,
         X=data.data,
         y=data.target,
@@ -222,8 +233,31 @@ def _benchmark_partitions(
             save_train=save_train,
         )
 
-    experiment.info["score_mean"] = np.nanmean(experiment.info["test_score"])
-    experiment.info["score_std"] = np.nanstd(experiment.info["test_score"])
+    _compute_means(experiment)
+
+
+def _benchmark(
+    experiment: Experiment,
+    *,
+    estimator: BaseEstimator,
+    data: Bunch,
+    save_train: bool = False,
+) -> None:
+    """Run the experiment."""
+    if getattr(data, "test_indices", None):
+        _benchmark_one(
+            experiment=experiment,
+            estimator=estimator,
+            data=data,
+            save_train=save_train,
+        )
+    else:
+        _benchmark_partitions(
+            experiment=experiment,
+            estimator=estimator,
+            data=data,
+            save_train=save_train,
+        )
 
 
 def experiment(
@@ -281,19 +315,126 @@ def experiment(
             e = estimator()
 
         # Model assessment
-        if getattr(data, "test_indices", None):
-            _benchmark_one(
-                experiment=experiment,
-                estimator=e,
-                data=data,
-                save_train=save_train,
-            )
-        elif getattr(data, "outer_cv", None) is not None:
-            _benchmark_partitions(
-                experiment=experiment,
-                estimator=e,
-                data=data,
-                save_train=save_train,
-            )
+        _benchmark(
+            experiment=experiment,
+            estimator=e,
+            data=data,
+            save_train=save_train,
+        )
 
     return experiment
+
+
+def _get_estimator_function(
+    experiment: Experiment,
+    estimator: EstimatorProtocol[Any, Any]
+        | Callable[..., EstimatorProtocol[Any, Any]],
+) -> Callable[..., EstimatorProtocol[Any, Any]]:
+
+    if hasattr(estimator, "fit"):
+        def estimator_function() -> EstimatorProtocol:
+            return estimator
+    else:
+        estimator_function = estimator
+
+    return experiment.capture(estimator_function)
+
+
+def _get_dataset_function(
+    experiment: Experiment,
+    dataset: Bunch | Callable[..., Bunch],
+) -> Callable[..., Bunch]:
+
+    if callable(dataset):
+        dataset_function = dataset
+    else:
+        def dataset_function() -> Bunch:
+            return dataset
+
+    return experiment.capture(dataset_function)
+
+
+def _create_one_experiment(
+    *,
+    estimator: EstimatorProtocol[Any, Any] | Callable[
+        ...,
+        EstimatorProtocol[Any, Any],
+    ],
+    dataset: Bunch | Callable[..., Bunch],
+    storage: RunObserver,
+    configs: Sequence[ConfigLike],
+    ignore_dataset_validation: bool = False,
+    save_train: bool = False,
+) -> Experiment:
+    experiment = Experiment()
+
+    for config in configs:
+        experiment.add_config(config)
+
+    experiment.observers.append(storage)
+
+    estimator_function = _get_estimator_function(experiment, estimator)
+    dataset_function = _get_dataset_function(experiment, dataset)
+
+    @experiment.main
+    def run() -> None:
+        """Run the experiment."""
+        dataset = dataset_function()
+
+        # Metaparameter search
+        cv = getattr(dataset, "inner_cv", None)
+
+        estimator = estimator_function()
+        if hasattr(estimator, "cv") and not ignore_dataset_validation:
+            estimator.cv = cv
+
+        # Model assessment
+        _benchmark(
+            experiment=experiment,
+            estimator=estimator,
+            data=dataset,
+            save_train=save_train,
+        )
+
+    return experiment
+
+
+def create_experiments(
+    *,
+    estimators: Sequence[
+        EstimatorProtocol[Any, Any]
+        | Callable[..., EstimatorProtocol[Any, Any]]
+    ],
+    datasets: Sequence[Bunch | Callable[..., Bunch]],
+    storage: RunObserver | str,
+    estimator_configs: Sequence[ConfigLike] | None = None,
+    dataset_configs: Sequence[ConfigLike] | None = None,
+    config: ConfigLike | None = None,
+    ignore_dataset_validation: bool = False,
+    save_train: bool = False,
+) -> Sequence[Experiment]:
+
+    if isinstance(storage, str):
+        storage = FileStorageObserver(storage)
+
+    if estimator_configs is None:
+        estimator_configs = [{}] * len(estimators)
+
+    if dataset_configs is None:
+        dataset_configs = [{}] * len(datasets)
+
+    if config is None:
+        config = {}
+
+    return [
+        _create_one_experiment(
+            estimator=estimator,
+            dataset=dataset,
+            storage=storage,
+            configs=[config, estimator_config, dataset_config],
+            ignore_dataset_validation=ignore_dataset_validation,
+            save_train=save_train,
+        )
+        for estimator, estimator_config in zip(estimators, estimator_configs)
+        for dataset, dataset_config in zip(datasets, dataset_configs)
+    ]

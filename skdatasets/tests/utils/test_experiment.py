@@ -4,16 +4,18 @@
 """
 from __future__ import annotations
 
+import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
 from sacred.observers import FileStorageObserver
-from sklearn.datasets import load_boston
+from sklearn.datasets import load_boston, load_iris, load_wine
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import Bunch
 
-from skdatasets.utils.experiment import experiment
+from skdatasets.utils.experiment import create_experiments, experiment
 
 if TYPE_CHECKING:
     from skdatasets.utils.experiment import CVLike
@@ -134,3 +136,23 @@ def test_explicit_nested_folds() -> None:
             (np.arange(20, 30), np.arange(30, 40)),
         ],
     )
+
+
+def test_create_experiments_basic() -> None:
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        experiments = create_experiments(
+            estimators=[
+                KNeighborsClassifier(n_neighbors=3),
+                KNeighborsClassifier(n_neighbors=5),
+                KNeighborsClassifier(n_neighbors=7),
+            ],
+            datasets=[
+                load_iris(),
+                load_wine(),
+            ],
+            storage=tmpdirname,
+        )
+
+        for e in experiments:
+            e.run()
