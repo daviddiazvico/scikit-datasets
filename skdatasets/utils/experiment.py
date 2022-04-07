@@ -15,14 +15,17 @@ from typing import (IO, TYPE_CHECKING, Any, Callable, Iterable, Iterator, List,
                     Mapping, Sequence, Tuple, TypeVar, Union)
 from warnings import warn
 
+import joblib
 import numpy as np
 from sacred import Experiment, Ingredient
-from sacred.observers import FileStorageObserver, RunObserver
+from sacred.observers import FileStorageObserver, MongoObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
 
 if TYPE_CHECKING:
+    from incense import FileSystemExperimentLoader, ExperimentLoader
+
     if sys.version_info >= (3, 8):
         from typing import Protocol
     else:
@@ -135,6 +138,14 @@ def _benchmark_from_data(
     y_test: TargetType,
     save_train: bool = False,
 ) -> None:
+    if "estimator_hash" not in experiment.info:
+        experiment.info["estimator_hash"] = joblib.hash(estimator)
+
+    if "data_hash" not in experiment.info:
+        experiment.info["data_hash"] = joblib.hash(
+            (X_train, y_train, X_test, y_test),
+        )
+
     with _add_timing(experiment, "fit_time"):
         estimator.fit(X_train, y_train)
 
@@ -438,3 +449,45 @@ def create_experiments(
         for estimator, estimator_config in zip(estimators, estimator_configs)
         for dataset, dataset_config in zip(datasets, dataset_configs)
     ]
+
+
+def _loader_from_observer(
+    storage: RunObserver | str,
+) -> ExperimentLoader | FileSystemExperimentLoader:
+
+    if isinstance(storage, str):
+        return FileSystemExperimentLoader(storage)
+    elif isinstance(storage, FileStorageObserver):
+        return FileSystemExperimentLoader(storage.basedir)
+    elif isinstance(storage, MongoObserver):
+        database = storage.runs.database
+        client = database.client
+        url, port = list(
+            client.topology_description.server_descriptions().keys(),
+        )[0]
+
+        return ExperimentLoader(
+            mongo_uri=f"mongodb://{url}:{port}/",
+            db_name=database.name,
+        )
+
+    raise ValueError(f"Observer {storage} is not supported.")
+
+
+def fetch_score_matrices(
+    storage: RunObserver | str,
+    ids: Sequence[int],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[float]]:
+
+    loader = _loader_from_observer(storage)
+
+    load_ids_fun = getattr(
+        loader,
+        "find_by_ids",
+        lambda id_seq: [
+            loader.find_by_ids(experiment_id)
+            for experiment_id in id_seq
+        ],
+    )
+
+    experiments = load_ids_fun(ids)
