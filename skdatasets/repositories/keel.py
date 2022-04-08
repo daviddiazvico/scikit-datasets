@@ -11,8 +11,18 @@ import os
 import sys
 from pathlib import Path
 from types import MappingProxyType
-from typing import (TYPE_CHECKING, AbstractSet, Any, Iterator, Optional,
-                    Sequence, Tuple, Union, overload)
+from typing import (
+    AbstractSet,
+    Any,
+    Final,
+    Iterator,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 from zipfile import ZipFile
 
 import numpy as np
@@ -20,12 +30,6 @@ import pandas as pd
 from sklearn.utils import Bunch
 
 from .base import fetch_file
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Final, Literal
-    else:
-        from typing_extensions import Final, Literal
 
 BASE_URL = 'http://sci2s.ugr.es/keel'
 COLLECTIONS: Final = frozenset((

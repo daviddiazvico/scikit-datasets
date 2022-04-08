@@ -1,0 +1,56 @@
+[project]
+name = "scikit-datasets"
+version = "0.2.0"
+description = "Scikit-learn-compatible datasets"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+keywords = ["scikit-learn", "datasets", "repository", "benchmark", "Python"]
+authors = [
+  {name = "David Diaz Vico", email = "david.diaz.vico@outlook.com"},
+  {name = "Carlos Ramos Carreño", email = "vnmabus@gmail.com"},
+]
+maintainers = [
+  {name = "David Diaz Vico", email = "david.diaz.vico@outlook.com"},
+  {name = "Carlos Ramos Carreño", email = "vnmabus@gmail.com"},
+]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+]
+
+dependencies = [
+  "numpy",
+  "scipy",
+  "scikit-learn",
+]
+
+[project.optional-dependencies]
+cran = ["rdata"]
+forex = ["forex_python>=1.6"]
+keel = ["pandas"]
+keras = ["tensorflow"]
+utils-estimator = ["jsonpickle"]
+utils-experiments = ["sacred"]
+utils-scores = ["statsmodels"]
+all = ["scikit-datasets[cran,forex,keel,keras,utils-estimator,utils-experiments,utils-scores]"]
+test = [
+  "pytest",
+  "pytest-cov[all]",
+  "coverage",
+  "scikit-datasets[all]",
+]
+
+[project.urls]
+homepage = "https://github.com/daviddiazvico/scikit-datasets"
+documentation = "https://daviddiazvico.github.io/scikit-datasets/"
+repository = "https://github.com/daviddiazvico/scikit-datasets"
+download = "https://github.com/daviddiazvico/scikit-datasets/archive/v0.2.0.tar.gz"
+
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = ["setuptools", "wheel"]  # PEP 508 specifications.

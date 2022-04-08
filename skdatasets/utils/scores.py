@@ -6,37 +6,36 @@ from __future__ import annotations
 
 import itertools as it
 import sys
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
+from typing import Any, Literal, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy.stats import (friedmanchisquare, kruskal, mannwhitneyu, rankdata,
-                         wilcoxon)
+from scipy.stats import (
+    friedmanchisquare,
+    kruskal,
+    mannwhitneyu,
+    rankdata,
+    wilcoxon,
+)
 from statsmodels.sandbox.stats.multicomp import multipletests
 
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Literal
-    else:
-        from typing_extensions import Literal
+CorrectionLike = Literal[
+    None,
+    'bonferroni',
+    'sidak',
+    'holm-sidak',
+    'holm',
+    'simes-hochberg',
+    'hommel',
+    'fdr_bh',
+    'fdr_by',
+    'fdr_tsbh',
+    'fdr_tsbky',
+]
 
-    CorrectionLike = Literal[
-        None,
-        'bonferroni',
-        'sidak',
-        'holm-sidak',
-        'holm',
-        'simes-hochberg',
-        'hommel',
-        'fdr_bh',
-        'fdr_by',
-        'fdr_tsbh',
-        'fdr_tsbky',
-    ]
+MultitestLike = Literal['kruskal', 'friedmanchisquare']
 
-    MultitestLike = Literal['kruskal', 'friedmanchisquare']
-
-    TestLike = Literal['mannwhitneyu', 'wilcoxon']
+TestLike = Literal['mannwhitneyu', 'wilcoxon']
 
 
 def scores_table(
