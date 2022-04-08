@@ -29,7 +29,7 @@ jobs:
       run: |
         pip3 debug --verbose .
         pip3 install --upgrade-strategy eager -v ".[test]"
-        coverage run --source=skdatasets/ setup.py test;
+        coverage run --source=skdatasets/ pytest;
         coverage xml -o coverage.xml # explicitely exporting coverage file to be read by coverage report command.
 
     - name: Archive code coverage results
