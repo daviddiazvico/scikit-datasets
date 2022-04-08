@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Sequence, Tuple, overload
+from typing import Final, Literal, Sequence, Tuple, overload
 from urllib.error import HTTPError
 
 import numpy as np
@@ -18,12 +18,6 @@ from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
 
 from .base import fetch_file
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Final, Literal
-    else:
-        from typing_extensions import Final, Literal
 
 BASE_URL: Final = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
 COLLECTIONS: Final = frozenset((

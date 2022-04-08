@@ -27,9 +27,9 @@ jobs:
 
     - name: Run tests
       run: |
-        pip3 debug --verbose .
-        pip3 install --upgrade-strategy eager -v ".[cran,forex,keel,keras,utils.estimator,utils.experiments,utils.scores]"
-        coverage run --source=skdatasets/ setup.py test;
+        #pip3 debug --verbose .
+        pip3 install --upgrade-strategy eager -v ".[test]"
+        coverage run --source=skdatasets/ -m pytest;
         coverage xml -o coverage.xml # explicitely exporting coverage file to be read by coverage report command.
 
     - name: Archive code coverage results

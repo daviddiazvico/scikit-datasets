@@ -5,20 +5,62 @@ Keras datasets (https://keras.io/datasets).
 @license: MIT
 """
 
+from __future__ import annotations
+
+from typing import Any, Literal, Tuple, overload
+
 import numpy as np
 from sklearn.utils import Bunch
 
-from keras.datasets import (boston_housing, cifar10, cifar100, fashion_mnist,
-                            imdb, mnist, reuters)
+from tensorflow.keras.datasets import (
+    boston_housing,
+    cifar10,
+    cifar100,
+    fashion_mnist,
+    imdb,
+    mnist,
+    reuters,
+)
 
-DATASETS = {'boston_housing': boston_housing.load_data,
-            'cifar10': cifar10.load_data, 'cifar100': cifar100.load_data,
-            'fashion_mnist': fashion_mnist.load_data, 'imdb': imdb.load_data,
-            'mnist': mnist.load_data, 'reuters': reuters.load_data}
+DATASETS = {
+    'boston_housing': boston_housing.load_data,
+    'cifar10': cifar10.load_data,
+    'cifar100': cifar100.load_data,
+    'fashion_mnist': fashion_mnist.load_data,
+    'imdb': imdb.load_data,
+    'mnist': mnist.load_data,
+    'reuters': reuters.load_data,
+}
 
 
-def fetch(name, *, return_X_y=False, **kwargs):
-    """Fetch Keras dataset.
+@overload
+def fetch(
+    name: str,
+    *,
+    return_X_y: Literal[False] = False,
+    **kwargs: Any,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    *,
+    return_X_y: Literal[True],
+    **kwargs: Any,
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]:
+    pass
+
+
+def fetch(
+    name: str,
+    *,
+    return_X_y: bool = False,
+    **kwargs: Any,
+) -> Bunch | Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]:
+    """
+    Fetch Keras dataset.
 
     Fetch a Keras dataset by name. More info at https://keras.io/datasets.
 
