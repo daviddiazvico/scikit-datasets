@@ -10,20 +10,22 @@ from __future__ import annotations
 import hashlib
 import sys
 from pathlib import Path
-from typing import (TYPE_CHECKING, Iterator, Optional, Sequence, Tuple, Union,
-                    overload)
+from typing import (
+    Final,
+    Iterator,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 import numpy as np
 from scipy.io import loadmat
 from sklearn.utils import Bunch
 
 from .base import fetch_file
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Final, Literal
-    else:
-        from typing_extensions import Final, Literal
 
 DATASETS: Final = frozenset((
     'banana',

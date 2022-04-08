@@ -8,19 +8,13 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, overload
+from typing import Any, Literal, Optional, Tuple, Union, overload
 
 import numpy as np
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.utils import Bunch
 
 from .base import fetch_file
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Literal
-    else:
-        from typing_extensions import Literal
 
 BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
 

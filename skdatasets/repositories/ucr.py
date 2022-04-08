@@ -8,19 +8,13 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union, overload
+from typing import Final, Literal, Optional, Sequence, Tuple, Union, overload
 
 import numpy as np
 import scipy.io.arff
 from sklearn.utils import Bunch
 
 from .base import fetch_zip as _fetch_zip
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Final, Literal
-    else:
-        from typing_extensions import Final, Literal
 
 BASE_URL: Final = 'http://www.timeseriesclassification.com/Downloads/'
 

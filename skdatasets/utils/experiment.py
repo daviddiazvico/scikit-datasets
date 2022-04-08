@@ -11,8 +11,22 @@ from contextlib import contextmanager
 from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time
-from typing import (IO, TYPE_CHECKING, AbstractSet, Any, Callable, Iterable,
-                    Iterator, List, Mapping, Sequence, Tuple, TypeVar, Union)
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    AbstractSet,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Protocol,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from warnings import warn
 
 import numpy as np
@@ -22,67 +36,66 @@ from sklearn.base import BaseEstimator, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
 
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from typing import Protocol
-    else:
-        from typing_extensions import Protocol
+SelfType = TypeVar("SelfType")
 
-    SelfType = TypeVar("SelfType")
 
-    class DataLike(Protocol):
+class DataLike(Protocol):
 
-        def __getitem__(
-            self: SelfType,
-            key: np.typing.NDArray[int],
-        ) -> SelfType:
-            pass
+    def __getitem__(
+        self: SelfType,
+        key: np.typing.NDArray[int],
+    ) -> SelfType:
+        pass
 
-        def __len__(self) -> int:
-            pass
+    def __len__(self) -> int:
+        pass
 
-    DataType = TypeVar("DataType", bound=DataLike, contravariant=True)
-    TargetType = TypeVar("TargetType", bound=DataLike)
-    IndicesType = Tuple[np.typing.NDArray[int], np.typing.NDArray[int]]
-    ExplicitSplitType = Tuple[
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[float, int]],
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[float, int]],
-    ]
 
-    class EstimatorProtocol(Protocol[DataType, TargetType]):
+DataType = TypeVar("DataType", bound=DataLike, contravariant=True)
+TargetType = TypeVar("TargetType", bound=DataLike)
+IndicesType = Tuple[np.typing.NDArray[int], np.typing.NDArray[int]]
+ExplicitSplitType = Tuple[
+    np.typing.NDArray[float],
+    np.typing.NDArray[Union[float, int]],
+    np.typing.NDArray[float],
+    np.typing.NDArray[Union[float, int]],
+]
 
-        def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
-            pass
 
-        def predict(self, X: DataType) -> TargetType:
-            pass
+class EstimatorProtocol(Protocol[DataType, TargetType]):
 
-    class CVSplitter(Protocol):
+    def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
+        pass
 
-        def split(
-            self,
-            X: np.typing.NDArray[float],
-            y: None = None,
-            groups: None = None,
-        ) -> Iterable[IndicesType]:
-            pass
+    def predict(self, X: DataType) -> TargetType:
+        pass
 
-        def get_n_splits(
-            self,
-            X: np.typing.NDArray[float],
-            y: None = None,
-            groups: None = None,
-        ) -> int:
-            pass
 
-    CVLike = Union[
-        CVSplitter,
-        Iterable[IndicesType],
-        int,
-        None,
-    ]
+class CVSplitter(Protocol):
+
+    def split(
+        self,
+        X: np.typing.NDArray[float],
+        y: None = None,
+        groups: None = None,
+    ) -> Iterable[IndicesType]:
+        pass
+
+    def get_n_splits(
+        self,
+        X: np.typing.NDArray[float],
+        y: None = None,
+        groups: None = None,
+    ) -> int:
+        pass
+
+
+CVLike = Union[
+    CVSplitter,
+    Iterable[IndicesType],
+    int,
+    None,
+]
 
 
 def _append_info(experiment: Experiment, name: str, value: Any) -> None:
