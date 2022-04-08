@@ -33,7 +33,7 @@ dependencies = [
 cran = ["rdata"]
 forex = ["forex_python>=1.6"]
 keel = ["pandas"]
-keras = ["keras"]
+keras = ["tensorflow"]
 utils-estimator = ["jsonpickle"]
 utils-experiments = ["sacred"]
 utils-scores = ["statsmodels"]
