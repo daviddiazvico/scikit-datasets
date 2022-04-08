@@ -46,6 +46,7 @@ test = [
 ]
 
 [project.urls]
+homepage = "https://github.com/daviddiazvico/scikit-datasets"
 documentation = "https://daviddiazvico.github.io/scikit-datasets/"
 repository = "https://github.com/daviddiazvico/scikit-datasets"
 download = "https://github.com/daviddiazvico/scikit-datasets/archive/v0.2.0.tar.gz"
