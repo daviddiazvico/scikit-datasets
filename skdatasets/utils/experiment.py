@@ -11,83 +11,113 @@ from contextlib import contextmanager
 from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time
-from typing import (IO, TYPE_CHECKING, Any, Callable, Iterable, Iterator, List,
-                    Mapping, Sequence, Tuple, TypeVar, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Mapping,
+    NamedTuple,
+    Protocol,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from warnings import warn
 
 import joblib
 import numpy as np
+from incense import ExperimentLoader, FileSystemExperimentLoader
 from sacred import Experiment, Ingredient
 from sacred.observers import FileStorageObserver, MongoObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
 
-if TYPE_CHECKING:
-    from incense import FileSystemExperimentLoader, ExperimentLoader
+SelfType = TypeVar("SelfType")
 
-    if sys.version_info >= (3, 8):
-        from typing import Protocol
-    else:
-        from typing_extensions import Protocol
 
-    SelfType = TypeVar("SelfType")
+class DataLike(Protocol):
 
-    class DataLike(Protocol):
+    def __getitem__(
+        self: SelfType,
+        key: np.typing.NDArray[int],
+    ) -> SelfType:
+        pass
 
-        def __getitem__(
-            self: SelfType,
-            key: np.typing.NDArray[int],
-        ) -> SelfType:
-            pass
+    def __len__(self) -> int:
+        pass
 
-        def __len__(self) -> int:
-            pass
 
-    DataType = TypeVar("DataType", bound=DataLike, contravariant=True)
-    TargetType = TypeVar("TargetType", bound=DataLike)
-    IndicesType = Tuple[np.typing.NDArray[int], np.typing.NDArray[int]]
-    ExplicitSplitType = Tuple[
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[float, int]],
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[float, int]],
-    ]
+DataType = TypeVar("DataType", bound=DataLike, contravariant=True)
+TargetType = TypeVar("TargetType", bound=DataLike)
+IndicesType = Tuple[np.typing.NDArray[int], np.typing.NDArray[int]]
+ExplicitSplitType = Tuple[
+    np.typing.NDArray[float],
+    np.typing.NDArray[Union[float, int]],
+    np.typing.NDArray[float],
+    np.typing.NDArray[Union[float, int]],
+]
 
-    ConfigLike = Union[
-        Mapping[str, Any],
-        str,
-    ]
+ConfigLike = Union[
+    Mapping[str, Any],
+    str,
+]
 
-    class EstimatorProtocol(Protocol[DataType, TargetType]):
 
-        def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
-            pass
+class EstimatorProtocol(Protocol[DataType, TargetType]):
 
-    class CVSplitter(Protocol):
+    def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
+        pass
 
-        def split(
-            self,
-            X: np.typing.NDArray[float],
-            y: None = None,
-            groups: None = None,
-        ) -> Iterable[IndicesType]:
-            pass
 
-        def get_n_splits(
-            self,
-            X: np.typing.NDArray[float],
-            y: None = None,
-            groups: None = None,
-        ) -> int:
-            pass
+class CVSplitter(Protocol):
 
-    CVLike = Union[
-        CVSplitter,
-        Iterable[IndicesType],
-        int,
-        None,
-    ]
+    def split(
+        self,
+        X: np.typing.NDArray[float],
+        y: None = None,
+        groups: None = None,
+    ) -> Iterable[IndicesType]:
+        pass
+
+    def get_n_splits(
+        self,
+        X: np.typing.NDArray[float],
+        y: None = None,
+        groups: None = None,
+    ) -> int:
+        pass
+
+
+CVLike = Union[
+    CVSplitter,
+    Iterable[IndicesType],
+    int,
+    None,
+]
+
+
+EstimatorLike = Union[
+    EstimatorProtocol[Any, Any],
+    Callable[..., EstimatorProtocol[Any, Any]],
+    Tuple[Callable[..., EstimatorProtocol[Any, Any]], ConfigLike],
+]
+
+DatasetLike = Union[
+    Bunch,
+    Callable[..., Bunch],
+    Tuple[Callable[..., Bunch], ConfigLike],
+]
+
+
+class ScoresInfo(NamedTuple):
+    dataset_names: Sequence[str]
+    estimator_names: Sequence[str]
+    scores_mean: np.typing.NDArray[float]
+    scores_std: np.typing.NDArray[float]
 
 
 def _append_info(experiment: Experiment, name: str, value: Any) -> None:
@@ -138,14 +168,6 @@ def _benchmark_from_data(
     y_test: TargetType,
     save_train: bool = False,
 ) -> None:
-    if "estimator_hash" not in experiment.info:
-        experiment.info["estimator_hash"] = joblib.hash(estimator)
-
-    if "data_hash" not in experiment.info:
-        experiment.info["data_hash"] = joblib.hash(
-            (X_train, y_train, X_test, y_test),
-        )
-
     with _add_timing(experiment, "fit_time"):
         estimator.fit(X_train, y_train)
 
@@ -338,8 +360,7 @@ def experiment(
 
 def _get_estimator_function(
     experiment: Experiment,
-    estimator: EstimatorProtocol[Any, Any]
-        | Callable[..., EstimatorProtocol[Any, Any]],
+    estimator: EstimatorLike,
 ) -> Callable[..., EstimatorProtocol[Any, Any]]:
 
     if hasattr(estimator, "fit"):
@@ -353,7 +374,7 @@ def _get_estimator_function(
 
 def _get_dataset_function(
     experiment: Experiment,
-    dataset: Bunch | Callable[..., Bunch],
+    dataset: DatasetLike,
 ) -> Callable[..., Bunch]:
 
     if callable(dataset):
@@ -367,20 +388,28 @@ def _get_dataset_function(
 
 def _create_one_experiment(
     *,
-    estimator: EstimatorProtocol[Any, Any] | Callable[
-        ...,
-        EstimatorProtocol[Any, Any],
-    ],
-    dataset: Bunch | Callable[..., Bunch],
+    estimator_name: str,
+    estimator: EstimatorLike,
+    dataset_name: str,
+    dataset: DatasetLike,
     storage: RunObserver,
-    configs: Sequence[ConfigLike],
+    config: ConfigLike,
     ignore_dataset_validation: bool = False,
     save_train: bool = False,
 ) -> Experiment:
     experiment = Experiment()
 
-    for config in configs:
-        experiment.add_config(config)
+    experiment.add_config(config)
+
+    experiment.add_config({"estimator_name": estimator_name})
+    if isinstance(estimator, tuple):
+        estimator, estimator_config = estimator
+        experiment.add_config(estimator_config)
+
+    experiment.add_config({"dataset_name": dataset_name})
+    if isinstance(dataset, tuple):
+        dataset, dataset_config = dataset
+        experiment.add_config(dataset_config)
 
     experiment.observers.append(storage)
 
@@ -412,11 +441,8 @@ def _create_one_experiment(
 
 def create_experiments(
     *,
-    estimators: Sequence[
-        EstimatorProtocol[Any, Any]
-        | Callable[..., EstimatorProtocol[Any, Any]]
-    ],
-    datasets: Sequence[Bunch | Callable[..., Bunch]],
+    estimators: Mapping[str, EstimatorLike],
+    datasets: Mapping[str, DatasetLike],
     storage: RunObserver | str,
     estimator_configs: Sequence[ConfigLike] | None = None,
     dataset_configs: Sequence[ConfigLike] | None = None,
@@ -439,16 +465,25 @@ def create_experiments(
 
     return [
         _create_one_experiment(
+            estimator_name=estimator_name,
             estimator=estimator,
+            dataset_name=dataset_name,
             dataset=dataset,
             storage=storage,
-            configs=[config, estimator_config, dataset_config],
+            config=config,
             ignore_dataset_validation=ignore_dataset_validation,
             save_train=save_train,
         )
-        for estimator, estimator_config in zip(estimators, estimator_configs)
-        for dataset, dataset_config in zip(datasets, dataset_configs)
+        for estimator_name, estimator in estimators.items()
+        for dataset_name, dataset in datasets.items()
     ]
+
+
+def run_experiments(
+    experiments: Sequence[Experiment],
+) -> Sequence[int]:
+
+    return [e.run()._id for e in experiments]
 
 
 def _loader_from_observer(
@@ -474,10 +509,11 @@ def _loader_from_observer(
     raise ValueError(f"Observer {storage} is not supported.")
 
 
-def fetch_score_matrices(
+def fetch_scores(
+    *,
     storage: RunObserver | str,
     ids: Sequence[int],
-) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[float]]:
+) -> ScoresInfo:
 
     loader = _loader_from_observer(storage)
 
@@ -485,9 +521,56 @@ def fetch_score_matrices(
         loader,
         "find_by_ids",
         lambda id_seq: [
-            loader.find_by_ids(experiment_id)
+            loader.find_by_id(experiment_id)
             for experiment_id in id_seq
         ],
     )
 
     experiments = load_ids_fun(ids)
+
+    dict_experiments: Dict[str, Dict[str, Tuple[float, float]]] = {}
+    estimator_list = []
+    dataset_list = []
+
+    for experiment in experiments:
+        estimator_name = experiment.config["estimator_name"]
+        if estimator_name not in estimator_list:
+            estimator_list.append(estimator_name)
+        dataset_name = experiment.config["dataset_name"]
+        if dataset_name not in dataset_list:
+            dataset_list.append(dataset_name)
+        score_mean = experiment.info["score_mean"]
+        score_std = experiment.info["score_std"]
+
+        if estimator_name not in dict_experiments:
+            dict_experiments[estimator_name] = {}
+
+        if dataset_name in dict_experiments[estimator_name]:
+            raise ValueError(
+                f"Repeated experiment: ({estimator_name}, {dataset_name})",
+            )
+
+        dict_experiments[estimator_name][dataset_name] = (
+            score_mean,
+            score_std,
+        )
+
+    estimator_names = tuple(estimator_list)
+    dataset_names = tuple(dataset_list)
+    matrix_shape = (len(dataset_names), len(estimator_names))
+
+    scores_mean = np.full(matrix_shape, np.nan)
+    scores_std = np.full(matrix_shape, np.nan)
+
+    for i, dataset_name in enumerate(dataset_names):
+        for j, estimator_name in enumerate(estimator_names):
+            mean, std = dict_experiments[estimator_name][dataset_name]
+            scores_mean[i, j] = mean
+            scores_std[i, j] = std
+
+    return ScoresInfo(
+        dataset_names=dataset_names,
+        estimator_names=estimator_names,
+        scores_mean=scores_mean,
+        scores_std=scores_std,
+    )
