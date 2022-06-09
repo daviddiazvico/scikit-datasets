@@ -9,17 +9,18 @@ from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
 from sacred.observers import FileStorageObserver
+from sklearn.datasets import load_boston, load_iris, load_wine
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.utils import Bunch
+
 from skdatasets.utils.experiment import (
     create_experiments,
     experiment,
     fetch_scores,
     run_experiments,
 )
-from sklearn.datasets import load_boston, load_iris, load_wine
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.utils import Bunch
 
 if TYPE_CHECKING:
     from skdatasets.utils.experiment import CVLike
@@ -64,16 +65,17 @@ def _experiment(
     inner_cv: CVLike,
     outer_cv: CVLike | Iterable[ExplicitSplitType],
 ) -> None:
-    e = experiment(_dataset, _estimator)
-    e.observers.append(FileStorageObserver('.results'))
-    e.run(
-        config_updates={
-            'dataset': {
-                'inner_cv': inner_cv,
-                'outer_cv': outer_cv,
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        e = experiment(_dataset, _estimator)
+        e.observers.append(FileStorageObserver(tmpdirname))
+        e.run(
+            config_updates={
+                'dataset': {
+                    'inner_cv': inner_cv,
+                    'outer_cv': outer_cv,
+                },
             },
-        },
-    )
+        )
 
 
 def test_nested_cv() -> None:
