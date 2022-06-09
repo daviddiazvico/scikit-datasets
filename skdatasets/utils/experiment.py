@@ -12,6 +12,7 @@ from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time
 from typing import (
+<<<<<<< HEAD
     Any,
     Callable,
     Dict,
@@ -19,6 +20,17 @@ from typing import (
     Iterator,
     Mapping,
     NamedTuple,
+=======
+    IO,
+    TYPE_CHECKING,
+    AbstractSet,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+>>>>>>> refs/heads/master
     Protocol,
     Sequence,
     Tuple,
@@ -61,15 +73,31 @@ ExplicitSplitType = Tuple[
     np.typing.NDArray[Union[float, int]],
 ]
 
+<<<<<<< HEAD
 ConfigLike = Union[
     Mapping[str, Any],
     str,
 ]
+=======
+>>>>>>> refs/heads/master
 
-
+<<<<<<< HEAD
+=======
 class EstimatorProtocol(Protocol[DataType, TargetType]):
+>>>>>>> refs/heads/master
 
+<<<<<<< HEAD
+class EstimatorProtocol(Protocol[DataType, TargetType]):
+=======
     def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
+        pass
+>>>>>>> refs/heads/master
+
+<<<<<<< HEAD
+    def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
+=======
+    def predict(self, X: DataType) -> TargetType:
+>>>>>>> refs/heads/master
         pass
 
 
@@ -98,6 +126,7 @@ CVLike = Union[
     int,
     None,
 ]
+<<<<<<< HEAD
 
 
 EstimatorLike = Union[
@@ -118,6 +147,8 @@ class ScoresInfo(NamedTuple):
     estimator_names: Sequence[str]
     scores_mean: np.typing.NDArray[float]
     scores_std: np.typing.NDArray[float]
+=======
+>>>>>>> refs/heads/master
 
 
 def _append_info(experiment: Experiment, name: str, value: Any) -> None:
