@@ -35,11 +35,7 @@ forex = ["forex_python>=1.6"]
 keel = ["pandas"]
 keras = ["tensorflow"]
 utils-estimator = ["jsonpickle"]
-<<<<<<< HEAD
 utils-experiments = ["sacred", "incense"]
-=======
-utils-experiments = ["sacred"]
->>>>>>> refs/heads/master
 utils-scores = ["statsmodels"]
 all = ["scikit-datasets[cran,forex,keel,keras,utils-estimator,utils-experiments,utils-scores]"]
 test = [

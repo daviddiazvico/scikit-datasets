@@ -12,7 +12,6 @@ from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time
 from typing import (
-<<<<<<< HEAD
     Any,
     Callable,
     Dict,
@@ -20,17 +19,6 @@ from typing import (
     Iterator,
     Mapping,
     NamedTuple,
-=======
-    IO,
-    TYPE_CHECKING,
-    AbstractSet,
-    Any,
-    Callable,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
->>>>>>> refs/heads/master
     Protocol,
     Sequence,
     Tuple,
@@ -41,12 +29,13 @@ from warnings import warn
 
 import joblib
 import numpy as np
-from incense import ExperimentLoader, FileSystemExperimentLoader
 from sacred import Experiment, Ingredient
 from sacred.observers import FileStorageObserver, MongoObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
+
+from incense import ExperimentLoader, FileSystemExperimentLoader
 
 SelfType = TypeVar("SelfType")
 
@@ -73,31 +62,18 @@ ExplicitSplitType = Tuple[
     np.typing.NDArray[Union[float, int]],
 ]
 
-<<<<<<< HEAD
 ConfigLike = Union[
     Mapping[str, Any],
     str,
 ]
-=======
->>>>>>> refs/heads/master
 
-<<<<<<< HEAD
-=======
-class EstimatorProtocol(Protocol[DataType, TargetType]):
->>>>>>> refs/heads/master
 
-<<<<<<< HEAD
 class EstimatorProtocol(Protocol[DataType, TargetType]):
-=======
+
     def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
         pass
->>>>>>> refs/heads/master
 
-<<<<<<< HEAD
-    def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
-=======
     def predict(self, X: DataType) -> TargetType:
->>>>>>> refs/heads/master
         pass
 
 
@@ -126,8 +102,6 @@ CVLike = Union[
     int,
     None,
 ]
-<<<<<<< HEAD
-
 
 EstimatorLike = Union[
     EstimatorProtocol[Any, Any],
@@ -147,8 +121,6 @@ class ScoresInfo(NamedTuple):
     estimator_names: Sequence[str]
     scores_mean: np.typing.NDArray[float]
     scores_std: np.typing.NDArray[float]
-=======
->>>>>>> refs/heads/master
 
 
 def _append_info(experiment: Experiment, name: str, value: Any) -> None:
