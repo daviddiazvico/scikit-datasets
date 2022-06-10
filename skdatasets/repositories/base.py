@@ -21,6 +21,14 @@ OpenMethod = Callable[
 ]
 
 
+class DatasetNotFoundError(ValueError):
+    """Exception raised for dataset not found."""
+
+    def __init__(self, dataset_name: str) -> None:
+        self.dataset_name = dataset_name
+        super().__init__(f"Dataset '{dataset_name}' not found.")
+
+
 def fetch_file(
     dataname: str,
     urlname: str,
@@ -64,7 +72,7 @@ def fetch_file(
             data_url = urlopen(urlname)
         except HTTPError as e:
             if e.code == 404:
-                e.msg = "Dataset '%s' not found." % dataname
+                raise DatasetNotFoundError(dataname) from e
             raise
         # store file
         try:
