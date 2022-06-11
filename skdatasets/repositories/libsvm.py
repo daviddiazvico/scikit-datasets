@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import sys
 from typing import Final, Literal, Sequence, Tuple, overload
-from urllib.error import HTTPError
 
 import numpy as np
 import scipy as sp
@@ -17,7 +16,7 @@ from sklearn.datasets import load_svmlight_file, load_svmlight_files
 from sklearn.model_selection import PredefinedSplit
 from sklearn.utils import Bunch
 
-from .base import fetch_file
+from .base import DatasetNotFoundError, fetch_file
 
 BASE_URL: Final = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
 COLLECTIONS: Final = frozenset((
@@ -50,7 +49,7 @@ def _fetch_partition(
                     data_home=data_home,
                 ),
             )
-        except HTTPError:
+        except DatasetNotFoundError:
             pass
 
     return None
