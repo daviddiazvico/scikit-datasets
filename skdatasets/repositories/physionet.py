@@ -101,8 +101,10 @@ def _get_info_strings(comments: Sequence[str]) -> Mapping[str, Any]:
                         _parse_info_string_value(result.group(2))
                     )
             else:
-                key, value = comment.rsplit(maxsplit=1)
-                info_strings_spaces[key] = _parse_info_string_value(value)
+                split = comment.rsplit(maxsplit=1)
+                if len(split) == 2:
+                    key, value = split
+                    info_strings_spaces[key] = _parse_info_string_value(value)
 
     if info_strings_semicolons:
         return info_strings_semicolons

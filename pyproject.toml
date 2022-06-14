@@ -38,7 +38,7 @@ physionet = ["pandas", "wfdb"]
 utils-estimator = ["jsonpickle"]
 utils-experiments = ["sacred"]
 utils-scores = ["statsmodels"]
-all = ["scikit-datasets[cran,forex,keel,keras,utils-estimator,utils-experiments,utils-scores]"]
+all = ["scikit-datasets[cran,forex,keel,keras,physionet,utils-estimator,utils-experiments,utils-scores]"]
 test = [
   "pytest",
   "pytest-cov[all]",
