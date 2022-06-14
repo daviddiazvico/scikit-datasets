@@ -25,9 +25,9 @@ from sklearn.utils import Bunch
 from .base import DatasetNotFoundError, fetch_zip
 
 BASE_URL: Final = "https://physionet.org/static/published-projects"
-INFO_STRING_SEMICOLONS_ONE_STR: Final = "(\S*): (\S*)"
+INFO_STRING_SEMICOLONS_ONE_STR: Final = r"(\S*): (\S*)\s*"
 INFO_STRING_SEMICOLONS_SEVERAL_REGEX: Final = re.compile(
-    f"({INFO_STRING_SEMICOLONS_ONE_STR})+",
+    fr"(?:{INFO_STRING_SEMICOLONS_ONE_STR})+",
 )
 INFO_STRING_SEMICOLONS_ONE_REGEX: Final = re.compile(
     INFO_STRING_SEMICOLONS_ONE_STR,
@@ -97,7 +97,10 @@ def _get_info_strings(comments: Sequence[str]) -> Mapping[str, Any]:
                     INFO_STRING_SEMICOLONS_ONE_REGEX,
                     comment,
                 ):
-                    info_strings_semicolons[result.group(1)] = (
+                    key = result.group(1)
+                    if key[0] == "<" and key[-1] == ">":
+                        key = key[1:-1]
+                    info_strings_semicolons[key] = (
                         _parse_info_string_value(result.group(2))
                     )
             else:

@@ -35,3 +35,14 @@ def test_fetch_ctu_uhb_ctgdb_bunch() -> None:
     assert bunch.data.shape == (552, 30)
     assert bunch.target.shape == (552, 6)
     assert bunch.frame.shape == (552, 36)
+
+
+def test_fetch_macecgdb() -> None:
+    """Tests LIBSVM australian dataset."""
+    bunch = fetch(
+        'macecgdb',
+        as_frame=True,
+    )
+    assert bunch.data.shape == (27, 5)
+    assert bunch.target == None
+    assert bunch.frame.shape == (27, 5)
