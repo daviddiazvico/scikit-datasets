@@ -27,6 +27,11 @@ try:
     repos['keras'] = keras
 except ImportError:
     pass
+try:
+    from . import physionet
+    repos['physionet'] = physionet
+except ImportError:
+    pass
 
 
 def fetch(repository, dataset, collection=None, **kwargs):
