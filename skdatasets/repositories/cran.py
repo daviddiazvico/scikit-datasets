@@ -4,6 +4,7 @@ Datasets extracted from R packages in CRAN (https://cran.r-project.org/).
 @author: Carlos Ramos Carreño
 @license: MIT
 """
+from __future__ import annotations
 
 import os
 import pathlib
@@ -12,37 +13,54 @@ import urllib
 import warnings
 from distutils.version import LooseVersion
 from html.parser import HTMLParser
+from pathlib import Path
+from typing import (
+    Any,
+    Final,
+    List,
+    Literal,
+    Mapping,
+    Sequence,
+    Tuple,
+    TypedDict,
+    overload,
+)
 
+import numpy as np
 import pandas as pd
 from sklearn.datasets import get_data_home
 from sklearn.utils import Bunch
 
 import rdata
 
-from .base import fetch_tgz as _fetch_tgz
+from .base import DatasetNotFoundError, fetch_tgz as _fetch_tgz
+
+CRAN_URL: Final = "https://CRAN.R-project.org"
 
 
 class _LatestVersionHTMLParser(HTMLParser):
-    """
-    Class for parsing the version in the CRAN package information page.
-    """
+    """Class for parsing the version in the CRAN package information page."""
 
-    def __init__(self, *, convert_charrefs=True):
-        HTMLParser.__init__(self, convert_charrefs=convert_charrefs)
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
+        super().__init__(convert_charrefs=convert_charrefs)
 
         self.last_is_version = False
-        self.version = None
+        self.version: str | None = None
         self.version_regex = re.compile('(?i).*version.*')
         self.handling_td = False
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: List[Tuple[str, str | None]],
+    ) -> None:
         if tag == "td":
             self.handling_td = True
 
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag: str) -> None:
         self.handling_td = False
 
-    def handle_data(self, data):
+    def handle_data(self, data: str) -> None:
         if self.handling_td:
             if self.last_is_version:
                 self.version = data
@@ -51,29 +69,30 @@ class _LatestVersionHTMLParser(HTMLParser):
                 self.last_is_version = True
 
 
-def _get_latest_version_online(package_name):
-    """
-    Get the latest version of the package from CRAN.
-
-    """
+def _get_latest_version_online(package_name: str, dataset_name: str) -> str:
+    """Get the latest version of the package from CRAN."""
     parser = _LatestVersionHTMLParser()
 
     url_request = urllib.request.Request(
-        url="https://CRAN.R-project.org/package=" + package_name)
+        url=f"{CRAN_URL}/package={package_name}",
+    )
     try:
-        url_file = urllib.request.urlopen(url_request)
-    except urllib.request.HTTPError as e:
+        with urllib.request.urlopen(url_request) as url_file:
+            url_content = url_file.read().decode('utf-8')
+    except urllib.error.HTTPError as e:
         if e.code == 404:
-            e.msg = f"Package '{package_name}' not found."
+            raise DatasetNotFoundError(f"{package_name}/{dataset_name}") from e
         raise
-    url_content = url_file.read().decode('utf-8')
 
     parser.feed(url_content)
+
+    if parser.version is None:
+        raise ValueError(f"Version of package {package_name} not found")
 
     return parser.version
 
 
-def _get_latest_version_offline(package_name):
+def _get_latest_version_offline(package_name: str) -> str | None:
     """
     Get the latest downloaded version of the package.
 
@@ -87,17 +106,23 @@ def _get_latest_version_offline(package_name):
     if downloaded_packages:
         versions = [
             LooseVersion(p.name[(len(package_name) + 1):-len(".tar.gz")])
-            for p in downloaded_packages]
+            for p in downloaded_packages
+        ]
 
         versions.sort()
         latest_version = versions[-1]
 
         return str(latest_version)
-    else:
-        return None
+
+    return None
 
 
-def _get_version(package_name, *, version=None):
+def _get_version(
+    package_name: str,
+    *,
+    dataset_name: str,
+    version: str | None = None,
+) -> str:
     """
     Get the version of the package.
 
@@ -108,8 +133,11 @@ def _get_version(package_name, *, version=None):
     """
     if version is None:
         try:
-            version = _get_latest_version_online(package_name)
-        except urllib.request.URLError:
+            version = _get_latest_version_online(
+                package_name,
+                dataset_name=dataset_name,
+            )
+        except (urllib.error.URLError, DatasetNotFoundError):
             version = _get_latest_version_offline(package_name)
 
             if version is None:
@@ -118,24 +146,40 @@ def _get_version(package_name, *, version=None):
     return version
 
 
-def _get_urls(package_name, *, version=None):
+def _get_urls(
+    package_name: str,
+    *,
+    dataset_name: str,
+    version: str | None = None,
+) -> Sequence[str]:
 
-    version = _get_version(package_name, version=version)
+    version = _get_version(
+        package_name, dataset_name=dataset_name, version=version)
 
-    latest_url = ("https://cran.r-project.org/src/contrib/" + package_name +
-                  "_" + version + ".tar.gz")
-    archive_url = ("https://cran.r-project.org/src/contrib/Archive/" +
-                   package_name + "/" + package_name +
-                   "_" + version + ".tar.gz")
+    filename = f"{package_name}_{version}.tar.gz"
+
+    latest_url = f"{CRAN_URL}/src/contrib/{filename}"
+    archive_url = (
+        f"{CRAN_URL}/src/contrib/Archive/{package_name}/{filename}"
+    )
     return (latest_url, archive_url)
 
 
-def _download_package_data(package_name, *, package_url=None, version=None,
-                           folder_name=None,
-                           subdir=None):
-
+def _download_package_data(
+    package_name: str,
+    *,
+    dataset_name: str = "*",
+    package_url: str | None = None,
+    version: str | None = None,
+    folder_name: str | None = None,
+    subdir: str | None = None,
+) -> Path:
     if package_url is None:
-        url_list = _get_urls(package_name, version=version)
+        url_list = _get_urls(
+            package_name,
+            dataset_name=dataset_name,
+            version=version,
+        )
     else:
         url_list = (package_url,)
 
@@ -159,10 +203,18 @@ def _download_package_data(package_name, *, package_url=None, version=None,
     return data_path
 
 
-def fetch_dataset(dataset_name, package_name, *, package_url=None,
-                  version=None, folder_name=None, subdir=None,
-                  converter=None):
-    """Fetch an R dataset.
+def fetch_dataset(
+    dataset_name: str,
+    package_name: str,
+    *,
+    package_url: str | None = None,
+    version: str | None = None,
+    folder_name: str | None = None,
+    subdir: str | None = None,
+    converter: rdata.conversion.Converter | None = None,
+) -> Mapping[str, Any]:
+    """
+    Fetch an R dataset.
 
     Only .rda datasets in community packages can be downloaded for now.
 
@@ -199,33 +251,44 @@ def fetch_dataset(dataset_name, package_name, *, package_url=None,
     if converter is None:
         converter = rdata.conversion.SimpleConverter()
 
-    data_path = _download_package_data(package_name, package_url=package_url,
-                                       version=version,
-                                       folder_name=folder_name,
-                                       subdir=subdir)
+    data_path = _download_package_data(
+        package_name,
+        dataset_name=dataset_name,
+        package_url=package_url,
+        version=version,
+        folder_name=folder_name,
+        subdir=subdir,
+    )
 
     file_path = data_path / dataset_name
 
     if not file_path.suffix:
         possible_names = list(data_path.glob(dataset_name + ".*"))
         if len(possible_names) != 1:
-            raise FileNotFoundError(f"Dataset {dataset_name} not found in "
-                                    f"package {package_name}")
-        dataset_name = possible_names[0]
-        file_path = data_path / dataset_name
+            raise FileNotFoundError(
+                f"Dataset {dataset_name} not found in "
+                f"package {package_name}",
+            )
+
+        file_path = data_path / possible_names[0]
 
     parsed = rdata.parser.parse_file(file_path)
 
-    converted = converter.convert(parsed)
-
-    return converted
+    return converter.convert(parsed)
 
 
-def fetch_package(package_name, *, package_url=None,
-                  version=None,
-                  folder_name=None, subdir=None,
-                  converter=None, ignore_errors=False):
-    """Fetch all datasets from a R package.
+def fetch_package(
+    package_name: str,
+    *,
+    package_url: str | None = None,
+    version: str | None = None,
+    folder_name: str | None = None,
+    subdir: str | None = None,
+    converter: rdata.conversion.Converter | None = None,
+    ignore_errors: bool = False,
+) -> Mapping[str, Any]:
+    """
+    Fetch all datasets from a R package.
 
     Only .rda datasets in community packages can be downloaded for now.
 
@@ -263,10 +326,13 @@ def fetch_package(package_name, *, package_url=None,
     if converter is None:
         converter = rdata.conversion.SimpleConverter()
 
-    data_path = _download_package_data(package_name, package_url=package_url,
-                                       version=version,
-                                       folder_name=folder_name,
-                                       subdir=subdir)
+    data_path = _download_package_data(
+        package_name,
+        package_url=package_url,
+        version=version,
+        folder_name=folder_name,
+        subdir=subdir,
+    )
 
     if not data_path.exists():
         return {}
@@ -286,22 +352,33 @@ def fetch_package(package_name, *, package_url=None,
                 if not ignore_errors:
                     raise
                 else:
-                    warnings.warn(f"Error loading dataset {dataset.name}",
-                                  stacklevel=2)
+                    warnings.warn(
+                        f"Error loading dataset {dataset.name}",
+                        stacklevel=2,
+                    )
 
     return all_datasets
 
 
-datasets = {
+class _DatasetArguments(TypedDict):
+    load_args: Tuple[Sequence[Any], Mapping[str, Any]]
+    sklearn_args: Tuple[Sequence[Any], Mapping[str, Any]]
+
+
+datasets: Mapping[str, _DatasetArguments] = {
     'geyser': {
         'load_args': (['geyser.rda', 'MASS'], {}),
-        'sklearn_args': ([], {'target_name': 'waiting'})
-    }
+        'sklearn_args': ([], {'target_name': 'waiting'}),
+    },
 }
 
 
-def _to_sklearn(dataset, *, target_name):
-    """Transforms R datasets to Sklearn format, if possible"""
+def _to_sklearn(
+    dataset: Mapping[str, Any],
+    *,
+    target_name: str,
+) -> Bunch:
+    """Transform R datasets to Sklearn format, if possible"""
     assert len(dataset.keys()) == 1
     name = tuple(dataset.keys())[0]
     obj = dataset[name]
@@ -312,8 +389,9 @@ def _to_sklearn(dataset, *, target_name):
         X = pd.get_dummies(obj[feature_names]).values
         y = obj[target_name].values
     else:
-        raise ValueError("Dataset not automatically convertible to "
-                         "Sklearn format")
+        raise ValueError(
+            "Dataset not automatically convertible to Sklearn format",
+        )
 
     return Bunch(
         data=X,
@@ -328,8 +406,31 @@ def _to_sklearn(dataset, *, target_name):
     )
 
 
-def fetch(name, *, return_X_y=False):
-    """Load a dataset.
+@overload
+def fetch(
+    name: str,
+    *,
+    return_X_y: Literal[False] = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    *,
+    return_X_y: Literal[True],
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Any]]:
+    pass
+
+
+def fetch(
+    name: str,
+    *,
+    return_X_y: bool = False,
+) -> Bunch | Tuple[np.typing.NDArray[float], np.typing.NDArray[Any]]:
+    """
+    Load a dataset.
 
     Parameters
     ----------
