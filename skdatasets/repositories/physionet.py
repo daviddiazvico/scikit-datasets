@@ -22,6 +22,8 @@ import pandas as pd
 import wfdb.io
 from sklearn.utils import Bunch
 
+from skdatasets.repositories.base import dataset_from_dataframe
+
 from .base import DatasetNotFoundError, fetch_zip
 
 BASE_URL: Final = "https://physionet.org/static/published-projects"
@@ -160,8 +162,20 @@ def fetch(
     data_home: str | None = None,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-    target_column: str | Sequence[str] | None = None,
-) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]:
+    target_column: None = None,
+) -> Tuple[np.typing.NDArray[Any], None]:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+    target_column: str | Sequence[str],
+) -> Tuple[np.typing.NDArray[Any], np.typing.NDArray[Any]]:
     pass
 
 
@@ -172,8 +186,32 @@ def fetch(
     data_home: str | None = None,
     return_X_y: Literal[True],
     as_frame: Literal[True],
-    target_column: str | Sequence[str] | None = None,
-) -> Tuple[pd.DataFrame, pd.Series | pd.DataFrame]:
+    target_column: None = None,
+) -> Tuple[pd.DataFrame, None]:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+    target_column: str,
+) -> Tuple[pd.DataFrame, pd.Series]:
+    pass
+
+
+@overload
+def fetch(
+    name: str,
+    *,
+    data_home: str | None = None,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+    target_column: Sequence[str],
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     pass
 
 
@@ -186,8 +224,8 @@ def fetch(
     target_column: str | Sequence[str] | None = None,
 ) -> (
     Bunch
-    | Tuple[np.typing.NDArray[float], np.typing.NDArray[int]]
-    | Tuple[pd.DataFrame, pd.Series | pd.DataFrame]
+    | Tuple[np.typing.NDArray[Any], np.typing.NDArray[Any] | None]
+    | Tuple[pd.DataFrame, pd.Series | pd.DataFrame | None]
 ):
 
     zip_name = _get_zip_name_online(name)
@@ -230,52 +268,9 @@ def fetch(
         fs=records[0].fs,
     )
 
-    data_dataframe = (
-        dataframe
-        if target_column is None
-        else dataframe.drop(target_column, axis=1)
+    return dataset_from_dataframe(
+        dataframe,
+        return_X_y=return_X_y,
+        as_frame=as_frame,
+        target_column=target_column,
     )
-    target_dataframe = (
-        None
-        if target_column is None
-        else dataframe.loc[:, target_column]
-    )
-
-    data = (
-        data_dataframe
-        if as_frame is True
-        else data_dataframe.to_numpy()
-    )
-
-    target = (
-        None
-        if target_dataframe is None
-        else target_dataframe if as_frame is True
-        else target_dataframe.to_numpy()
-    )
-
-    if return_X_y:
-        return data, target
-
-    # TODO: Fetch and download description from the website
-    DESCR = ""
-
-    feature_names = list(data_dataframe.keys())
-    target_names = (
-        None
-        if target_dataframe is None
-        else list(target_dataframe.keys())
-    )
-
-    bunch = Bunch(
-        data=data,
-        target=target,
-        DESCR=DESCR,
-        feature_names=feature_names,
-        target_names=target_names,
-    )
-
-    if as_frame:
-        bunch["frame"] = dataframe
-
-    return bunch
