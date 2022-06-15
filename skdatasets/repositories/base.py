@@ -1,17 +1,33 @@
 """
 Common utilities.
 """
+from __future__ import annotations
 
 import pathlib
 import tarfile
 import zipfile
 from os.path import basename, normpath
 from shutil import copyfileobj
-from typing import Callable, Optional, Sequence, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
+import numpy as np
 from sklearn.datasets import get_data_home
+from sklearn.utils import Bunch
+
+if TYPE_CHECKING:
+    from pandas import DataFrame, Series
 
 CompressedFile = Union[zipfile.ZipFile, tarfile.TarFile]
 
@@ -251,3 +267,136 @@ def fetch_tgz(
         data_home=data_home,
         open_format='r:gz',
     )
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[False],
+    as_frame: bool,
+    target_column: str | Sequence[str] | None,
+) -> Bunch:
+    pass
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[True],
+    as_frame: Literal[False],
+    target_column: None,
+) -> Tuple[np.typing.NDArray[Any], None]:
+    pass
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[True],
+    as_frame: Literal[False],
+    target_column: str | Sequence[str],
+) -> Tuple[np.typing.NDArray[Any], np.typing.NDArray[Any]]:
+    pass
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+    target_column: None,
+) -> Tuple[DataFrame, None]:
+    pass
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+    target_column: str,
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+@overload
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+    target_column: Sequence[str],
+) -> Tuple[DataFrame, DataFrame]:
+    pass
+
+
+def dataset_from_dataframe(
+    frame: DataFrame,
+    *,
+    DESCR: str = "",
+    return_X_y: bool,
+    as_frame: bool,
+    target_column: str | Sequence[str] | None,
+) -> (
+    Bunch
+    | Tuple[np.typing.NDArray[float], np.typing.NDArray[int] | None]
+    | Tuple[DataFrame, Series | DataFrame | None]
+):
+
+    data_dataframe = (
+        frame
+        if target_column is None
+        else frame.drop(target_column, axis=1)
+    )
+    target_dataframe = (
+        None
+        if target_column is None
+        else frame.loc[:, target_column]
+    )
+
+    data = (
+        data_dataframe
+        if as_frame is True
+        else data_dataframe.to_numpy()
+    )
+
+    target = (
+        None
+        if target_dataframe is None
+        else target_dataframe if as_frame is True
+        else target_dataframe.to_numpy()
+    )
+
+    if return_X_y:
+        return data, target
+
+    feature_names = list(data_dataframe.keys())
+    target_names = (
+        None
+        if target_dataframe is None
+        else list(target_dataframe.keys())
+    )
+
+    bunch = Bunch(
+        data=data,
+        target=target,
+        DESCR=DESCR,
+        feature_names=feature_names,
+        target_names=target_names,
+    )
+
+    if as_frame:
+        bunch["frame"] = frame
+
+    return bunch
