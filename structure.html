@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Dataset structure &#8212; scikit-datasets 0.2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Repositories" href="repositories.html" />
+    <link rel="prev" title="Welcome to scikit-datasets’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="dataset-structure">
+<h1>Dataset structure<a class="headerlink" href="#dataset-structure" title="Permalink to this heading">¶</a></h1>
+<p>Most of the repositories available in scikit-datasets have datasets in some
+regular format.
+In that case, its corresponding <code class="docutils literal notranslate"><span class="pre">fetch</span></code> function in scikit-datasets converts
+the data to a standardized format, similar to the one used in scikit-learn, but
+with new optional fields for additional features that some repositories
+include, such as indices for train, validation and test partitions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Data in the CRAN repository is unstructured, and thus there is no <code class="docutils literal notranslate"><span class="pre">fetch</span></code>
+function for it. The data is returned in the original format.</p>
+</div>
+<p>The structure is a <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="(in scikit-learn v1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Bunch</span></code></a> object with the
+following fields:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code>: The matrix of observed data. A 2d NumPy array, ready to be used
+with scikit-learn tools.
+Each row correspond to a different observation while each column is a
+particular feature.
+For datasets with train, validation and test partitions, the whole data
+is included here.
+Use <code class="docutils literal notranslate"><span class="pre">train_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">validation_indices</span></code> and <code class="docutils literal notranslate"><span class="pre">test_indices</span></code> to
+select each partition.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target</span></code>: The target of the classification or regression problem. This
+is a 1d NumPy array except for multioutput problems, in with it is a 2d
+array, where each column correspond to a different output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DESCR</span></code>: A human readable description of the dataset.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_names</span></code>: The list of feature names, if the repository has that
+information available.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target_names</span></code>: For classification problems, this correspond to the names
+of the different classes, if available.
+Note that this field in scikit-learn is used in some cases for naming the
+outputs in multioutput problems.
+As we will try to maintain compatibility with scikit-learn, the meaning of
+this field could change in future versions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">train_indices</span></code>: Indexes of the elements of the train partition, if
+available in the repository.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validation_indices</span></code>: Indexes of the elements of the validation partition,
+if available in the repository.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_indices</span></code>: Indexes of the elements of the test partition, if
+available in the repository.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inner_cv</span></code>: A <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-CV-splitter" title="(in scikit-learn v1.1)"><span class="xref std std-term">CV splitter</span></a> object, usable for cross
+validation and hyperparameter selection, if the repository provides a
+cross validation strategy (such as using a particular validation
+partition).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outer_cv</span></code>: A Python iterable over different train and test partitions,
+when they are provided in the repository.</p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">scikit-datasets</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Dataset structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="repositories.html">Repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to scikit-datasets’s documentation!</a></li>
+      <li>Next: <a href="repositories.html" title="next chapter">Repositories</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, David Diaz Vico.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/structure.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

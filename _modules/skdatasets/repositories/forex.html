@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>skdatasets.repositories.forex &#8212; scikit-datasets 0.2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for skdatasets.repositories.forex</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Forex datasets (http://forex-python.readthedocs.io).</span>
+
+<span class="sd">@author: David Diaz Vico</span>
+<span class="sd">@license: MIT</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">Bunch</span>
+
+<span class="kn">from</span> <span class="nn">forex_python.bitcoin</span> <span class="kn">import</span> <span class="n">BtcConverter</span>
+<span class="kn">from</span> <span class="nn">forex_python.converter</span> <span class="kn">import</span> <span class="n">CurrencyRates</span>
+
+
+<span class="k">def</span> <span class="nf">_fetch</span><span class="p">(</span><span class="n">get_rate</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()):</span>
+    <span class="sd">&quot;&quot;&quot;Fetch dataset.&quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">delta</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">rate</span> <span class="o">=</span> <span class="n">get_rate</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_load_bitcoin</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">currency</span><span class="o">=</span><span class="s1">&#39;EUR&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load bitcoin dataset&quot;&quot;&quot;</span>
+    <span class="n">btcc</span> <span class="o">=</span> <span class="n">BtcConverter</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_rate</span><span class="p">(</span><span class="n">day</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">btcc</span><span class="o">.</span><span class="n">get_previous_price</span><span class="p">(</span><span class="n">currency</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_fetch</span><span class="p">(</span><span class="n">get_rate</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_load_forex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">currency_1</span><span class="o">=</span><span class="s1">&#39;USD&#39;</span><span class="p">,</span>
+                <span class="n">currency_2</span><span class="o">=</span><span class="s1">&#39;EUR&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load forex dataset.&quot;&quot;&quot;</span>
+    <span class="n">cr</span> <span class="o">=</span> <span class="n">CurrencyRates</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_rate</span><span class="p">(</span><span class="n">day</span><span class="p">):</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cr</span><span class="o">.</span><span class="n">get_rate</span><span class="p">(</span><span class="n">currency_1</span><span class="p">,</span> <span class="n">currency_2</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_fetch</span><span class="p">(</span><span class="n">get_rate</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="fetch"><a class="viewcode-back" href="../../../autosummary/skdatasets.repositories.forex.fetch.html#skdatasets.repositories.forex.fetch">[docs]</a><span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">currency_1</span><span class="o">=</span><span class="s1">&#39;USD&#39;</span><span class="p">,</span>
+          <span class="n">currency_2</span><span class="o">=</span><span class="s1">&#39;EUR&#39;</span><span class="p">,</span> <span class="n">return_X_y</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fetch Forex datasets.</span>
+
+<span class="sd">    Fetches the ECB Forex and Coindesk Bitcoin datasets. More info at</span>
+<span class="sd">    http://forex-python.readthedocs.io.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    start : date, default=2015-01-01</span>
+<span class="sd">        Initial date.</span>
+<span class="sd">    end : date, default=today</span>
+<span class="sd">        Final date.</span>
+<span class="sd">    currency_1 : str, default=&#39;USD&#39;</span>
+<span class="sd">        Currency 1.</span>
+<span class="sd">    currency_2 : str, default=&#39;EUR&#39;</span>
+<span class="sd">        Currency 2.</span>
+<span class="sd">    return_X_y : bool, default=False</span>
+<span class="sd">        If True, returns ``(data, target)`` instead of a Bunch object.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data : Bunch</span>
+<span class="sd">        Dictionary-like object with all the data and metadata.</span>
+
+<span class="sd">    (data, target) : tuple if ``return_X_y`` is True</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">currency_1</span> <span class="o">==</span> <span class="s1">&#39;BTC&#39;</span><span class="p">:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">_load_bitcoin</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">currency</span><span class="o">=</span><span class="n">currency_2</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="s1">&#39;BTC-&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">currency_2</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">currency_2</span> <span class="o">==</span> <span class="s1">&#39;BTC&#39;</span><span class="p">:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">_load_bitcoin</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">currency</span><span class="o">=</span><span class="n">currency_1</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="s1">&#39;BTC-&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">currency_1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">_load_forex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">currency_1</span><span class="o">=</span><span class="n">currency_1</span><span class="p">,</span>
+                        <span class="n">currency_2</span><span class="o">=</span><span class="n">currency_2</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">currency_1</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">currency_2</span><span class="p">)</span>
+    <span class="n">descr</span> <span class="o">=</span> <span class="n">descr</span> <span class="o">+</span> <span class="n">start</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="n">end</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">return_X_y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">Bunch</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
+        <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">train_indices</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">validation_indices</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">test_indices</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">inner_cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">outer_cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">DESCR</span><span class="o">=</span><span class="n">descr</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">scikit-datasets</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../structure.html">Dataset structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../repositories.html">Repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, David Diaz Vico.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

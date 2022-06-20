@@ -1,20 +1,22 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<html lang="en">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to scikit-datasets’s documentation! &#8212; scikit-datasets 0.1.9 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Welcome to scikit-datasets’s documentation! &#8212; scikit-datasets 0.2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Dataset structure" href="structure.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -27,69 +29,129 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-scikit-datasets-s-documentation">
-<h1>Welcome to scikit-datasets’s documentation!<a class="headerlink" href="#welcome-to-scikit-datasets-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <section id="welcome-to-scikit-datasets-s-documentation">
+<h1>Welcome to scikit-datasets’s documentation!<a class="headerlink" href="#welcome-to-scikit-datasets-s-documentation" title="Permalink to this heading">¶</a></h1>
+<p>This package groups functions to fetch datasets from several sources,
+converting them to scikit-learn-compatible datasets.</p>
+<p>In the <a class="reference external" href="https://github.com/daviddiazvico/scikit-datasets">project page</a> hosted by
+Github you can find more information related to the development of the package.</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+<p>Currently, scikit-datasets is available in Python 3, regardless of the
+platform. The stable version can be installed via
+<a class="reference external" href="https://pypi.org/project/scikit-datasets/">PyPI</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install scikit-datasets
+</pre></div>
+</div>
+</section>
+<section id="content-tree">
+<h2>Content tree<a class="headerlink" href="#content-tree" title="Permalink to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
-<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
-<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="structure.html">Dataset structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="repositories.html">Repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#aneurisk">Aneurisk</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#cran">CRAN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#forex">Forex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#keel">Keel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#keras">Keras</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#libsvm">LIBSVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#ratsch">Rätsch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#scikit-learn">scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#uci">UCI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="repositories.html#ucr">UCR</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#estimator">Estimator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#experiment">Experiment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#scores">Scores</a></li>
+</ul>
+</li>
 </ul>
 </div>
+</section>
+<section id="contributions">
+<h2>Contributions<a class="headerlink" href="#contributions" title="Permalink to this heading">¶</a></h2>
+<p>All contributions are welcome. You can help this project grow in multiple ways,
+from creating an issue, reporting an improvement or a bug, to doing a
+repository fork and creating a pull request to the development branch.</p>
+<p>If you want to contribute routines for fetching data from a new repository,
+please first open a new issue or draft PR to discuss it.</p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this heading">¶</a></h2>
+<p>The package is licensed under the MIT License. A copy of the
+<a class="reference external" href="https://github.com/daviddiazvico/scikit-datasets/blob/master/LICENSE.txt">license</a>
+can be found along with the code or in the project page.</p>
+</section>
+</section>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Welcome to scikit-datasets’s documentation!</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<h1 class="logo"><a href="#">scikit-datasets</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="structure.html">Dataset structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="repositories.html">Repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
 </ul>
+
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="structure.html" title="next chapter">Dataset structure</a></li>
   </ul></li>
 </ul>
 </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/index.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2018, David Diaz Vico.
+      &copy;2020, David Diaz Vico.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/index.rst.txt"
