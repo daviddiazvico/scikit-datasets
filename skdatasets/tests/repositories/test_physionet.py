@@ -4,7 +4,7 @@ from skdatasets.repositories.physionet import fetch
 
 
 def test_fetch_ctu_uhb_ctgdb() -> None:
-    """Tests LIBSVM australian dataset."""
+    """Tests ctu_uhb dataset."""
     X, y = fetch(
         'ctu-uhb-ctgdb',
         return_X_y=True,
@@ -15,7 +15,7 @@ def test_fetch_ctu_uhb_ctgdb() -> None:
 
 
 def test_fetch_ctu_uhb_ctgdb_single_target() -> None:
-    """Tests LIBSVM australian dataset."""
+    """Tests ctu_uhb dataset with one target."""
     X, y = fetch(
         'ctu-uhb-ctgdb',
         return_X_y=True,
@@ -26,7 +26,7 @@ def test_fetch_ctu_uhb_ctgdb_single_target() -> None:
 
 
 def test_fetch_ctu_uhb_ctgdb_bunch() -> None:
-    """Tests LIBSVM australian dataset."""
+    """Tests ctu_uhb dataset returning Bunch."""
     bunch = fetch(
         'ctu-uhb-ctgdb',
         as_frame=True,
@@ -38,7 +38,7 @@ def test_fetch_ctu_uhb_ctgdb_bunch() -> None:
 
 
 def test_fetch_macecgdb() -> None:
-    """Tests LIBSVM australian dataset."""
+    """Tests macecgdb dataset."""
     bunch = fetch(
         'macecgdb',
         as_frame=True,
