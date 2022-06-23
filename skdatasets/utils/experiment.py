@@ -403,7 +403,7 @@ def _create_one_experiment(
     dataset: DatasetLike,
     storage: RunObserver,
     config: ConfigLike,
-    ignore_dataset_validation: bool = False,
+    inner_cv: CVLike | Literal[False, "dataset"] = None,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
     save_train: bool = False,
 ) -> Experiment:
@@ -432,10 +432,10 @@ def _create_one_experiment(
         dataset = dataset_function()
 
         # Metaparameter search
-        cv = getattr(dataset, "inner_cv", None)
+        cv = dataset.inner_cv if inner_cv == "dataset" else inner_cv
 
         estimator = estimator_function()
-        if hasattr(estimator, "cv") and not ignore_dataset_validation:
+        if hasattr(estimator, "cv") and cv is not False:
             estimator.cv = cv
 
         # Model assessment
@@ -458,7 +458,7 @@ def create_experiments(
     estimator_configs: Sequence[ConfigLike] | None = None,
     dataset_configs: Sequence[ConfigLike] | None = None,
     config: ConfigLike | None = None,
-    ignore_dataset_validation: bool = False,
+    inner_cv: CVLike | Literal[False, "dataset"] = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
     save_train: bool = False,
 ) -> Sequence[Experiment]:
@@ -483,7 +483,7 @@ def create_experiments(
             dataset=dataset,
             storage=storage,
             config=config,
-            ignore_dataset_validation=ignore_dataset_validation,
+            inner_cv=inner_cv,
             outer_cv=outer_cv,
             save_train=save_train,
         )
