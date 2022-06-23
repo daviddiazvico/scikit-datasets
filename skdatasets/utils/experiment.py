@@ -17,6 +17,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    Literal,
     Mapping,
     NamedTuple,
     Protocol,
@@ -250,10 +251,13 @@ def _benchmark_partitions(
     estimator: BaseEstimator,
     data: Bunch,
     save_train: bool = False,
+    outer_cv: CVLike | Literal["dataset"] = None,
 ) -> None:
     """Use several partitions."""
+    outer_cv = data.outer_cv if outer_cv == "dataset" else outer_cv
+
     for X_train, y_train, X_test, y_test in _iterate_outer_cv(
-        outer_cv=getattr(data, "outer_cv", None),
+        outer_cv=outer_cv,
         estimator=estimator,
         X=data.data,
         y=data.target,
@@ -278,9 +282,10 @@ def _benchmark(
     estimator: BaseEstimator,
     data: Bunch,
     save_train: bool = False,
+    outer_cv: CVLike | Literal[False, "dataset"] = None,
 ) -> None:
     """Run the experiment."""
-    if getattr(data, "test_indices", None):
+    if outer_cv is False:
         _benchmark_one(
             experiment=experiment,
             estimator=estimator,
@@ -293,6 +298,7 @@ def _benchmark(
             estimator=estimator,
             data=data,
             save_train=save_train,
+            outer_cv=outer_cv,
         )
 
 
@@ -398,6 +404,7 @@ def _create_one_experiment(
     storage: RunObserver,
     config: ConfigLike,
     ignore_dataset_validation: bool = False,
+    outer_cv: CVLike | Literal[False, "dataset"] = None,
     save_train: bool = False,
 ) -> Experiment:
     experiment = Experiment()
@@ -437,6 +444,7 @@ def _create_one_experiment(
             estimator=estimator,
             data=dataset,
             save_train=save_train,
+            outer_cv=outer_cv,
         )
 
     return experiment
@@ -451,6 +459,7 @@ def create_experiments(
     dataset_configs: Sequence[ConfigLike] | None = None,
     config: ConfigLike | None = None,
     ignore_dataset_validation: bool = False,
+    outer_cv: CVLike | Literal[False, "dataset"] = None,
     save_train: bool = False,
 ) -> Sequence[Experiment]:
 
@@ -475,6 +484,7 @@ def create_experiments(
             storage=storage,
             config=config,
             ignore_dataset_validation=ignore_dataset_validation,
+            outer_cv=outer_cv,
             save_train=save_train,
         )
         for estimator_name, estimator in estimators.items()
