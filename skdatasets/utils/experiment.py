@@ -17,6 +17,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    List,
     Literal,
     Mapping,
     NamedTuple,
@@ -37,6 +38,7 @@ from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch, is_scalar_nan
 
 from incense import ExperimentLoader, FileSystemExperimentLoader
+from incense.experiment import FileSystemExperiment
 
 SelfType = TypeVar("SelfType")
 
@@ -522,24 +524,102 @@ def _loader_from_observer(
     raise ValueError(f"Observer {storage} is not supported.")
 
 
-def fetch_scores(
+def _get_experiments(
     *,
     storage: RunObserver | str,
-    ids: Sequence[int],
-) -> ScoresInfo:
+    ids: Sequence[int] | None = None,
+    dataset_names: Sequence[str] | None = None,
+    estimator_names: Sequence[str] | None = None,
+) -> Sequence[Experiment]:
 
     loader = _loader_from_observer(storage)
 
-    load_ids_fun = getattr(
-        loader,
-        "find_by_ids",
-        lambda id_seq: [
-            loader.find_by_id(experiment_id)
-            for experiment_id in id_seq
-        ],
-    )
+    if (
+        (ids, dataset_names, estimator_names) == (None, None, None)
+        or isinstance(loader, FileSystemExperimentLoader) and ids is None
+    ):
+        find_all_fun = getattr(
+            loader,
+            "find_all",
+            lambda: [
+                FileSystemExperiment.from_run_dir(run_dir)
+                for run_dir in loader._runs_dir.iterdir()
+            ],
+        )
 
-    experiments = load_ids_fun(ids)
+        experiments = find_all_fun()
+
+    elif (
+        (dataset_names, estimator_names) == (None, None)
+        or isinstance(loader, FileSystemExperimentLoader)
+    ):
+        load_ids_fun = getattr(
+            loader,
+            "find_by_ids",
+            lambda id_seq: [
+                loader.find_by_id(experiment_id)
+                for experiment_id in id_seq
+            ],
+        )
+
+        experiments = load_ids_fun(ids)
+
+    else:
+
+        conditions: List[
+            Mapping[
+                str,
+                Mapping[str, Sequence[Any]],
+            ]
+        ] = []
+
+        if ids is not None:
+            conditions.append({"_id": {"$in": ids}})
+
+        if estimator_names is not None:
+            conditions.append(
+                {"config.estimator_name": {"$in": estimator_names}})
+
+        if dataset_names is not None:
+            conditions.append({"config.dataset_name": {"$in": dataset_names}})
+
+        query = {"$and": conditions}
+
+        experiments = loader.find(query)
+
+    if isinstance(loader, FileSystemExperimentLoader):
+        # Filter experiments by dataset and estimator names
+        experiments = [
+            e for e in experiments
+            if (
+                (
+                    estimator_names is None
+                    or e.config["estimator_name"] in estimator_names
+                )
+                and (
+                    dataset_names is None
+                    or e.config["dataset_name"] in dataset_names
+                )
+            )
+        ]
+
+    return experiments
+
+
+def fetch_scores(
+    *,
+    storage: RunObserver | str,
+    ids: Sequence[int] | None = None,
+    dataset_names: Sequence[str] | None = None,
+    estimator_names: Sequence[str] | None = None,
+) -> ScoresInfo:
+
+    experiments = _get_experiments(
+        storage=storage,
+        ids=ids,
+        dataset_names=dataset_names,
+        estimator_names=estimator_names,
+    )
 
     dict_experiments: Dict[str, Dict[str, Tuple[float, float]]] = {}
     estimator_list = []
@@ -568,8 +648,12 @@ def fetch_scores(
             score_std,
         )
 
-    estimator_names = tuple(estimator_list)
-    dataset_names = tuple(dataset_list)
+    estimator_names = (
+        tuple(estimator_list) if estimator_names is None else estimator_names
+    )
+    dataset_names = (
+        tuple(dataset_list) if dataset_names is None else dataset_names
+    )
     matrix_shape = (len(dataset_names), len(estimator_names))
 
     scores_mean = np.full(matrix_shape, np.nan)
