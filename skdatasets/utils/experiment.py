@@ -344,7 +344,7 @@ def experiment(
         ),
     )
 
-    @experiment.automain
+    @experiment.main
     def run() -> None:
         """Run the experiment."""
         data = dataset()
