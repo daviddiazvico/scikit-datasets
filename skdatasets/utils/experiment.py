@@ -519,6 +519,7 @@ def _loader_from_observer(
         return ExperimentLoader(
             mongo_uri=f"mongodb://{url}:{port}/",
             db_name=database.name,
+            unpickle=False,
         )
 
     raise ValueError(f"Observer {storage} is not supported.")
@@ -632,8 +633,8 @@ def fetch_scores(
         dataset_name = experiment.config["dataset_name"]
         if dataset_name not in dataset_list:
             dataset_list.append(dataset_name)
-        score_mean = experiment.info["score_mean"]
-        score_std = experiment.info["score_std"]
+        score_mean = experiment.info.get("score_mean", np.nan)
+        score_std = experiment.info.get("score_std", np.nan)
 
         if estimator_name not in dict_experiments:
             dict_experiments[estimator_name] = {}
@@ -661,7 +662,8 @@ def fetch_scores(
 
     for i, dataset_name in enumerate(dataset_names):
         for j, estimator_name in enumerate(estimator_names):
-            mean, std = dict_experiments[estimator_name][dataset_name]
+            dict_estimator = dict_experiments.get(estimator_name, {})
+            mean, std = dict_estimator.get(dataset_name, (np.nan, np.nan))
             scores_mean[i, j] = mean
             scores_std[i, j] = std
 
