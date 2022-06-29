@@ -172,12 +172,14 @@ def _benchmark_from_data(
     y_train: TargetType,
     X_test: DataType,
     y_test: TargetType,
+    save_estimator: bool = False,
     save_train: bool = False,
 ) -> None:
     with _add_timing(experiment, "fit_time"):
         estimator.fit(X_train, y_train)
 
-    _append_info(experiment, "fitted_estimator", estimator)
+    if save_estimator:
+        _append_info(experiment, "fitted_estimator", estimator)
 
     with _add_timing(experiment, "score_time"):
         test_score = estimator.score(X_test, y_test)
@@ -210,6 +212,7 @@ def _benchmark_one(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    save_estimator: bool = False,
     save_train: bool = False,
 ) -> None:
     """Use only one predefined partition."""
@@ -241,6 +244,7 @@ def _benchmark_one(
         y_train=y_train_val,
         X_test=X_test,
         y_test=y_test,
+        save_estimator=save_estimator,
         save_train=save_train,
     )
 
@@ -252,6 +256,7 @@ def _benchmark_partitions(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    save_estimator: bool = False,
     save_train: bool = False,
     outer_cv: CVLike | Literal["dataset"] = None,
 ) -> None:
@@ -272,6 +277,7 @@ def _benchmark_partitions(
             y_train=y_train,
             X_test=X_test,
             y_test=y_test,
+            save_estimator=save_estimator,
             save_train=save_train,
         )
 
@@ -283,6 +289,7 @@ def _benchmark(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    save_estimator: bool = False,
     save_train: bool = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
 ) -> None:
@@ -292,6 +299,7 @@ def _benchmark(
             experiment=experiment,
             estimator=estimator,
             data=data,
+            save_estimator=save_estimator,
             save_train=save_train,
         )
     else:
@@ -299,6 +307,7 @@ def _benchmark(
             experiment=experiment,
             estimator=estimator,
             data=data,
+            save_estimator=save_estimator,
             save_train=save_train,
             outer_cv=outer_cv,
         )
@@ -308,6 +317,7 @@ def experiment(
     dataset: Callable[..., Bunch],
     estimator: Callable[..., BaseEstimator],
     *,
+    save_estimator: bool = False,
     save_train: bool = False,
 ) -> Experiment:
     """
@@ -363,6 +373,7 @@ def experiment(
             experiment=experiment,
             estimator=e,
             data=data,
+            save_estimator=save_estimator,
             save_train=save_train,
         )
 
@@ -407,6 +418,7 @@ def _create_one_experiment(
     config: ConfigLike,
     inner_cv: CVLike | Literal[False, "dataset"] = None,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
+    save_estimator: bool = False,
     save_train: bool = False,
 ) -> Experiment:
     experiment = Experiment()
@@ -445,6 +457,7 @@ def _create_one_experiment(
             experiment=experiment,
             estimator=estimator,
             data=dataset,
+            save_estimator=save_estimator,
             save_train=save_train,
             outer_cv=outer_cv,
         )
@@ -462,6 +475,7 @@ def create_experiments(
     config: ConfigLike | None = None,
     inner_cv: CVLike | Literal[False, "dataset"] = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
+    save_estimator: bool = False,
     save_train: bool = False,
 ) -> Sequence[Experiment]:
 
@@ -487,6 +501,7 @@ def create_experiments(
             config=config,
             inner_cv=inner_cv,
             outer_cv=outer_cv,
+            save_estimator=save_estimator,
             save_train=save_train,
         )
         for estimator_name, estimator in estimators.items()
