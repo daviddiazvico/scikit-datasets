@@ -10,7 +10,7 @@ import sys
 from contextlib import contextmanager
 from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
-from time import perf_counter, process_time
+from time import perf_counter, process_time, sleep
 from typing import (
     Any,
     Callable,
@@ -376,6 +376,10 @@ def experiment(
             save_estimator=save_estimator,
             save_train=save_train,
         )
+
+        # Ensure that everything is in the info dict at the end
+        # See https://github.com/IDSIA/sacred/issues/830
+        sleep(experiment.current_run.beat_interval + 1)
 
     return experiment
 
