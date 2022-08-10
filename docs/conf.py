@@ -91,4 +91,5 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'sklearn': ('https://scikit-learn.org/stable', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'sacred': ('https://sacred.readthedocs.io/en/stable/', None),
 }
