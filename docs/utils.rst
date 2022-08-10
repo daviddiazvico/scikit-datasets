@@ -19,12 +19,21 @@ scikit-learn API.
 Experiment
 ----------
 
-The following functions are related to launching machine learning experiments.
+The following functions can be used to execute several experiments,
+such as classification or regression tasks, with different datasets
+for a posterior comparison.
+These experiments are created using the Sacred library, storing the
+most common parameters of interest, such as time required for training or
+final scores.
+After the experiments have finished, the final scores can be easily 
+retrieved in order to plot a table or perform hypothesis testing.
 
 .. autosummary::
    :toctree: autosummary
 
-   ~skdatasets.utils.experiment.experiment
+   ~skdatasets.utils.experiment.create_experiments
+   ~skdatasets.utils.experiment.run_experiments
+   ~skdatasets.utils.experiment.fetch_scores
 
 Scores
 ------

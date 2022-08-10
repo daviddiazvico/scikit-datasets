@@ -339,8 +339,8 @@ def experiment(
     ----------
     dataset : function
         Dataset fetch function. Might receive any argument. Must return a
-        :external:obj:`Bunch` with ``data``, ``target`` (might be ``None``),
-        ``inner_cv`` (might be ``None``) and ``outer_cv``
+        :external:class:`sklearn.utils.Bunch` with ``data``, ``target``
+        (might be ``None``), ``inner_cv`` (might be ``None``) and ``outer_cv``
         (might be ``None``).
     estimator : function
         Estimator initialization function. Might receive any keyword argument.
@@ -483,23 +483,85 @@ def create_experiments(
     estimators: Mapping[str, EstimatorLike],
     datasets: Mapping[str, DatasetLike],
     storage: RunObserver | str,
-    estimator_configs: Sequence[ConfigLike] | None = None,
-    dataset_configs: Sequence[ConfigLike] | None = None,
     config: ConfigLike | None = None,
     inner_cv: CVLike | Literal[False, "dataset"] = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> Sequence[Experiment]:
+    """
+    Create several Sacred experiments.
 
+    It receives a set of estimators and datasets, and create Sacred experiment
+    objects for them.
+
+    Parameters
+    ----------
+    estimators : Mapping
+        Mapping where each key is the name for a estimator and each value
+        is either:
+
+        * A scikit-learn compatible estimator.
+        * A function receiving arbitrary config values and returning a
+            scikit-learn compatible estimator.
+        * A tuple with such a function and additional configuration (either
+            a mapping or a filename).
+    datasets : Mapping
+        Mapping where each key is the name for a dataset and each value
+        is either:
+
+        * A :external:class:`sklearn.utils.Bunch` with the fields explained
+            in :doc:`Dataset structure`. Only ``data`` and ``target`` are
+            mandatory.
+        * A function receiving arbitrary config values and returning a
+            :external:class:`sklearn.utils.Bunch` object like the one explained
+            above.
+        * A tuple with such a function and additional configuration (either
+            a mapping or a filename).
+    storage : :external:class:`sacred.observers.RunObserver` or :class:`str`
+        Where the experiments would be stored. Either a Sacred observer, for
+        example to store in a Mongo database, or the name of a directory, to
+        use a file observer.
+    config : Mapping, :class:`str` or ``None``, default ``None``
+        A mapping or filename with additional configuration for the experiment.
+    inner_cv : CV-like object, ``"datasets"`` or ``False``, default ``False``
+        For estimators that perform cross validation (they have a ``cv``
+        parameter) this sets the cross validation strategy, as follows:
+
+        * If ``False`` the original value of ``cv`` is unchanged.
+        * If ``"dataset"``, the :external:class:`sklearn.utils.Bunch` objects
+            for the datasets must have a ``inner_cv`` attribute, which will
+            be the one used.
+        * Otherwise, ``cv`` is changed to this value.
+    outer_cv : CV-like object, ``"datasets"`` or ``False``, default ``None``
+        The strategy used to evaluate different partitions of the data, as
+        follows:
+
+        * If ``False`` use only one partition: the one specified in the
+            dataset. Thus the :external:class:`sklearn.utils.Bunch` objects
+            for the datasets should have defined at least a train and a test
+            partition.
+        * If ``"dataset"``, the :external:class:`sklearn.utils.Bunch` objects
+            for the datasets must have a ``outer_cv`` attribute, which will
+            be the one used.
+        * Otherwise, this will be passed to
+            :external:func:`sklearn.utils.check_cv` and the resulting cross
+            validator will be used to define the partitions.
+    save_estimator : bool, default ``False``
+        Whether to save the fitted estimator. This is useful for debugging
+        and for obtaining extra information in some cases, but for some
+        estimators it could consume much storage.
+    save_train : bool, default ``False``
+        If ``True``, compute and store also the score over the train data.
+
+    Returns
+    -------
+    experiment : Sequence of :external:class:`sacred.Experiment`
+        Sequence of Sacred experiments, ready to be run.
+
+    """
     if isinstance(storage, str):
         storage = FileStorageObserver(storage)
-
-    if estimator_configs is None:
-        estimator_configs = [{}] * len(estimators)
-
-    if dataset_configs is None:
-        dataset_configs = [{}] * len(datasets)
 
     if config is None:
         config = {}
