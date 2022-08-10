@@ -34,6 +34,7 @@ retrieved in order to plot a table or perform hypothesis testing.
    ~skdatasets.utils.experiment.create_experiments
    ~skdatasets.utils.experiment.run_experiments
    ~skdatasets.utils.experiment.fetch_scores
+   ~skdatasets.utils.experiment.ScoresInfo
 
 Scores
 ------

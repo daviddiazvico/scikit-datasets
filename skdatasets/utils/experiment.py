@@ -8,6 +8,7 @@ import itertools
 import os
 import sys
 from contextlib import contextmanager
+from dataclasses import dataclass
 from inspect import signature
 from tempfile import NamedTemporaryFile, mkdtemp
 from time import perf_counter, process_time, sleep
@@ -20,7 +21,6 @@ from typing import (
     List,
     Literal,
     Mapping,
-    NamedTuple,
     Protocol,
     Sequence,
     Tuple,
@@ -119,7 +119,34 @@ DatasetLike = Union[
 ]
 
 
-class ScoresInfo(NamedTuple):
+@dataclass
+class ScoresInfo:
+    r"""
+    Class containing the scores of several related experiments.
+
+    Attributes
+    ----------
+    dataset_names : Sequence of :external:class:`str`
+        Name of the datasets, with the same order in which are present
+        in the rows of the scores.
+    estimator_names : Sequence of :external:class:`str`
+        Name of the estimators, with the same order in which are present
+        in the columns of the scores.
+    scores : :external:class:`numpy.ndarray`
+        Test scores. It has size ``n_datasets`` :math:`\times` ``n_estimators``
+        :math:`\times` ``n_partitions``.
+    scores_mean : :external:class:`numpy.ndarray`
+        Test score means. It has size ``n_datasets``
+        :math:`\times` ``n_estimators``.
+    scores_std : :external:class:`numpy.ndarray`
+        Test score standard deviations. It has size ``n_datasets``
+        :math:`\times` ``n_estimators``.
+
+    See Also
+    --------
+    fetch_scores
+
+    """
     dataset_names: Sequence[str]
     estimator_names: Sequence[str]
     scores: np.typing.NDArray[float]
@@ -480,8 +507,8 @@ def _create_one_experiment(
 
 def create_experiments(
     *,
-    estimators: Mapping[str, EstimatorLike],
     datasets: Mapping[str, DatasetLike],
+    estimators: Mapping[str, EstimatorLike],
     storage: RunObserver | str,
     config: ConfigLike | None = None,
     inner_cv: CVLike | Literal[False, "dataset"] = False,
@@ -497,29 +524,29 @@ def create_experiments(
 
     Parameters
     ----------
+    datasets : Mapping
+        Mapping where each key is the name for a dataset and each value
+        is either:
+
+        * A :external:class:`sklearn.utils.Bunch` with the fields explained
+          in :doc:`/structure`. Only ``data`` and ``target`` are
+          mandatory.
+        * A function receiving arbitrary config values and returning a
+          :external:class:`sklearn.utils.Bunch` object like the one explained
+          above.
+        * A tuple with such a function and additional configuration (either
+          a mapping or a filename).
     estimators : Mapping
         Mapping where each key is the name for a estimator and each value
         is either:
 
         * A scikit-learn compatible estimator.
         * A function receiving arbitrary config values and returning a
-            scikit-learn compatible estimator.
+          scikit-learn compatible estimator.
         * A tuple with such a function and additional configuration (either
-            a mapping or a filename).
-    datasets : Mapping
-        Mapping where each key is the name for a dataset and each value
-        is either:
-
-        * A :external:class:`sklearn.utils.Bunch` with the fields explained
-            in :doc:`Dataset structure`. Only ``data`` and ``target`` are
-            mandatory.
-        * A function receiving arbitrary config values and returning a
-            :external:class:`sklearn.utils.Bunch` object like the one explained
-            above.
-        * A tuple with such a function and additional configuration (either
-            a mapping or a filename).
+          a mapping or a filename).
     storage : :external:class:`sacred.observers.RunObserver` or :class:`str`
-        Where the experiments would be stored. Either a Sacred observer, for
+        Where the experiments will be stored. Either a Sacred observer, for
         example to store in a Mongo database, or the name of a directory, to
         use a file observer.
     config : Mapping, :class:`str` or ``None``, default ``None``
@@ -530,23 +557,23 @@ def create_experiments(
 
         * If ``False`` the original value of ``cv`` is unchanged.
         * If ``"dataset"``, the :external:class:`sklearn.utils.Bunch` objects
-            for the datasets must have a ``inner_cv`` attribute, which will
-            be the one used.
+          for the datasets must have a ``inner_cv`` attribute, which will
+          be the one used.
         * Otherwise, ``cv`` is changed to this value.
     outer_cv : CV-like object, ``"datasets"`` or ``False``, default ``None``
         The strategy used to evaluate different partitions of the data, as
         follows:
 
         * If ``False`` use only one partition: the one specified in the
-            dataset. Thus the :external:class:`sklearn.utils.Bunch` objects
-            for the datasets should have defined at least a train and a test
-            partition.
+          dataset. Thus the :external:class:`sklearn.utils.Bunch` objects
+          for the datasets should have defined at least a train and a test
+          partition.
         * If ``"dataset"``, the :external:class:`sklearn.utils.Bunch` objects
-            for the datasets must have a ``outer_cv`` attribute, which will
-            be the one used.
+          for the datasets must have a ``outer_cv`` attribute, which will
+          be the one used.
         * Otherwise, this will be passed to
-            :external:func:`sklearn.utils.check_cv` and the resulting cross
-            validator will be used to define the partitions.
+          :external:func:`sklearn.model_selection.check_cv` and the resulting
+          cross validator will be used to define the partitions.
     save_estimator : bool, default ``False``
         Whether to save the fitted estimator. This is useful for debugging
         and for obtaining extra information in some cases, but for some
@@ -556,8 +583,13 @@ def create_experiments(
 
     Returns
     -------
-    experiment : Sequence of :external:class:`sacred.Experiment`
+    experiments : Sequence of :external:class:`sacred.Experiment`
         Sequence of Sacred experiments, ready to be run.
+
+    See Also
+    --------
+    run_experiments
+    fetch_scores
 
     """
     if isinstance(storage, str):
@@ -587,7 +619,25 @@ def create_experiments(
 def run_experiments(
     experiments: Sequence[Experiment],
 ) -> Sequence[int]:
+    """
+    Run Sacred experiments.
 
+    Parameters
+    ----------
+    experiments : Sequence of :external:class:`sacred.Experiment`
+        Sequence of Sacred experiments to be run.
+
+    Returns
+    -------
+    ids : Sequence of :external:class:`int`
+        Sequence of identifiers for each experiment.
+
+    See Also
+    --------
+    create_experiments
+    fetch_scores
+
+    """
     return [e.run()._id for e in experiments]
 
 
@@ -704,6 +754,44 @@ def fetch_scores(
     dataset_names: Sequence[str] | None = None,
     estimator_names: Sequence[str] | None = None,
 ) -> ScoresInfo:
+    """
+    Fetch scores from Sacred experiments.
+
+    By default, it retrieves every experiment. The parameters ``ids``,
+    ``estimator_names`` and ``dataset_names`` can be used to restrict the
+    number of experiments returned.
+
+    Parameters
+    ----------
+    storage : :external:class:`sacred.observers.RunObserver` or :class:`str`
+        Where the experiments are stored. Either a Sacred observer, for
+        example for a Mongo database, or the name of a directory, to
+        use a file observer.
+    ids : Sequence of :external:class:`int` or ``None``, default ``None``
+        If not ``None``, return only experiments whose id is contained
+        in the sequence.
+    dataset_names : Sequence of :class:`str` or ``None``, default ``None``
+        If not ``None``, return only experiments whose dataset names are
+        contained in the sequence.
+        The order of the names is also the one used for datasets when
+        combining the results.
+    estimator_names : Sequence of :class:`str` or ``None``, default ``None``
+        If not ``None``, return only experiments whose estimator names are
+        contained in the sequence.
+        The order of the names is also the one used for estimators when
+        combining the results.
+
+    Returns
+    -------
+    info : :class:`ScoresInfo`
+        Class containing information about experiments scores.
+
+    See Also
+    --------
+    run_experiments
+    fetch_scores
+
+    """
 
     experiments = _get_experiments(
         storage=storage,
