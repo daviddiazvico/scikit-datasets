@@ -122,6 +122,7 @@ DatasetLike = Union[
 class ScoresInfo(NamedTuple):
     dataset_names: Sequence[str]
     estimator_names: Sequence[str]
+    scores: np.typing.NDArray[float]
     scores_mean: np.typing.NDArray[float]
     scores_std: np.typing.NDArray[float]
 
@@ -181,6 +182,14 @@ def _benchmark_from_data(
     if save_estimator:
         _append_info(experiment, "fitted_estimator", estimator)
 
+    best_params = getattr(estimator, "best_params_", None)
+    if best_params:
+        _append_info(experiment, "search_best_params", best_params)
+
+    best_score = getattr(estimator, "best_score_", None)
+    if best_params:
+        _append_info(experiment, "search_best_score", best_score)
+
     with _add_timing(experiment, "score_time"):
         test_score = estimator.score(X_test, y_test)
 
@@ -197,7 +206,7 @@ def _benchmark_from_data(
                 _append_info(experiment, f"{output}", method(X_test))
 
 
-def _compute_means(experiment: Experiment):
+def _compute_means(experiment: Experiment) -> None:
 
     experiment.info["score_mean"] = float(
         np.nanmean(experiment.info["test_score"])
@@ -641,9 +650,14 @@ def fetch_scores(
         estimator_names=estimator_names,
     )
 
-    dict_experiments: Dict[str, Dict[str, Tuple[float, float]]] = {}
+    dict_experiments: Dict[
+        str,
+        Dict[str, Tuple[np.typing.NDArray[float], float, float]],
+    ] = {}
     estimator_list = []
     dataset_list = []
+
+    nobs = 0
 
     for experiment in experiments:
         estimator_name = experiment.config["estimator_name"]
@@ -652,8 +666,14 @@ def fetch_scores(
         dataset_name = experiment.config["dataset_name"]
         if dataset_name not in dataset_list:
             dataset_list.append(dataset_name)
+        scores = experiment.info.get("test_score", np.array([]))
         score_mean = experiment.info.get("score_mean", np.nan)
         score_std = experiment.info.get("score_std", np.nan)
+
+        nobs = max(nobs, len(scores))
+
+        assert np.isnan(score_mean) or score_mean == np.mean(scores)
+        assert np.isnan(score_std) or score_std == np.std(scores)
 
         if estimator_name not in dict_experiments:
             dict_experiments[estimator_name] = {}
@@ -664,6 +684,7 @@ def fetch_scores(
             )
 
         dict_experiments[estimator_name][dataset_name] = (
+            scores,
             score_mean,
             score_std,
         )
@@ -676,19 +697,28 @@ def fetch_scores(
     )
     matrix_shape = (len(dataset_names), len(estimator_names))
 
+    scores = np.full(matrix_shape + (nobs,), np.nan)
     scores_mean = np.full(matrix_shape, np.nan)
     scores_std = np.full(matrix_shape, np.nan)
 
     for i, dataset_name in enumerate(dataset_names):
         for j, estimator_name in enumerate(estimator_names):
             dict_estimator = dict_experiments.get(estimator_name, {})
-            mean, std = dict_estimator.get(dataset_name, (np.nan, np.nan))
+            s, mean, std = dict_estimator.get(
+                dataset_name,
+                (np.array([]), np.nan, np.nan),
+            )
+            if len(s) == nobs:
+                scores[i, j] = s
             scores_mean[i, j] = mean
             scores_std[i, j] = std
+
+    scores = np.array(scores.tolist())
 
     return ScoresInfo(
         dataset_names=dataset_names,
         estimator_names=estimator_names,
+        scores=scores,
         scores_mean=scores_mean,
         scores_std=scores_std,
     )
