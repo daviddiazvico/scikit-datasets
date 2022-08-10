@@ -42,18 +42,18 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
 <span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">NamedTemporaryFile</span><span class="p">,</span> <span class="n">mkdtemp</span>
-<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span><span class="p">,</span> <span class="n">process_time</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span><span class="p">,</span> <span class="n">process_time</span><span class="p">,</span> <span class="n">sleep</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">IO</span><span class="p">,</span>
-    <span class="n">TYPE_CHECKING</span><span class="p">,</span>
-    <span class="n">AbstractSet</span><span class="p">,</span>
     <span class="n">Any</span><span class="p">,</span>
     <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
     <span class="n">Iterable</span><span class="p">,</span>
     <span class="n">Iterator</span><span class="p">,</span>
     <span class="n">List</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">,</span>
     <span class="n">Mapping</span><span class="p">,</span>
     <span class="n">Protocol</span><span class="p">,</span>
     <span class="n">Sequence</span><span class="p">,</span>
@@ -63,12 +63,16 @@
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 
+<span class="kn">import</span> <span class="nn">joblib</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">sacred</span> <span class="kn">import</span> <span class="n">Experiment</span><span class="p">,</span> <span class="n">Ingredient</span>
-<span class="kn">from</span> <span class="nn">sacred.observers</span> <span class="kn">import</span> <span class="n">RunObserver</span>
+<span class="kn">from</span> <span class="nn">sacred.observers</span> <span class="kn">import</span> <span class="n">FileStorageObserver</span><span class="p">,</span> <span class="n">MongoObserver</span><span class="p">,</span> <span class="n">RunObserver</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">is_classifier</span>
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">check_cv</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">Bunch</span><span class="p">,</span> <span class="n">is_scalar_nan</span>
+
+<span class="kn">from</span> <span class="nn">incense</span> <span class="kn">import</span> <span class="n">ExperimentLoader</span><span class="p">,</span> <span class="n">FileSystemExperimentLoader</span>
+<span class="kn">from</span> <span class="nn">incense.experiment</span> <span class="kn">import</span> <span class="n">FileSystemExperiment</span>
 
 <span class="n">SelfType</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;SelfType&quot;</span><span class="p">)</span>
 
@@ -93,6 +97,11 @@
     <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
     <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
     <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+<span class="p">]</span>
+
+<span class="n">ConfigLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="nb">str</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -130,6 +139,53 @@
     <span class="nb">int</span><span class="p">,</span>
     <span class="kc">None</span><span class="p">,</span>
 <span class="p">]</span>
+
+<span class="n">EstimatorLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">EstimatorProtocol</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">EstimatorProtocol</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">Tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">EstimatorProtocol</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">ConfigLike</span><span class="p">],</span>
+<span class="p">]</span>
+
+<span class="n">DatasetLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">Bunch</span><span class="p">,</span>
+    <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Bunch</span><span class="p">],</span>
+    <span class="n">Tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Bunch</span><span class="p">],</span> <span class="n">ConfigLike</span><span class="p">],</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="ScoresInfo"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.experiment.ScoresInfo.html#skdatasets.utils.experiment.ScoresInfo">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ScoresInfo</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class containing the scores of several related experiments.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset_names : Sequence of :external:class:`str`</span>
+<span class="sd">        Name of the datasets, with the same order in which are present</span>
+<span class="sd">        in the rows of the scores.</span>
+<span class="sd">    estimator_names : Sequence of :external:class:`str`</span>
+<span class="sd">        Name of the estimators, with the same order in which are present</span>
+<span class="sd">        in the columns of the scores.</span>
+<span class="sd">    scores : :external:class:`numpy.ndarray`</span>
+<span class="sd">        Test scores. It has size ``n_datasets`` :math:`\times` ``n_estimators``</span>
+<span class="sd">        :math:`\times` ``n_partitions``.</span>
+<span class="sd">    scores_mean : :external:class:`numpy.ndarray`</span>
+<span class="sd">        Test score means. It has size ``n_datasets``</span>
+<span class="sd">        :math:`\times` ``n_estimators``.</span>
+<span class="sd">    scores_std : :external:class:`numpy.ndarray`</span>
+<span class="sd">        Test score standard deviations. It has size ``n_datasets``</span>
+<span class="sd">        :math:`\times` ``n_estimators``.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    fetch_scores</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataset_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">estimator_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">scores_mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">scores_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></div>
 
 
 <span class="k">def</span> <span class="nf">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -178,21 +234,31 @@
     <span class="n">y_train</span><span class="p">:</span> <span class="n">TargetType</span><span class="p">,</span>
     <span class="n">X_test</span><span class="p">:</span> <span class="n">DataType</span><span class="p">,</span>
     <span class="n">y_test</span><span class="p">:</span> <span class="n">TargetType</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">with</span> <span class="n">_add_timing</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;fit_time&quot;</span><span class="p">):</span>
         <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
 
-    <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;fitted_estimator&quot;</span><span class="p">,</span> <span class="n">estimator</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">save_estimator</span><span class="p">:</span>
+        <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;fitted_estimator&quot;</span><span class="p">,</span> <span class="n">estimator</span><span class="p">)</span>
+
+    <span class="n">best_params</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;best_params_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">best_params</span><span class="p">:</span>
+        <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;search_best_params&quot;</span><span class="p">,</span> <span class="n">best_params</span><span class="p">)</span>
+
+    <span class="n">best_score</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;best_score_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">best_params</span><span class="p">:</span>
+        <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;search_best_score&quot;</span><span class="p">,</span> <span class="n">best_score</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">_add_timing</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;score_time&quot;</span><span class="p">):</span>
         <span class="n">test_score</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 
-    <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;test_score&quot;</span><span class="p">,</span> <span class="n">test_score</span><span class="p">)</span>
+    <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;test_score&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">test_score</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">save_train</span><span class="p">:</span>
         <span class="n">train_score</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-        <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;train_score&quot;</span><span class="p">,</span> <span class="n">train_score</span><span class="p">)</span>
+        <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="s2">&quot;train_score&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">train_score</span><span class="p">))</span>
 
     <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">):</span>
         <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -201,11 +267,22 @@
                 <span class="n">_append_info</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
 
 
+<span class="k">def</span> <span class="nf">_compute_means</span><span class="p">(</span><span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
+    <span class="p">)</span>
+    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_std&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
+    <span class="p">)</span>
+
+
 <span class="k">def</span> <span class="nf">_benchmark_one</span><span class="p">(</span>
     <span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">estimator</span><span class="p">:</span> <span class="n">BaseEstimator</span><span class="p">,</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Bunch</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Use only one predefined partition.&quot;&quot;&quot;</span>
@@ -237,11 +314,11 @@
         <span class="n">y_train</span><span class="o">=</span><span class="n">y_train_val</span><span class="p">,</span>
         <span class="n">X_test</span><span class="o">=</span><span class="n">X_test</span><span class="p">,</span>
         <span class="n">y_test</span><span class="o">=</span><span class="n">y_test</span><span class="p">,</span>
+        <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
         <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
-    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_std&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
+    <span class="n">_compute_means</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_benchmark_partitions</span><span class="p">(</span>
@@ -249,11 +326,15 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">estimator</span><span class="p">:</span> <span class="n">BaseEstimator</span><span class="p">,</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Bunch</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">outer_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Use several partitions.&quot;&quot;&quot;</span>
+    <span class="n">outer_cv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">outer_cv</span> <span class="k">if</span> <span class="n">outer_cv</span> <span class="o">==</span> <span class="s2">&quot;dataset&quot;</span> <span class="k">else</span> <span class="n">outer_cv</span>
+
     <span class="k">for</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="ow">in</span> <span class="n">_iterate_outer_cv</span><span class="p">(</span>
-        <span class="n">outer_cv</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">outer_cv</span><span class="p">,</span>
+        <span class="n">outer_cv</span><span class="o">=</span><span class="n">outer_cv</span><span class="p">,</span>
         <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
         <span class="n">X</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
         <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">target</span><span class="p">,</span>
@@ -266,17 +347,47 @@
             <span class="n">y_train</span><span class="o">=</span><span class="n">y_train</span><span class="p">,</span>
             <span class="n">X_test</span><span class="o">=</span><span class="n">X_test</span><span class="p">,</span>
             <span class="n">y_test</span><span class="o">=</span><span class="n">y_test</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
             <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
-    <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;score_std&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;test_score&quot;</span><span class="p">])</span>
+    <span class="n">_compute_means</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="experiment"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.experiment.experiment.html#skdatasets.utils.experiment.experiment">[docs]</a><span class="k">def</span> <span class="nf">experiment</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">_benchmark</span><span class="p">(</span>
+    <span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">BaseEstimator</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Bunch</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">outer_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Run the experiment.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">outer_cv</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">_benchmark_one</span><span class="p">(</span>
+            <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
+            <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_benchmark_partitions</span><span class="p">(</span>
+            <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
+            <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+            <span class="n">outer_cv</span><span class="o">=</span><span class="n">outer_cv</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">experiment</span><span class="p">(</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Bunch</span><span class="p">],</span>
     <span class="n">estimator</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Experiment</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -289,8 +400,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    dataset : function</span>
 <span class="sd">        Dataset fetch function. Might receive any argument. Must return a</span>
-<span class="sd">        :external:obj:`Bunch` with ``data``, ``target`` (might be ``None``),</span>
-<span class="sd">        ``inner_cv`` (might be ``None``) and ``outer_cv``</span>
+<span class="sd">        :external:class:`sklearn.utils.Bunch` with ``data``, ``target``</span>
+<span class="sd">        (might be ``None``), ``inner_cv`` (might be ``None``) and ``outer_cv``</span>
 <span class="sd">        (might be ``None``).</span>
 <span class="sd">    estimator : function</span>
 <span class="sd">        Estimator initialization function. Might receive any keyword argument.</span>
@@ -313,7 +424,7 @@
         <span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="nd">@experiment</span><span class="o">.</span><span class="n">automain</span>
+    <span class="nd">@experiment</span><span class="o">.</span><span class="n">main</span>
     <span class="k">def</span> <span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Run the experiment.&quot;&quot;&quot;</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">()</span>
@@ -328,22 +439,473 @@
             <span class="n">e</span> <span class="o">=</span> <span class="n">estimator</span><span class="p">()</span>
 
         <span class="c1"># Model assessment</span>
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;test_indices&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">_benchmark_one</span><span class="p">(</span>
-                <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
-                <span class="n">estimator</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
-                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-                <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+        <span class="n">_benchmark</span><span class="p">(</span>
+            <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
+            <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Ensure that everything is in the info dict at the end</span>
+        <span class="c1"># See https://github.com/IDSIA/sacred/issues/830</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">current_run</span><span class="o">.</span><span class="n">beat_interval</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">experiment</span>
+
+
+<span class="k">def</span> <span class="nf">_get_estimator_function</span><span class="p">(</span>
+    <span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">EstimatorLike</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">EstimatorProtocol</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">estimator_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">EstimatorProtocol</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">estimator</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">estimator_function</span> <span class="o">=</span> <span class="n">estimator</span>
+
+    <span class="k">return</span> <span class="n">experiment</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span><span class="n">estimator_function</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_dataset_function</span><span class="p">(</span>
+    <span class="n">experiment</span><span class="p">:</span> <span class="n">Experiment</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetLike</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Bunch</span><span class="p">]:</span>
+
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+        <span class="n">dataset_function</span> <span class="o">=</span> <span class="n">dataset</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">dataset_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bunch</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dataset</span>
+
+    <span class="k">return</span> <span class="n">experiment</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span><span class="n">dataset_function</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_create_one_experiment</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">estimator_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">EstimatorLike</span><span class="p">,</span>
+    <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetLike</span><span class="p">,</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">RunObserver</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ConfigLike</span><span class="p">,</span>
+    <span class="n">inner_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">outer_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Experiment</span><span class="p">:</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">()</span>
+
+    <span class="n">experiment</span><span class="o">.</span><span class="n">add_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="n">experiment</span><span class="o">.</span><span class="n">add_config</span><span class="p">({</span><span class="s2">&quot;estimator_name&quot;</span><span class="p">:</span> <span class="n">estimator_name</span><span class="p">})</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_config</span> <span class="o">=</span> <span class="n">estimator</span>
+        <span class="n">experiment</span><span class="o">.</span><span class="n">add_config</span><span class="p">(</span><span class="n">estimator_config</span><span class="p">)</span>
+
+    <span class="n">experiment</span><span class="o">.</span><span class="n">add_config</span><span class="p">({</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">:</span> <span class="n">dataset_name</span><span class="p">})</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">dataset</span><span class="p">,</span> <span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset</span>
+        <span class="n">experiment</span><span class="o">.</span><span class="n">add_config</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span>
+
+    <span class="n">experiment</span><span class="o">.</span><span class="n">observers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">storage</span><span class="p">)</span>
+
+    <span class="n">estimator_function</span> <span class="o">=</span> <span class="n">_get_estimator_function</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="n">estimator</span><span class="p">)</span>
+    <span class="n">dataset_function</span> <span class="o">=</span> <span class="n">_get_dataset_function</span><span class="p">(</span><span class="n">experiment</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+
+    <span class="nd">@experiment</span><span class="o">.</span><span class="n">main</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Run the experiment.&quot;&quot;&quot;</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset_function</span><span class="p">()</span>
+
+        <span class="c1"># Metaparameter search</span>
+        <span class="n">cv</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">inner_cv</span> <span class="k">if</span> <span class="n">inner_cv</span> <span class="o">==</span> <span class="s2">&quot;dataset&quot;</span> <span class="k">else</span> <span class="n">inner_cv</span>
+
+        <span class="n">estimator</span> <span class="o">=</span> <span class="n">estimator_function</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;cv&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">estimator</span><span class="o">.</span><span class="n">cv</span> <span class="o">=</span> <span class="n">cv</span>
+
+        <span class="c1"># Model assessment</span>
+        <span class="n">_benchmark</span><span class="p">(</span>
+            <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
+            <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+            <span class="n">outer_cv</span><span class="o">=</span><span class="n">outer_cv</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">experiment</span>
+
+
+<div class="viewcode-block" id="create_experiments"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.experiment.create_experiments.html#skdatasets.utils.experiment.create_experiments">[docs]</a><span class="k">def</span> <span class="nf">create_experiments</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">datasets</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatasetLike</span><span class="p">],</span>
+    <span class="n">estimators</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">EstimatorLike</span><span class="p">],</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">RunObserver</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ConfigLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">inner_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">outer_cv</span><span class="p">:</span> <span class="n">CVLike</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">save_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">save_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Experiment</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create several Sacred experiments.</span>
+
+<span class="sd">    It receives a set of estimators and datasets, and create Sacred experiment</span>
+<span class="sd">    objects for them.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    datasets : Mapping</span>
+<span class="sd">        Mapping where each key is the name for a dataset and each value</span>
+<span class="sd">        is either:</span>
+
+<span class="sd">        * A :external:class:`sklearn.utils.Bunch` with the fields explained</span>
+<span class="sd">          in :doc:`/structure`. Only ``data`` and ``target`` are</span>
+<span class="sd">          mandatory.</span>
+<span class="sd">        * A function receiving arbitrary config values and returning a</span>
+<span class="sd">          :external:class:`sklearn.utils.Bunch` object like the one explained</span>
+<span class="sd">          above.</span>
+<span class="sd">        * A tuple with such a function and additional configuration (either</span>
+<span class="sd">          a mapping or a filename).</span>
+<span class="sd">    estimators : Mapping</span>
+<span class="sd">        Mapping where each key is the name for a estimator and each value</span>
+<span class="sd">        is either:</span>
+
+<span class="sd">        * A scikit-learn compatible estimator.</span>
+<span class="sd">        * A function receiving arbitrary config values and returning a</span>
+<span class="sd">          scikit-learn compatible estimator.</span>
+<span class="sd">        * A tuple with such a function and additional configuration (either</span>
+<span class="sd">          a mapping or a filename).</span>
+<span class="sd">    storage : :external:class:`sacred.observers.RunObserver` or :class:`str`</span>
+<span class="sd">        Where the experiments will be stored. Either a Sacred observer, for</span>
+<span class="sd">        example to store in a Mongo database, or the name of a directory, to</span>
+<span class="sd">        use a file observer.</span>
+<span class="sd">    config : Mapping, :class:`str` or ``None``, default ``None``</span>
+<span class="sd">        A mapping or filename with additional configuration for the experiment.</span>
+<span class="sd">    inner_cv : CV-like object, ``&quot;datasets&quot;`` or ``False``, default ``False``</span>
+<span class="sd">        For estimators that perform cross validation (they have a ``cv``</span>
+<span class="sd">        parameter) this sets the cross validation strategy, as follows:</span>
+
+<span class="sd">        * If ``False`` the original value of ``cv`` is unchanged.</span>
+<span class="sd">        * If ``&quot;dataset&quot;``, the :external:class:`sklearn.utils.Bunch` objects</span>
+<span class="sd">          for the datasets must have a ``inner_cv`` attribute, which will</span>
+<span class="sd">          be the one used.</span>
+<span class="sd">        * Otherwise, ``cv`` is changed to this value.</span>
+<span class="sd">    outer_cv : CV-like object, ``&quot;datasets&quot;`` or ``False``, default ``None``</span>
+<span class="sd">        The strategy used to evaluate different partitions of the data, as</span>
+<span class="sd">        follows:</span>
+
+<span class="sd">        * If ``False`` use only one partition: the one specified in the</span>
+<span class="sd">          dataset. Thus the :external:class:`sklearn.utils.Bunch` objects</span>
+<span class="sd">          for the datasets should have defined at least a train and a test</span>
+<span class="sd">          partition.</span>
+<span class="sd">        * If ``&quot;dataset&quot;``, the :external:class:`sklearn.utils.Bunch` objects</span>
+<span class="sd">          for the datasets must have a ``outer_cv`` attribute, which will</span>
+<span class="sd">          be the one used.</span>
+<span class="sd">        * Otherwise, this will be passed to</span>
+<span class="sd">          :external:func:`sklearn.model_selection.check_cv` and the resulting</span>
+<span class="sd">          cross validator will be used to define the partitions.</span>
+<span class="sd">    save_estimator : bool, default ``False``</span>
+<span class="sd">        Whether to save the fitted estimator. This is useful for debugging</span>
+<span class="sd">        and for obtaining extra information in some cases, but for some</span>
+<span class="sd">        estimators it could consume much storage.</span>
+<span class="sd">    save_train : bool, default ``False``</span>
+<span class="sd">        If ``True``, compute and store also the score over the train data.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    experiments : Sequence of :external:class:`sacred.Experiment`</span>
+<span class="sd">        Sequence of Sacred experiments, ready to be run.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    run_experiments</span>
+<span class="sd">    fetch_scores</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">storage</span> <span class="o">=</span> <span class="n">FileStorageObserver</span><span class="p">(</span><span class="n">storage</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">_create_one_experiment</span><span class="p">(</span>
+            <span class="n">estimator_name</span><span class="o">=</span><span class="n">estimator_name</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">dataset_name</span><span class="o">=</span><span class="n">dataset_name</span><span class="p">,</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">storage</span><span class="o">=</span><span class="n">storage</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">inner_cv</span><span class="o">=</span><span class="n">inner_cv</span><span class="p">,</span>
+            <span class="n">outer_cv</span><span class="o">=</span><span class="n">outer_cv</span><span class="p">,</span>
+            <span class="n">save_estimator</span><span class="o">=</span><span class="n">save_estimator</span><span class="p">,</span>
+            <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">estimator_name</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="n">estimators</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dataset_name</span><span class="p">,</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="run_experiments"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.experiment.run_experiments.html#skdatasets.utils.experiment.run_experiments">[docs]</a><span class="k">def</span> <span class="nf">run_experiments</span><span class="p">(</span>
+    <span class="n">experiments</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Experiment</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run Sacred experiments.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    experiments : Sequence of :external:class:`sacred.Experiment`</span>
+<span class="sd">        Sequence of Sacred experiments to be run.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ids : Sequence of :external:class:`int`</span>
+<span class="sd">        Sequence of identifiers for each experiment.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    create_experiments</span>
+<span class="sd">    fetch_scores</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">run</span><span class="p">()</span><span class="o">.</span><span class="n">_id</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">experiments</span><span class="p">]</span></div>
+
+
+<span class="k">def</span> <span class="nf">_loader_from_observer</span><span class="p">(</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">RunObserver</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExperimentLoader</span> <span class="o">|</span> <span class="n">FileSystemExperimentLoader</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileSystemExperimentLoader</span><span class="p">(</span><span class="n">storage</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="n">FileStorageObserver</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileSystemExperimentLoader</span><span class="p">(</span><span class="n">storage</span><span class="o">.</span><span class="n">basedir</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="n">MongoObserver</span><span class="p">):</span>
+        <span class="n">database</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">database</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">client</span>
+        <span class="n">url</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">topology_description</span><span class="o">.</span><span class="n">server_descriptions</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">ExperimentLoader</span><span class="p">(</span>
+            <span class="n">mongo_uri</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;mongodb://</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">/&quot;</span><span class="p">,</span>
+            <span class="n">db_name</span><span class="o">=</span><span class="n">database</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">unpickle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observer </span><span class="si">{</span><span class="n">storage</span><span class="si">}</span><span class="s2"> is not supported.&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_experiments</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">RunObserver</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dataset_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Experiment</span><span class="p">]:</span>
+
+    <span class="n">loader</span> <span class="o">=</span> <span class="n">_loader_from_observer</span><span class="p">(</span><span class="n">storage</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">dataset_names</span><span class="p">,</span> <span class="n">estimator_names</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">FileSystemExperimentLoader</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ids</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">find_all_fun</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">loader</span><span class="p">,</span>
+            <span class="s2">&quot;find_all&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">FileSystemExperiment</span><span class="o">.</span><span class="n">from_run_dir</span><span class="p">(</span><span class="n">run_dir</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">run_dir</span> <span class="ow">in</span> <span class="n">loader</span><span class="o">.</span><span class="n">_runs_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">experiments</span> <span class="o">=</span> <span class="n">find_all_fun</span><span class="p">()</span>
+
+    <span class="k">elif</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">dataset_names</span><span class="p">,</span> <span class="n">estimator_names</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">FileSystemExperimentLoader</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">load_ids_fun</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">loader</span><span class="p">,</span>
+            <span class="s2">&quot;find_by_ids&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">id_seq</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">loader</span><span class="o">.</span><span class="n">find_by_id</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">experiment_id</span> <span class="ow">in</span> <span class="n">id_seq</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">experiments</span> <span class="o">=</span> <span class="n">load_ids_fun</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">conditions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span>
+            <span class="n">Mapping</span><span class="p">[</span>
+                <span class="nb">str</span><span class="p">,</span>
+                <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+            <span class="p">]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">ids</span><span class="p">}})</span>
+
+        <span class="k">if</span> <span class="n">estimator_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;config.estimator_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">estimator_names</span><span class="p">}})</span>
+
+        <span class="k">if</span> <span class="n">dataset_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;config.dataset_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">dataset_names</span><span class="p">}})</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;$and&quot;</span><span class="p">:</span> <span class="n">conditions</span><span class="p">}</span>
+
+        <span class="n">experiments</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">FileSystemExperimentLoader</span><span class="p">):</span>
+        <span class="c1"># Filter experiments by dataset and estimator names</span>
+        <span class="n">experiments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">experiments</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">estimator_names</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;estimator_name&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">estimator_names</span>
+                <span class="p">)</span>
+                <span class="ow">and</span> <span class="p">(</span>
+                    <span class="n">dataset_names</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">dataset_names</span>
+                <span class="p">)</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;outer_cv&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">_benchmark_partitions</span><span class="p">(</span>
-                <span class="n">experiment</span><span class="o">=</span><span class="n">experiment</span><span class="p">,</span>
-                <span class="n">estimator</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
-                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-                <span class="n">save_train</span><span class="o">=</span><span class="n">save_train</span><span class="p">,</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">experiments</span>
+
+
+<div class="viewcode-block" id="fetch_scores"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.experiment.fetch_scores.html#skdatasets.utils.experiment.fetch_scores">[docs]</a><span class="k">def</span> <span class="nf">fetch_scores</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">RunObserver</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dataset_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScoresInfo</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch scores from Sacred experiments.</span>
+
+<span class="sd">    By default, it retrieves every experiment. The parameters ``ids``,</span>
+<span class="sd">    ``estimator_names`` and ``dataset_names`` can be used to restrict the</span>
+<span class="sd">    number of experiments returned.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    storage : :external:class:`sacred.observers.RunObserver` or :class:`str`</span>
+<span class="sd">        Where the experiments are stored. Either a Sacred observer, for</span>
+<span class="sd">        example for a Mongo database, or the name of a directory, to</span>
+<span class="sd">        use a file observer.</span>
+<span class="sd">    ids : Sequence of :external:class:`int` or ``None``, default ``None``</span>
+<span class="sd">        If not ``None``, return only experiments whose id is contained</span>
+<span class="sd">        in the sequence.</span>
+<span class="sd">    dataset_names : Sequence of :class:`str` or ``None``, default ``None``</span>
+<span class="sd">        If not ``None``, return only experiments whose dataset names are</span>
+<span class="sd">        contained in the sequence.</span>
+<span class="sd">        The order of the names is also the one used for datasets when</span>
+<span class="sd">        combining the results.</span>
+<span class="sd">    estimator_names : Sequence of :class:`str` or ``None``, default ``None``</span>
+<span class="sd">        If not ``None``, return only experiments whose estimator names are</span>
+<span class="sd">        contained in the sequence.</span>
+<span class="sd">        The order of the names is also the one used for estimators when</span>
+<span class="sd">        combining the results.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    info : :class:`ScoresInfo`</span>
+<span class="sd">        Class containing information about experiments scores.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    run_experiments</span>
+<span class="sd">    fetch_scores</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">experiments</span> <span class="o">=</span> <span class="n">_get_experiments</span><span class="p">(</span>
+        <span class="n">storage</span><span class="o">=</span><span class="n">storage</span><span class="p">,</span>
+        <span class="n">ids</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span>
+        <span class="n">dataset_names</span><span class="o">=</span><span class="n">dataset_names</span><span class="p">,</span>
+        <span class="n">estimator_names</span><span class="o">=</span><span class="n">estimator_names</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">dict_experiments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">estimator_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dataset_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">nobs</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">experiment</span> <span class="ow">in</span> <span class="n">experiments</span><span class="p">:</span>
+        <span class="n">estimator_name</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;estimator_name&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">estimator_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">estimator_list</span><span class="p">:</span>
+            <span class="n">estimator_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimator_name</span><span class="p">)</span>
+        <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_list</span><span class="p">:</span>
+            <span class="n">dataset_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test_score&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]))</span>
+        <span class="n">score_mean</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score_mean&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">score_std</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score_std&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+        <span class="n">nobs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">nobs</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span>
+
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">score_mean</span><span class="p">)</span> <span class="ow">or</span> <span class="n">score_mean</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">score_std</span><span class="p">)</span> <span class="ow">or</span> <span class="n">score_std</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">estimator_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dict_experiments</span><span class="p">:</span>
+            <span class="n">dict_experiments</span><span class="p">[</span><span class="n">estimator_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">in</span> <span class="n">dict_experiments</span><span class="p">[</span><span class="n">estimator_name</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Repeated experiment: (</span><span class="si">{</span><span class="n">estimator_name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">experiment</span></div>
+        <span class="n">dict_experiments</span><span class="p">[</span><span class="n">estimator_name</span><span class="p">][</span><span class="n">dataset_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">score_mean</span><span class="p">,</span>
+            <span class="n">score_std</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">estimator_names</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">tuple</span><span class="p">(</span><span class="n">estimator_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">estimator_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">estimator_names</span>
+    <span class="p">)</span>
+    <span class="n">dataset_names</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">tuple</span><span class="p">(</span><span class="n">dataset_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">dataset_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dataset_names</span>
+    <span class="p">)</span>
+    <span class="n">matrix_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset_names</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">estimator_names</span><span class="p">))</span>
+
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">matrix_shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">nobs</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">scores_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">matrix_shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">scores_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">matrix_shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dataset_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dataset_names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">estimator_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">estimator_names</span><span class="p">):</span>
+            <span class="n">dict_estimator</span> <span class="o">=</span> <span class="n">dict_experiments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">estimator_name</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">s</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">dict_estimator</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">dataset_name</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="n">nobs</span><span class="p">:</span>
+                <span class="n">scores</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="n">scores_mean</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean</span>
+            <span class="n">scores_std</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span>
+
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">ScoresInfo</span><span class="p">(</span>
+        <span class="n">dataset_names</span><span class="o">=</span><span class="n">dataset_names</span><span class="p">,</span>
+        <span class="n">estimator_names</span><span class="o">=</span><span class="n">estimator_names</span><span class="p">,</span>
+        <span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span>
+        <span class="n">scores_mean</span><span class="o">=</span><span class="n">scores_mean</span><span class="p">,</span>
+        <span class="n">scores_std</span><span class="o">=</span><span class="n">scores_std</span><span class="p">,</span>
+    <span class="p">)</span></div>
 </pre></div>
 
           </div>
@@ -404,7 +966,7 @@
       &copy;2020, David Diaz Vico.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

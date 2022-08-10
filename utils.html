@@ -53,11 +53,27 @@ scikit-learn API.</p>
 </section>
 <section id="experiment">
 <h2>Experiment<a class="headerlink" href="#experiment" title="Permalink to this heading">¶</a></h2>
-<p>The following functions are related to launching machine learning experiments.</p>
+<p>The following functions can be used to execute several experiments,
+such as classification or regression tasks, with different datasets
+for a posterior comparison.
+These experiments are created using the Sacred library, storing the
+most common parameters of interest, such as time required for training or
+final scores.
+After the experiments have finished, the final scores can be easily
+retrieved in order to plot a table or perform hypothesis testing.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="autosummary/skdatasets.utils.experiment.experiment.html#skdatasets.utils.experiment.experiment" title="skdatasets.utils.experiment.experiment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">experiment</span></code></a>(dataset, estimator, *[, save_train])</p></td>
-<td><p>Prepare a Scikit-learn experiment as a Sacred experiment.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="autosummary/skdatasets.utils.experiment.create_experiments.html#skdatasets.utils.experiment.create_experiments" title="skdatasets.utils.experiment.create_experiments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_experiments</span></code></a>(*, datasets, estimators, ...)</p></td>
+<td><p>Create several Sacred experiments.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="autosummary/skdatasets.utils.experiment.run_experiments.html#skdatasets.utils.experiment.run_experiments" title="skdatasets.utils.experiment.run_experiments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_experiments</span></code></a>(experiments)</p></td>
+<td><p>Run Sacred experiments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="autosummary/skdatasets.utils.experiment.fetch_scores.html#skdatasets.utils.experiment.fetch_scores" title="skdatasets.utils.experiment.fetch_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fetch_scores</span></code></a>(*, storage[, ids, ...])</p></td>
+<td><p>Fetch scores from Sacred experiments.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="autosummary/skdatasets.utils.experiment.ScoresInfo.html#skdatasets.utils.experiment.ScoresInfo" title="skdatasets.utils.experiment.ScoresInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoresInfo</span></code></a>(dataset_names, estimator_names, ...)</p></td>
+<td><p>Class containing the scores of several related experiments.</p></td>
 </tr>
 </tbody>
 </table>
@@ -143,7 +159,7 @@ learning or hypothesis testing experiments.</p>
       &copy;2020, David Diaz Vico.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

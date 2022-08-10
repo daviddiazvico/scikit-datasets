@@ -1,0 +1,6 @@
+﻿skdatasets.utils.experiment.create\_experiments
+===============================================
+
+.. currentmodule:: skdatasets.utils.experiment
+
+.. autofunction:: create_experiments

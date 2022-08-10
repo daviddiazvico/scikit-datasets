@@ -1,0 +1,32 @@
+﻿skdatasets.utils.experiment.ScoresInfo
+======================================
+
+.. currentmodule:: skdatasets.utils.experiment
+
+.. autoclass:: ScoresInfo
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ScoresInfo.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ScoresInfo.dataset_names
+      ~ScoresInfo.estimator_names
+      ~ScoresInfo.scores
+      ~ScoresInfo.scores_mean
+      ~ScoresInfo.scores_std
+   
+   
