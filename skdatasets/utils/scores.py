@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 import itertools as it
-import sys
-from typing import Any, Literal, Mapping, Optional, Sequence, Tuple
+from typing import Any, Literal, Mapping, Optional, Sequence, Tuple, overload
 
 import numpy as np
 import pandas as pd
@@ -17,6 +16,7 @@ from scipy.stats import (
     rankdata,
     wilcoxon,
 )
+from scipy.stats.stats import ttest_ind_from_stats, ttest_rel
 from statsmodels.sandbox.stats.multicomp import multipletests
 
 CorrectionLike = Literal[
@@ -38,16 +38,40 @@ MultitestLike = Literal['kruskal', 'friedmanchisquare']
 TestLike = Literal['mannwhitneyu', 'wilcoxon']
 
 
+def _stylefun(
+    table: pd.DataFrame,
+    *,
+    style: str,
+    mask: np.typing.NDArray[bool],
+) -> np.typing.NDArray[str]:
+    full_mask = np.zeros(table.shape, dtype=np.bool_)
+    full_mask[:mask.shape[0]] = mask
+    style_table = np.full(shape=table.shape, fill_value=style)
+    style_table[~full_mask] = ""
+
+    return style_table
+
+
 def scores_table(
+    *,
     datasets: Sequence[str],
     estimators: Sequence[str],
     scores: np.typing.ArrayLike,
-    stds: Optional[np.typing.ArrayLike] = None,
+    stds: np.typing.ArrayLike | None = None,
+    nobs: int | None = None,
     greater_is_better: bool = True,
-    method: Literal['average', 'min', 'max', 'dense', 'ordinal'] = 'average',
+    method: Literal['average', 'min', 'max', 'dense', 'ordinal'] = 'min',
+    first_style: str | None = None,
+    second_style: str | None = None,
+    mark_significant: bool = False,
+    paired_test: bool = False,
+    significancy_level: float = 0.01,
     score_decimals: int = 2,
     rank_decimals: int = 0,
-) -> pd.DataFrame:
+    add_score_mean: bool = False,
+    two_sided: bool = True,
+    return_styler: bool | Literal["auto"] = "auto",
+) -> pd.DataFrame | pd.io.formats.style.Styler:
     """
     Scores table.
 
@@ -81,27 +105,160 @@ def scores_table(
     scores = np.asanyarray(scores)
     stds = None if stds is None else np.asanyarray(stds)
 
+    if return_styler == "auto":
+        return_styler = first_style is not None
+
+    assert scores.ndim in {2, 3}
+    score_means = scores if scores.ndim == 2 else np.mean(scores, axis=-1)
+    if scores.ndim == 3:
+        assert stds is None
+        assert nobs is None
+        stds = np.std(scores, axis=-1)
+        nobs = scores.shape[-1]
+
     ranks = np.asarray([
         rankdata(-m, method=method)
         if greater_is_better
         else rankdata(m, method=method)
-        for m in scores
+        for m in score_means
     ])
 
-    table = pd.DataFrame(data=scores, index=datasets, columns=estimators)
+    table = pd.DataFrame(data=score_means, index=datasets, columns=estimators)
     for i, d in enumerate(datasets):
         for j, e in enumerate(estimators):
-            table.loc[d, e] = f'{scores[i, j]:.{score_decimals}f}'
+            table.loc[d, e] = f'{{{score_means[i, j]:.{score_decimals}f}'
             if stds is not None:
-                table.loc[d, e] += f' ±{stds[i, j]:.{score_decimals}f}'
-            table.loc[d, e] += f' ({ranks[i, j]:.{rank_decimals}f})'
+                table.loc[d, e] += f' ± {stds[i, j]:.{score_decimals}f}'
+            table.loc[d, e] += f'}} ({ranks[i, j]:.{rank_decimals}f})'
 
-    table.loc['rank mean'] = np.around(
-        np.mean(ranks, axis=0),
-        decimals=score_decimals,
+    score_mean = np.mean(score_means, axis=0)
+    rank_mean = np.mean(ranks, axis=0)
+
+    score_mean_rank = (
+        rankdata(-score_mean, method=method)
+        if greater_is_better
+        else rankdata(score_mean, method=method)
     )
 
-    return table
+    rank_mean_rank = rankdata(rank_mean, method=method)
+
+    if add_score_mean:
+        table.loc["Average accuracy"] = [
+            f"{{{float(m):.{score_decimals}f}}}" for m in score_mean
+        ]
+
+    table.loc["Average rank"] = [
+        f"{{{float(m):.{score_decimals}f}}}" for m in rank_mean
+    ]
+
+    n_extra_rows = 2 if add_score_mean else 1
+
+    last_rows_mask = np.zeros(table.shape, dtype=bool)
+    last_rows_mask[-n_extra_rows:, :] = 1
+
+    if mark_significant:
+
+        firsts = (ranks == 1)
+
+        for i, (mean_row, std_row, rank_row, score_row) in enumerate(
+            zip(score_means, stds, ranks, scores),
+        ):
+            # Break ties by greater std
+            sorted_ranks = sorted(
+                range(len(rank_row)),
+                key=lambda ind: (rank_row[ind], -std_row[ind]),
+            )
+
+            first_index = sorted_ranks[0]
+            second_index = sorted_ranks[1]
+
+            alternative = "two-sided" if two_sided else "greater"
+
+            if paired_test:
+                assert score_row.ndim == 2
+
+                scores1 = score_row[first_index]
+                scores2 = score_row[second_index]
+
+                _, pvalue = ttest_rel(
+                    scores1,
+                    scores2,
+                    axis=-1,
+                    alternative=alternative,
+                )
+
+            else:
+                mean1 = mean_row[first_index]
+                mean2 = mean_row[second_index]
+                std1 = std_row[first_index]
+                std2 = std_row[second_index]
+
+                assert nobs
+                _, pvalue = ttest_ind_from_stats(
+                    mean1=mean1,
+                    std1=std1,
+                    nobs1=nobs,
+                    mean2=mean2,
+                    std2=std2,
+                    nobs2=nobs,
+                    equal_var=False,
+                    alternative=alternative,
+                )
+
+            if pvalue < significancy_level:
+                # Significant
+                first_index = np.nonzero(firsts[i])[0][0]
+
+                table.iloc[
+                    i,
+                    first_index,
+                ] = f"\\hphantom{{*}}{table.iloc[i, first_index]}*"
+
+    styler = table.style.apply(
+        _stylefun,
+        axis=None,
+        style="itshape:",
+        mask=last_rows_mask,
+    ).apply_index(
+        _stylefun,
+        axis=0,
+        style="itshape:",
+        mask=last_rows_mask[:, 0],
+    ).apply_index(
+        _stylefun,
+        axis=0,
+        style="bfseries:",
+        mask=last_rows_mask[:, 0],
+    ).apply_index(
+        lambda x: ["bfseries:"] * len(x),
+        axis=1,
+    )
+
+    if first_style:
+        firsts = np.vstack(
+            [ranks == 1, score_mean_rank == 1, rank_mean_rank == 1],
+        )
+
+        styler = styler.apply(
+            _stylefun,
+            axis=None,
+            style=first_style,
+            mask=firsts,
+        )
+
+    if second_style:
+        seconds = np.vstack(
+            [ranks == 2, score_mean_rank == 2, rank_mean_rank == 2],
+        )
+
+        styler = styler.apply(
+            _stylefun,
+            axis=None,
+            style=second_style,
+            mask=seconds,
+        )
+
+    return styler if return_styler else table
 
 
 def hypotheses_table(
