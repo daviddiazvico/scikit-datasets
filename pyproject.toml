@@ -37,7 +37,7 @@ keras = ["tensorflow"]
 physionet = ["pandas", "wfdb"]
 utils-estimator = ["jsonpickle"]
 utils-experiments = ["sacred", "incense"]
-utils-scores = ["statsmodels"]
+utils-scores = ["statsmodels", "jinja2"]
 all = ["scikit-datasets[cran,forex,keel,keras,physionet,utils-estimator,utils-experiments,utils-scores]"]
 test = [
   "pytest",

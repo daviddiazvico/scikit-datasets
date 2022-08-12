@@ -81,7 +81,7 @@ def _parse_info_string_value(value: str) -> Any:
         return math.nan
     try:
         value = ast.literal_eval(value)
-    except ValueError:
+    except Exception:
         pass
 
     return value
@@ -131,7 +131,8 @@ def _join_info_dicts(
     joined = {}
 
     n_keys = len(dicts[0])
-    assert all(len(d) == n_keys for d in dicts)
+    if not all(len(d) == n_keys for d in dicts):
+        return {}
 
     for key in dicts[0]:
         joined[key] = np.array([d[key] for d in dicts])
