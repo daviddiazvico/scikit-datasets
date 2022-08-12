@@ -61,6 +61,7 @@ class ScoreCell:
     mean: float
     std: float | None
     rank: int
+    significant: bool
 
 
 def average_rank(
@@ -258,8 +259,9 @@ def _set_style_formatter(
     )
 
 
-def _set_default_style(
+def _set_default_style_html(
     styler: pd.io.formats.style.Styler,
+    *,
     n_summary_rows: int,
 ) -> pd.io.formats.style.Styler:
 
@@ -275,6 +277,10 @@ def _set_default_style(
             {
                 "selector": ".rank1",
                 "props": [("font-weight", "bold")],
+            },
+            {
+                "selector": ".rank2",
+                "props": [("text-decoration", "underline")],
             },
             {
                 "selector": ".significant::after",
@@ -307,6 +313,108 @@ def _set_default_style(
     return styler
 
 
+def _set_style_from_class(
+    styler: pd.io.formats.style.Styler,
+    class_name: str,
+    style: str,
+) -> pd.io.formats.style.Styler:
+    style_matrix = np.full(styler.data.shape, style)
+
+    for row in range(style_matrix.shape[0]):
+        for column in range(style_matrix.shape[1]):
+            classes = styler.cell_context.get(
+                (row, column),
+                "",
+            ).split()
+
+            if class_name not in classes:
+                style_matrix[row, column] = ""
+
+    return styler.apply(lambda x: style_matrix, axis=None)
+
+
+def _set_default_style_latex(
+    styler: pd.io.formats.style.Styler,
+    *,
+    n_summary_rows: int,
+) -> pd.io.formats.style.Styler:
+
+    last_rows_mask = np.zeros(len(styler.data), dtype=int)
+    last_rows_mask[-n_summary_rows:] = 1
+
+    styler.set_table_styles(
+        [
+            {
+                'selector': r'newcommand{\summary}',
+                'props': r':[1]{\textit{#1}};',
+            },
+            {
+                'selector': r'newcommand{\significant}',
+                'props': r':[1]{#1*};',
+            },
+            {
+                'selector': r'newcommand{\rank}',
+                'props': (
+                    r':[2]{\ifnum#1=1 \textbf{#2} \else '
+                    r'\ifnum#1=2 \underline{#2} \fi\fi};'
+                ),
+            },
+        ],
+        overwrite=False,
+    )
+
+    for rank in range(styler.data.shape[1]):
+        styler = _set_style_from_class(
+            styler,
+            f"rank{rank}",
+            f"rank{{{rank}}}:--rwrap; ",
+        )
+
+    for class_name in ("summary", "significant"):
+
+        styler = _set_style_from_class(
+            styler,
+            class_name,
+            f"{class_name}:--rwrap; ",
+        )
+
+    styler = styler.apply_index(
+        lambda _: np.char.multiply(
+            "textbf:--rwrap;summary:--rwrap;",
+            last_rows_mask,
+        ),
+        axis=0,
+    )
+
+    styler = styler.apply_index(
+        lambda idx: ["textbf:--rwrap"] * len(idx),
+        axis=1,
+    )
+
+    return styler
+
+
+def _set_default_style(
+    styler: pd.io.formats.style.Styler,
+    *,
+    n_summary_rows: int,
+    default_style: Literal["html", "latex", None],
+) -> pd.io.formats.style.Styler:
+
+    if default_style == "html":
+        styler = _set_default_style_html(
+            styler,
+            n_summary_rows=n_summary_rows,
+        )
+    elif default_style == "latex":
+        styler = _set_default_style_latex(
+            styler,
+            n_summary_rows=n_summary_rows,
+        )
+
+    return styler
+
+
 def scores_table(
     scores: np.typing.ArrayLike,
     stds: np.typing.ArrayLike | None = None,
@@ -316,10 +424,10 @@ def scores_table(
     nobs: int | None = None,
     greater_is_better: bool = True,
     method: Literal['average', 'min', 'max', 'dense', 'ordinal'] = 'min',
+    default_style: Literal["html", "latex", None] = "html",
     paired_test: bool = False,
     significancy_level: float = 0,
-    score_decimals: int = 2,
-    rank_decimals: int = 0,
+    precision: int = 2,
     summary_rows: Sequence[Tuple[str, Callable[..., SummaryRow]]] = (
         ("Average rank", average_rank),
     ),
@@ -373,6 +481,17 @@ def scores_table(
         for m in means
     ])
 
+    significants = _all_significants(
+        scores,
+        means,
+        stds,
+        ranks,
+        nobs=nobs,
+        two_sided=two_sided,
+        paired_test=paired_test,
+        significancy_level=significancy_level,
+    )
+
     table = pd.DataFrame(data=means, index=datasets, columns=estimators)
     for i, d in enumerate(datasets):
         for j, e in enumerate(estimators):
@@ -380,8 +499,10 @@ def scores_table(
                 mean=means[i, j],
                 std=None if stds is None else stds[i, j],
                 rank=ranks[i, j],
+                significant=significants[i, j],
             )
 
+    # Create additional summary rows
     additional_ranks = []
     for name, summary_fun in summary_rows:
         row = summary_fun(
@@ -402,17 +523,6 @@ def scores_table(
                 else rankdata(row.values, method=method),
             )
 
-    significants = _all_significants(
-        scores,
-        means,
-        stds,
-        ranks,
-        nobs=nobs,
-        two_sided=two_sided,
-        paired_test=paired_test,
-        significancy_level=significancy_level,
-    )
-
     styler = _set_style_classes(
         table,
         all_ranks=np.vstack([ranks] + additional_ranks),
@@ -422,10 +532,14 @@ def scores_table(
 
     styler = _set_style_formatter(
         styler,
-        precision=score_decimals,
+        precision=precision,
     )
 
-    return _set_default_style(styler, len(summary_rows))
+    return _set_default_style(
+        styler,
+        n_summary_rows=len(summary_rows),
+        default_style=default_style,
+    )
 
 
 def hypotheses_table(
