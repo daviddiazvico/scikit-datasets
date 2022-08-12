@@ -424,14 +424,14 @@ def scores_table(
     nobs: int | None = None,
     greater_is_better: bool = True,
     method: Literal['average', 'min', 'max', 'dense', 'ordinal'] = 'min',
-    default_style: Literal["html", "latex", None] = "html",
-    paired_test: bool = False,
     significancy_level: float = 0,
+    paired_test: bool = False,
+    two_sided: bool = True,
+    default_style: Literal["html", "latex", None] = "html",
     precision: int = 2,
     summary_rows: Sequence[Tuple[str, Callable[..., SummaryRow]]] = (
         ("Average rank", average_rank),
     ),
-    two_sided: bool = True,
 ) -> pd.io.formats.style.Styler:
     """
     Scores table.
@@ -441,20 +441,48 @@ def scores_table(
 
     Parameters
     ----------
-    datasets: array-like
-        List of dataset names.
-    estimators: array-like
-        List of estimator names.
     scores: array-like
         Matrix of scores where each column represents a model.
-    stds: array_like, default=None
+        Either the full matrix with all experiment results or the
+        matrix with the mean scores can be passed.
+    stds: array-like, default=None
         Matrix of standard deviations where each column represents a
-        model.
+        model. If ``scores`` is the full matrix with all results
+        this is automatically computed from it and should not be passed.
+    datasets: sequence of :external:class:`str`
+        List of dataset names.
+    estimators: sequence of :external:class:`str`
+        List of estimator names.
+    nobs: :external:class:`int`
+        Number of repetitions of the experiments. Used only for computing
+        significances when ``scores`` is not the full matrix.
     greater_is_better: boolean, default=True
         Whether a greater score is better (score) or worse
         (loss).
     method: {'average', 'min', 'max', 'dense', 'ordinal'}, default='average'
         Method used to solve ties.
+    significancy_level: :external:class:`float`, default=0
+        Significancy level for considerin a result significant. If nonzero,
+        significancy is calculated using a t-test. In that case, if
+        ``paired_test`` is ``True``, ``scores`` should be the full matrix
+        and a paired test is performed. Otherwise, the t-test assumes
+        independence, and either ``scores`` should be the full matrix
+        or ``nobs`` should be passed.
+    paired_test: :external:class:`bool`, default=False
+        Whether to perform a paired test or a test assuming independence.
+        If ``True``, ``scores`` should be the full matrix.
+        Otherwise, either ``scores`` should be the full matrix
+        or ``nobs`` should be passed.
+    two_sided: :external:class:`bool`, default=True
+        Whether to perform a two sided t-test or a one sided t-test.
+    default_style: {'html', 'latex', None}, default='html'
+        Default style for the table. Use ``None`` for no style. Note that
+        the CSS classes and textual formatting are always set.
+    precision: :external:class:`int`
+        Number of decimals used for floating point numbers.
+    summary_rows: sequence
+        List of (name, callable) tuples for additional summary rows.
+        By default, the rank average is computed.
 
     Returns
     -------
