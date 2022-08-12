@@ -28,25 +28,12 @@ scores = np.asarray(((89.79, 89.78, 89.76, 89.88, 89.85, 89.91, 89.93),
 
 def test_scores_table() -> None:
     """Tests scores table."""
-<<<<<<< HEAD
     scores_table(scores, datasets=datasets, estimators=estimators)
     scores_table(
         scores,
         stds=scores / 10.0,
         datasets=datasets,
         estimators=estimators,
-=======
-    scores_table(
-        datasets=datasets,
-        estimators=estimators,
-        scores=scores,
-    )
-    scores_table(
-        datasets=datasets,
-        estimators=estimators,
-        scores=scores,
-        stds=scores / 10.0,
->>>>>>> refs/heads/master
     )
 
 
