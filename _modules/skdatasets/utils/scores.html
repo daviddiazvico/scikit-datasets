@@ -39,8 +39,19 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">Iterable</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Mapping</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+    <span class="n">overload</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -51,6 +62,7 @@
     <span class="n">rankdata</span><span class="p">,</span>
     <span class="n">wilcoxon</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">scipy.stats.stats</span> <span class="kn">import</span> <span class="n">ttest_ind_from_stats</span><span class="p">,</span> <span class="n">ttest_rel</span>
 <span class="kn">from</span> <span class="nn">statsmodels.sandbox.stats.multicomp</span> <span class="kn">import</span> <span class="n">multipletests</span>
 
 <span class="n">CorrectionLike</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
@@ -72,16 +84,389 @@
 <span class="n">TestLike</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;mannwhitneyu&#39;</span><span class="p">,</span> <span class="s1">&#39;wilcoxon&#39;</span><span class="p">]</span>
 
 
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SummaryRow</span><span class="p">:</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+    <span class="n">greater_is_better</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ScoreCell</span><span class="p">:</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">significant</span><span class="p">:</span> <span class="nb">bool</span>
+
+
+<span class="k">def</span> <span class="nf">average_rank</span><span class="p">(</span>
+    <span class="n">ranks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SummaryRow</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compute rank averages.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SummaryRow</span><span class="p">(</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">average_mean_score</span><span class="p">(</span>
+    <span class="n">means</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">greater_is_better</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SummaryRow</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compute score mean averages.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SummaryRow</span><span class="p">(</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">means</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">greater_is_better</span><span class="o">=</span><span class="n">greater_is_better</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_is_significant</span><span class="p">(</span>
+    <span class="n">scores1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">scores2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">mean1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">mean2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">std1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">std2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">nobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">two_sided</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">paired_test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">significancy_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+
+    <span class="n">alternative</span> <span class="o">=</span> <span class="s2">&quot;two-sided&quot;</span> <span class="k">if</span> <span class="n">two_sided</span> <span class="k">else</span> <span class="s2">&quot;greater&quot;</span>
+
+    <span class="k">if</span> <span class="n">paired_test</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">scores1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="n">scores2</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">pvalue</span> <span class="o">=</span> <span class="n">ttest_rel</span><span class="p">(</span>
+            <span class="n">scores1</span><span class="p">,</span>
+            <span class="n">scores2</span><span class="p">,</span>
+            <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">alternative</span><span class="o">=</span><span class="n">alternative</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">nobs</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">pvalue</span> <span class="o">=</span> <span class="n">ttest_ind_from_stats</span><span class="p">(</span>
+            <span class="n">mean1</span><span class="o">=</span><span class="n">mean1</span><span class="p">,</span>
+            <span class="n">std1</span><span class="o">=</span><span class="n">std1</span><span class="p">,</span>
+            <span class="n">nobs1</span><span class="o">=</span><span class="n">nobs</span><span class="p">,</span>
+            <span class="n">mean2</span><span class="o">=</span><span class="n">mean2</span><span class="p">,</span>
+            <span class="n">std2</span><span class="o">=</span><span class="n">std2</span><span class="p">,</span>
+            <span class="n">nobs2</span><span class="o">=</span><span class="n">nobs</span><span class="p">,</span>
+            <span class="n">equal_var</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">alternative</span><span class="o">=</span><span class="n">alternative</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pvalue</span> <span class="o">&lt;</span> <span class="n">significancy_level</span>
+
+
+<span class="k">def</span> <span class="nf">_all_significants</span><span class="p">(</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">means</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">stds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ranks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">nobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">two_sided</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">paired_test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">significancy_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]:</span>
+
+    <span class="n">significant_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">stds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">significancy_level</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">significant_matrix</span>
+
+    <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="p">(</span><span class="n">scores_row</span><span class="p">,</span> <span class="n">mean_row</span><span class="p">,</span> <span class="n">std_row</span><span class="p">,</span> <span class="n">rank_row</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+        <span class="nb">zip</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">,</span> <span class="n">ranks</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="k">for</span> <span class="n">column</span><span class="p">,</span> <span class="p">(</span><span class="n">scores1</span><span class="p">,</span> <span class="n">mean1</span><span class="p">,</span> <span class="n">std1</span><span class="p">,</span> <span class="n">rank1</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">scores_row</span><span class="p">,</span> <span class="n">mean_row</span><span class="p">,</span> <span class="n">std_row</span><span class="p">,</span> <span class="n">rank_row</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="c1"># Compare every element with all the ones with immediate below rank</span>
+            <span class="c1"># It must be significantly better than all of them</span>
+            <span class="n">index2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">rank_row</span> <span class="o">==</span> <span class="p">(</span><span class="n">rank1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">is_significant</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">index2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="n">_is_significant</span><span class="p">(</span>
+                    <span class="n">scores1</span><span class="p">,</span>
+                    <span class="n">scores_row</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                    <span class="n">mean1</span><span class="p">,</span>
+                    <span class="n">mean_row</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                    <span class="n">std1</span><span class="p">,</span>
+                    <span class="n">std_row</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                    <span class="n">nobs</span><span class="o">=</span><span class="n">nobs</span><span class="p">,</span>
+                    <span class="n">two_sided</span><span class="o">=</span><span class="n">two_sided</span><span class="p">,</span>
+                    <span class="n">paired_test</span><span class="o">=</span><span class="n">paired_test</span><span class="p">,</span>
+                    <span class="n">significancy_level</span><span class="o">=</span><span class="n">significancy_level</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">index2</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">is_significant</span><span class="p">:</span>
+                <span class="n">significant_matrix</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="n">significant_matrix</span>
+
+
+<span class="k">def</span> <span class="nf">_set_style_classes</span><span class="p">(</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">all_ranks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">significants</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">],</span>
+    <span class="n">n_summary_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+    <span class="n">rank_class_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+        <span class="s2">&quot;rank&quot;</span><span class="p">,</span>
+        <span class="n">all_ranks</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">is_summary_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">all_ranks</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
+    <span class="n">is_summary_row</span><span class="p">[</span><span class="o">-</span><span class="n">n_summary_rows</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">summary_rows_class_name</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+        <span class="s2">&quot;summary&quot;</span><span class="p">,</span>
+        <span class="n">is_summary_row</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">significant_class_name</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+        <span class="s2">&quot;significant&quot;</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+            <span class="n">significants</span><span class="p">,</span>
+            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">significants</span><span class="p">),)</span> <span class="o">*</span> <span class="n">n_summary_rows</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">set_td_classes</span><span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">reduce</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">add</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="n">rank_class_names</span><span class="p">,</span>
+                    <span class="s2">&quot; &quot;</span><span class="p">,</span>
+                    <span class="n">summary_rows_class_name</span><span class="p">,</span>
+                    <span class="s2">&quot; &quot;</span><span class="p">,</span>
+                    <span class="n">significant_class_name</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">styler</span>
+
+
+<span class="k">def</span> <span class="nf">_set_style_formatter</span><span class="p">(</span>
+    <span class="n">styler</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">_formatter</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data</span><span class="si">:</span><span class="s2">.</span><span class="si">{</span><span class="n">precision</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ScoreCell</span><span class="p">):</span>
+            <span class="n">str_repr</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">precision</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">str_repr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; ± </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">precision</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="n">str_repr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; (</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">rank</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">)&#39;</span>
+            <span class="k">return</span> <span class="n">str_repr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">styler</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">_formatter</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_set_default_style_html</span><span class="p">(</span>
+    <span class="n">styler</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">n_summary_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+
+    <span class="n">last_rows_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">styler</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">last_rows_mask</span><span class="p">[</span><span class="o">-</span><span class="n">n_summary_rows</span><span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">set_table_styles</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selector&quot;</span><span class="p">:</span> <span class="s2">&quot;.summary&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;props&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;font-style&quot;</span><span class="p">,</span> <span class="s2">&quot;italic&quot;</span><span class="p">)],</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selector&quot;</span><span class="p">:</span> <span class="s2">&quot;.rank1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;props&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;font-weight&quot;</span><span class="p">,</span> <span class="s2">&quot;bold&quot;</span><span class="p">)],</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selector&quot;</span><span class="p">:</span> <span class="s2">&quot;.rank2&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;props&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;text-decoration&quot;</span><span class="p">,</span> <span class="s2">&quot;underline&quot;</span><span class="p">)],</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selector&quot;</span><span class="p">:</span> <span class="s2">&quot;.significant::after&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;props&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">*</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="s2">&quot;0px&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;display&quot;</span><span class="p">,</span> <span class="s2">&quot;inline-block&quot;</span><span class="p">),</span>
+                <span class="p">],</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selector&quot;</span><span class="p">:</span> <span class="s2">&quot;.col_heading&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;props&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;font-weight&quot;</span><span class="p">,</span> <span class="s2">&quot;bold&quot;</span><span class="p">)],</span>
+            <span class="p">},</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">apply_index</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+            <span class="s2">&quot;font-style: italic; font-weight: bold&quot;</span><span class="p">,</span>
+            <span class="n">last_rows_mask</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">apply_index</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;font-weight: bold&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">styler</span>
+
+
+<span class="k">def</span> <span class="nf">_set_style_from_class</span><span class="p">(</span>
+    <span class="n">styler</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">,</span>
+    <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+    <span class="n">style_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">styler</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">style</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">style_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">style_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">classes</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">cell_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">),</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">class_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
+                <span class="n">style_matrix</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">styler</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">style_matrix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_set_default_style_latex</span><span class="p">(</span>
+    <span class="n">styler</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">n_summary_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+
+    <span class="n">last_rows_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">styler</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">last_rows_mask</span><span class="p">[</span><span class="o">-</span><span class="n">n_summary_rows</span><span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">styler</span><span class="o">.</span><span class="n">set_table_styles</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;selector&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;newcommand{\summary}&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;props&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;:[1]{\textit{#1}};&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;selector&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;newcommand{\significant}&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;props&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;:[1]{#1*};&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;selector&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;newcommand{\rank}&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;props&#39;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">r</span><span class="s1">&#39;:[2]{\ifnum#1=1 \textbf{#2} \else &#39;</span>
+                    <span class="sa">r</span><span class="s1">&#39;\ifnum#1=2 \underline{#2} \fi\fi};&#39;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">],</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">rank</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">styler</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_style_from_class</span><span class="p">(</span>
+            <span class="n">styler</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;rank</span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;rank</span><span class="se">{{</span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="se">}}</span><span class="s2">:--rwrap; &quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;summary&quot;</span><span class="p">,</span> <span class="s2">&quot;significant&quot;</span><span class="p">):</span>
+
+        <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_style_from_class</span><span class="p">(</span>
+            <span class="n">styler</span><span class="p">,</span>
+            <span class="n">class_name</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">class_name</span><span class="si">}</span><span class="s2">:--rwrap; &quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">apply_index</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+            <span class="s2">&quot;textbf:--rwrap;summary:--rwrap;&quot;</span><span class="p">,</span>
+            <span class="n">last_rows_mask</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">styler</span><span class="o">.</span><span class="n">apply_index</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;textbf:--rwrap&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">styler</span>
+
+
+<span class="k">def</span> <span class="nf">_set_default_style</span><span class="p">(</span>
+    <span class="n">styler</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">n_summary_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">default_style</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;html&quot;</span><span class="p">,</span> <span class="s2">&quot;latex&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">default_style</span> <span class="o">==</span> <span class="s2">&quot;html&quot;</span><span class="p">:</span>
+        <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_default_style_html</span><span class="p">(</span>
+            <span class="n">styler</span><span class="p">,</span>
+            <span class="n">n_summary_rows</span><span class="o">=</span><span class="n">n_summary_rows</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">default_style</span> <span class="o">==</span> <span class="s2">&quot;latex&quot;</span><span class="p">:</span>
+        <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_default_style_latex</span><span class="p">(</span>
+            <span class="n">styler</span><span class="p">,</span>
+            <span class="n">n_summary_rows</span><span class="o">=</span><span class="n">n_summary_rows</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">styler</span>
+
+
 <div class="viewcode-block" id="scores_table"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.scores.scores_table.html#skdatasets.utils.scores.scores_table">[docs]</a><span class="k">def</span> <span class="nf">scores_table</span><span class="p">(</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">stds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">ArrayLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">datasets</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">estimators</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
-    <span class="n">stds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">greater_is_better</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;average&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="s1">&#39;ordinal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;average&#39;</span><span class="p">,</span>
-    <span class="n">score_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="n">rank_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;average&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="s1">&#39;ordinal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;min&#39;</span><span class="p">,</span>
+    <span class="n">significancy_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">paired_test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">two_sided</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_style</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;html&quot;</span><span class="p">,</span> <span class="s2">&quot;latex&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;html&quot;</span><span class="p">,</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">summary_rows</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">SummaryRow</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;Average rank&quot;</span><span class="p">,</span> <span class="n">average_rank</span><span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">formats</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">Styler</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scores table.</span>
 
@@ -90,20 +475,48 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    datasets: array-like</span>
-<span class="sd">        List of dataset names.</span>
-<span class="sd">    estimators: array-like</span>
-<span class="sd">        List of estimator names.</span>
 <span class="sd">    scores: array-like</span>
 <span class="sd">        Matrix of scores where each column represents a model.</span>
-<span class="sd">    stds: array_like, default=None</span>
+<span class="sd">        Either the full matrix with all experiment results or the</span>
+<span class="sd">        matrix with the mean scores can be passed.</span>
+<span class="sd">    stds: array-like, default=None</span>
 <span class="sd">        Matrix of standard deviations where each column represents a</span>
-<span class="sd">        model.</span>
+<span class="sd">        model. If ``scores`` is the full matrix with all results</span>
+<span class="sd">        this is automatically computed from it and should not be passed.</span>
+<span class="sd">    datasets: sequence of :external:class:`str`</span>
+<span class="sd">        List of dataset names.</span>
+<span class="sd">    estimators: sequence of :external:class:`str`</span>
+<span class="sd">        List of estimator names.</span>
+<span class="sd">    nobs: :external:class:`int`</span>
+<span class="sd">        Number of repetitions of the experiments. Used only for computing</span>
+<span class="sd">        significances when ``scores`` is not the full matrix.</span>
 <span class="sd">    greater_is_better: boolean, default=True</span>
 <span class="sd">        Whether a greater score is better (score) or worse</span>
 <span class="sd">        (loss).</span>
 <span class="sd">    method: {&#39;average&#39;, &#39;min&#39;, &#39;max&#39;, &#39;dense&#39;, &#39;ordinal&#39;}, default=&#39;average&#39;</span>
 <span class="sd">        Method used to solve ties.</span>
+<span class="sd">    significancy_level: :external:class:`float`, default=0</span>
+<span class="sd">        Significancy level for considerin a result significant. If nonzero,</span>
+<span class="sd">        significancy is calculated using a t-test. In that case, if</span>
+<span class="sd">        ``paired_test`` is ``True``, ``scores`` should be the full matrix</span>
+<span class="sd">        and a paired test is performed. Otherwise, the t-test assumes</span>
+<span class="sd">        independence, and either ``scores`` should be the full matrix</span>
+<span class="sd">        or ``nobs`` should be passed.</span>
+<span class="sd">    paired_test: :external:class:`bool`, default=False</span>
+<span class="sd">        Whether to perform a paired test or a test assuming independence.</span>
+<span class="sd">        If ``True``, ``scores`` should be the full matrix.</span>
+<span class="sd">        Otherwise, either ``scores`` should be the full matrix</span>
+<span class="sd">        or ``nobs`` should be passed.</span>
+<span class="sd">    two_sided: :external:class:`bool`, default=True</span>
+<span class="sd">        Whether to perform a two sided t-test or a one sided t-test.</span>
+<span class="sd">    default_style: {&#39;html&#39;, &#39;latex&#39;, None}, default=&#39;html&#39;</span>
+<span class="sd">        Default style for the table. Use ``None`` for no style. Note that</span>
+<span class="sd">        the CSS classes and textual formatting are always set.</span>
+<span class="sd">    precision: :external:class:`int`</span>
+<span class="sd">        Number of decimals used for floating point numbers.</span>
+<span class="sd">    summary_rows: sequence</span>
+<span class="sd">        List of (name, callable) tuples for additional summary rows.</span>
+<span class="sd">        By default, the rank average is computed.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -115,27 +528,80 @@
     <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
     <span class="n">stds</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">stds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">stds</span><span class="p">)</span>
 
+    <span class="k">assert</span> <span class="n">scores</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">}</span>
+    <span class="n">means</span> <span class="o">=</span> <span class="n">scores</span> <span class="k">if</span> <span class="n">scores</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">scores</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">stds</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">nobs</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="n">stds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">nobs</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
     <span class="n">ranks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span>
         <span class="n">rankdata</span><span class="p">(</span><span class="o">-</span><span class="n">m</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">greater_is_better</span>
         <span class="k">else</span> <span class="n">rankdata</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">scores</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">means</span>
     <span class="p">])</span>
 
-    <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">datasets</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">estimators</span><span class="p">)</span>
+    <span class="n">significants</span> <span class="o">=</span> <span class="n">_all_significants</span><span class="p">(</span>
+        <span class="n">scores</span><span class="p">,</span>
+        <span class="n">means</span><span class="p">,</span>
+        <span class="n">stds</span><span class="p">,</span>
+        <span class="n">ranks</span><span class="p">,</span>
+        <span class="n">nobs</span><span class="o">=</span><span class="n">nobs</span><span class="p">,</span>
+        <span class="n">two_sided</span><span class="o">=</span><span class="n">two_sided</span><span class="p">,</span>
+        <span class="n">paired_test</span><span class="o">=</span><span class="n">paired_test</span><span class="p">,</span>
+        <span class="n">significancy_level</span><span class="o">=</span><span class="n">significancy_level</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">means</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">datasets</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">estimators</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">estimators</span><span class="p">):</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">scores</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">score_decimals</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">&#39;</span>
-            <span class="k">if</span> <span class="n">stds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; ± </span><span class="si">{</span><span class="n">stds</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">score_decimals</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">&#39;</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; (</span><span class="si">{</span><span class="n">ranks</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">rank_decimals</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">)&#39;</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">ScoreCell</span><span class="p">(</span>
+                <span class="n">mean</span><span class="o">=</span><span class="n">means</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
+                <span class="n">std</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">stds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">stds</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">ranks</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
+                <span class="n">significant</span><span class="o">=</span><span class="n">significants</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
+            <span class="p">)</span>
 
-    <span class="n">rank_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">&#39;rank mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="si">:</span><span class="s2">.</span><span class="si">{</span><span class="n">score_decimals</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">rank_mean</span>
-    <span class="p">]</span>
+    <span class="c1"># Create additional summary rows</span>
+    <span class="n">additional_ranks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">summary_fun</span> <span class="ow">in</span> <span class="n">summary_rows</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">summary_fun</span><span class="p">(</span>
+            <span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span>
+            <span class="n">means</span><span class="o">=</span><span class="n">means</span><span class="p">,</span>
+            <span class="n">stds</span><span class="o">=</span><span class="n">stds</span><span class="p">,</span>
+            <span class="n">ranks</span><span class="o">=</span><span class="n">ranks</span><span class="p">,</span>
+            <span class="n">greater_is_better</span><span class="o">=</span><span class="n">greater_is_better</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">values</span>
 
-    <span class="k">return</span> <span class="n">table</span></div>
+        <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">greater_is_better</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_ranks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">additional_ranks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">rankdata</span><span class="p">(</span><span class="o">-</span><span class="n">row</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">greater_is_better</span>
+                <span class="k">else</span> <span class="n">rankdata</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_style_classes</span><span class="p">(</span>
+        <span class="n">table</span><span class="p">,</span>
+        <span class="n">all_ranks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">ranks</span><span class="p">]</span> <span class="o">+</span> <span class="n">additional_ranks</span><span class="p">),</span>
+        <span class="n">significants</span><span class="o">=</span><span class="n">significants</span><span class="p">,</span>
+        <span class="n">n_summary_rows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">summary_rows</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">styler</span> <span class="o">=</span> <span class="n">_set_style_formatter</span><span class="p">(</span>
+        <span class="n">styler</span><span class="p">,</span>
+        <span class="n">precision</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_set_default_style</span><span class="p">(</span>
+        <span class="n">styler</span><span class="p">,</span>
+        <span class="n">n_summary_rows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">summary_rows</span><span class="p">),</span>
+        <span class="n">default_style</span><span class="o">=</span><span class="n">default_style</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="hypotheses_table"><a class="viewcode-back" href="../../../autosummary/skdatasets.utils.scores.hypotheses_table.html#skdatasets.utils.scores.hypotheses_table">[docs]</a><span class="k">def</span> <span class="nf">hypotheses_table</span><span class="p">(</span>
