@@ -5,8 +5,7 @@
 
 import numpy as np
 
-from skdatasets.utils.scores import scores_table, hypotheses_table
-
+from skdatasets.utils.scores import hypotheses_table, scores_table
 
 datasets = ['a4a', 'a8a', 'combined', 'dna', 'ijcnn1', 'letter', 'pendigits',
             'satimage', 'shuttle', 'usps', 'w7a', 'w8a']
@@ -27,17 +26,23 @@ scores = np.asarray(((89.79, 89.78, 89.76, 89.88, 89.85, 89.91, 89.93),
                      (95.80, 95.99, 95.35, 96.20, 96.22, 96.36, 96.71)))
 
 
-def test_scores_table():
+def test_scores_table() -> None:
     """Tests scores table."""
-    scores_table(datasets, estimators, scores)
-    scores_table(datasets, estimators, scores, stds=scores/10.0)
+    scores_table(scores, datasets=datasets, estimators=estimators)
+    scores_table(
+        scores,
+        stds=scores / 10.0,
+        datasets=datasets,
+        estimators=estimators,
+    )
 
 
-def test_hypotheses_table():
+def test_hypotheses_table() -> None:
     """Tests hypotheses table."""
     for multitest in ('kruskal', 'friedmanchisquare', None):
         for test in ('mannwhitneyu', 'wilcoxon'):
-            hypotheses_table(scores, estimators, multitest=multitest, test=test)
+            hypotheses_table(scores, estimators,
+                             multitest=multitest, test=test)
             for correction in ('bonferroni', 'sidak', 'holm-sidak', 'holm',
                                'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
                                'fdr_tsbh', 'fdr_tsbky'):
