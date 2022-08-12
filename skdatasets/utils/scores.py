@@ -93,13 +93,13 @@ def scores_table(
         for j, e in enumerate(estimators):
             table.loc[d, e] = f'{scores[i, j]:.{score_decimals}f}'
             if stds is not None:
-                table.loc[d, e] += f' ±{stds[i, j]:.{score_decimals}f}'
+                table.loc[d, e] += f' ± {stds[i, j]:.{score_decimals}f}'
             table.loc[d, e] += f' ({ranks[i, j]:.{rank_decimals}f})'
 
-    table.loc['rank mean'] = np.around(
-        np.mean(ranks, axis=0),
-        decimals=score_decimals,
-    )
+    rank_mean = np.mean(ranks, axis=0)
+    table.loc['rank mean'] = [
+        f"{float(m):.{score_decimals}f}" for m in rank_mean
+    ]
 
     return table
 

@@ -4,16 +4,23 @@
 """
 from __future__ import annotations
 
+import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
 from sacred.observers import FileStorageObserver
-from sklearn.datasets import load_boston
+from sklearn.datasets import load_boston, load_iris, load_wine
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import Bunch
 
-from skdatasets.utils.experiment import experiment
+from skdatasets.utils.experiment import (
+    create_experiments,
+    experiment,
+    fetch_scores,
+    run_experiments,
+)
 
 if TYPE_CHECKING:
     from skdatasets.utils.experiment import CVLike
@@ -58,16 +65,17 @@ def _experiment(
     inner_cv: CVLike,
     outer_cv: CVLike | Iterable[ExplicitSplitType],
 ) -> None:
-    e = experiment(_dataset, _estimator)
-    e.observers.append(FileStorageObserver('.results'))
-    e.run(
-        config_updates={
-            'dataset': {
-                'inner_cv': inner_cv,
-                'outer_cv': outer_cv,
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        e = experiment(_dataset, _estimator)
+        e.observers.append(FileStorageObserver(tmpdirname))
+        e.run(
+            config_updates={
+                'dataset': {
+                    'inner_cv': inner_cv,
+                    'outer_cv': outer_cv,
+                },
             },
-        },
-    )
+        )
 
 
 def test_nested_cv() -> None:
@@ -134,3 +142,45 @@ def test_explicit_nested_folds() -> None:
             (np.arange(20, 30), np.arange(30, 40)),
         ],
     )
+
+
+def test_create_experiments_basic() -> None:
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        experiments = create_experiments(
+            estimators={
+                "knn-3": KNeighborsClassifier(n_neighbors=3),
+                "knn-5": KNeighborsClassifier(n_neighbors=5),
+                "knn-7": KNeighborsClassifier(n_neighbors=7),
+            },
+            datasets={
+                "iris": load_iris(),
+                "wine": load_wine(),
+            },
+            storage=tmpdirname,
+        )
+
+        ids = run_experiments(experiments)
+
+        scores = fetch_scores(
+            storage=tmpdirname,
+            ids=ids,
+        )
+
+        assert scores.dataset_names == ("iris", "wine")
+        assert scores.estimator_names == ("knn-3", "knn-5", "knn-7")
+        np.testing.assert_allclose(
+            scores.scores_mean,
+            [
+                [0.96666667, 0.97333333, 0.98],
+                [0.70285714, 0.69126984, 0.68063492],
+            ],
+        )
+        np.testing.assert_allclose(
+            scores.scores_std,
+            [
+                [0.02108185, 0.02494438, 0.01632993],
+                [0.07920396, 0.04877951, 0.0662983],
+            ],
+            rtol=1e-6,
+        )
