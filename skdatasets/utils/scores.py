@@ -481,6 +481,7 @@ def scores_table(
         for m in means
     ])
 
+<<<<<<< HEAD
     significants = _all_significants(
         scores,
         means,
@@ -491,6 +492,20 @@ def scores_table(
         paired_test=paired_test,
         significancy_level=significancy_level,
     )
+=======
+    table = pd.DataFrame(data=scores, index=datasets, columns=estimators)
+    for i, d in enumerate(datasets):
+        for j, e in enumerate(estimators):
+            table.loc[d, e] = f'{scores[i, j]:.{score_decimals}f}'
+            if stds is not None:
+                table.loc[d, e] += f' ± {stds[i, j]:.{score_decimals}f}'
+            table.loc[d, e] += f' ({ranks[i, j]:.{rank_decimals}f})'
+
+    rank_mean = np.mean(ranks, axis=0)
+    table.loc['rank mean'] = [
+        f"{float(m):.{score_decimals}f}" for m in rank_mean
+    ]
+>>>>>>> refs/heads/master
 
     table = pd.DataFrame(data=means, index=datasets, columns=estimators)
     for i, d in enumerate(datasets):

@@ -12,7 +12,7 @@ include, such as indices for train, validation and test partitions.
 	Data in the CRAN repository is unstructured, and thus there is no ``fetch``
 	function for it. The data is returned in the original format.
 
-The structure is a :external:obj:`~sklearn.utils.Bunch` object with the
+The structure is a :external:class:`~sklearn.utils.Bunch` object with the
 following fields:
 
 - ``data``: The matrix of observed data. A 2d NumPy array, ready to be used
