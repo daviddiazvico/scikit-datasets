@@ -90,6 +90,9 @@ def fetch_file(
             if e.code == 404:
                 raise DatasetNotFoundError(dataname) from e
             raise
+        if data_url.length == 0:
+            raise DatasetNotFoundError(dataname)
+
         # store file
         try:
             with open(filename, 'w+b') as data_file:
