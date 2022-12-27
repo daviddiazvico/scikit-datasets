@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
 from sacred.observers import FileStorageObserver
-from sklearn.datasets import load_boston, load_iris, load_wine
+from sklearn.datasets import load_diabetes, load_iris, load_wine
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeRegressor
@@ -37,7 +37,7 @@ def _dataset(
     inner_cv: CVLike = None,
     outer_cv: CVLike = None,
 ) -> Bunch:
-    data = load_boston()
+    data = load_diabetes()
     if outer_cv is None:
         X, X_test, y, y_test = train_test_split(data.data, data.target)
         data.data = X
@@ -90,7 +90,7 @@ def test_inner_cv() -> None:
 
 def test_explicit_inner_folds() -> None:
     """Tests explicit inner folds experiment."""
-    X, y = load_boston(return_X_y=True)
+    X, y = load_diabetes(return_X_y=True)
     _experiment(
         [
             (np.arange(10), np.arange(10, 20)),
@@ -103,7 +103,7 @@ def test_explicit_inner_folds() -> None:
 
 def test_explicit_outer_folds_indexes() -> None:
     """Tests explicit outer folds experiment."""
-    X, y = load_boston(return_X_y=True)
+    X, y = load_diabetes(return_X_y=True)
     _experiment(
         3,
         [
@@ -116,7 +116,7 @@ def test_explicit_outer_folds_indexes() -> None:
 
 def test_explicit_outer_folds() -> None:
     """Tests explicit outer folds experiment."""
-    X, y = load_boston(return_X_y=True)
+    X, y = load_diabetes(return_X_y=True)
     _experiment(
         3,
         [
@@ -129,7 +129,7 @@ def test_explicit_outer_folds() -> None:
 
 def test_explicit_nested_folds() -> None:
     """Tests explicit nested folds experiment."""
-    X, y = load_boston(return_X_y=True)
+    X, y = load_diabetes(return_X_y=True)
     _experiment(
         [
             (np.arange(3, 10), np.arange(3)),
