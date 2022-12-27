@@ -117,6 +117,7 @@ def _load_Xy(
                 na_values=na_values,
                 **kwargs,
             )
+            data.columns = data.columns.astype(str)
             X = pd.get_dummies(data.iloc[:, :-1])
             y = pd.factorize(data.iloc[:, -1].tolist(), sort=True)[0]
             return X, y
