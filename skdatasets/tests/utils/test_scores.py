@@ -26,22 +26,18 @@ scores = np.asarray(((89.79, 89.78, 89.76, 89.88, 89.85, 89.91, 89.93),
                      (95.80, 95.99, 95.35, 96.20, 96.22, 96.36, 96.71)))
 
 
-def test_scores_table():
+def test_scores_table() -> None:
     """Tests scores table."""
+    scores_table(scores, datasets=datasets, estimators=estimators)
     scores_table(
-        datasets=datasets,
-        estimators=estimators,
-        scores=scores,
-    )
-    scores_table(
-        datasets=datasets,
-        estimators=estimators,
-        scores=scores,
+        scores,
         stds=scores / 10.0,
+        datasets=datasets,
+        estimators=estimators,
     )
 
 
-def test_hypotheses_table():
+def test_hypotheses_table() -> None:
     """Tests hypotheses table."""
     for multitest in ('kruskal', 'friedmanchisquare', None):
         for test in ('mannwhitneyu', 'wilcoxon'):
