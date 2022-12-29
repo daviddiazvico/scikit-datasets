@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import pytest
 import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
@@ -78,16 +79,19 @@ def _experiment(
         )
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_nested_cv() -> None:
     """Tests nested CV experiment."""
     _experiment(3, 3)
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_inner_cv() -> None:
     """Tests inner CV experiment."""
     _experiment(3, None)
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_explicit_inner_folds() -> None:
     """Tests explicit inner folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -101,6 +105,7 @@ def test_explicit_inner_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_explicit_outer_folds_indexes() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -114,6 +119,7 @@ def test_explicit_outer_folds_indexes() -> None:
     )
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_explicit_outer_folds() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -127,6 +133,7 @@ def test_explicit_outer_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_explicit_nested_folds() -> None:
     """Tests explicit nested folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -144,6 +151,7 @@ def test_explicit_nested_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Sacred outdated. Looking for a replacement.")
 def test_create_experiments_basic() -> None:
 
     with tempfile.TemporaryDirectory() as tmpdirname:
