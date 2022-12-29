@@ -1,9 +1,7 @@
 name: Tests
-
 on:
   push:
   pull_request:
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -11,27 +9,22 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.8', '3.9']
-
+        python-version: ['3.8', '3.9', '3.10', '3.11']
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up Python ${{ matrix.python-version }} on ${{ matrix.os }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
         pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
-
     - name: Run tests
       run: |
         #pip3 debug --verbose .
         pip3 install --upgrade-strategy eager -v ".[test]"
         coverage run --source=skdatasets/ -m pytest;
         coverage xml -o coverage.xml # explicitely exporting coverage file to be read by coverage report command.
-
     - name: Archive code coverage results
       uses: actions/upload-artifact@v3
       with:

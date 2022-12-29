@@ -1,17 +1,14 @@
 name: CodeClimate upload
-
 on:
   workflow_run:
     workflows: [Tests]
     types:
       - completed
-
 jobs:
   download:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-    
       - name: 'Download artifact'
         uses: actions/github-script@v5
         with:
@@ -32,14 +29,11 @@ jobs:
             });
             let fs = require('fs');
             fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/code-coverage-report.zip`, Buffer.from(download.data));
-
       - name: 'Unzip artifact'
         run: unzip code-coverage-report.zip
-        
       - name: Install dependencies
         run: |
           pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
-
       - name: Upload coverage to CodeClimate
         uses: paambaati/codeclimate-action@v3.0.0
         env:
