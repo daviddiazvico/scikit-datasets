@@ -6,7 +6,7 @@ from skdatasets.repositories.physionet import fetch
 def test_fetch_ctu_uhb_ctgdb() -> None:
     """Tests ctu_uhb dataset."""
     X, y = fetch(
-        'ctu-uhb-ctgdb',
+        "ctu-uhb-ctgdb",
         return_X_y=True,
         target_column=["pH", "BDecf", "pCO2", "BE", "Apgar1", "Apgar5"],
     )
@@ -17,7 +17,7 @@ def test_fetch_ctu_uhb_ctgdb() -> None:
 def test_fetch_ctu_uhb_ctgdb_single_target() -> None:
     """Tests ctu_uhb dataset with one target."""
     X, y = fetch(
-        'ctu-uhb-ctgdb',
+        "ctu-uhb-ctgdb",
         return_X_y=True,
         target_column="pH",
     )
@@ -28,7 +28,7 @@ def test_fetch_ctu_uhb_ctgdb_single_target() -> None:
 def test_fetch_ctu_uhb_ctgdb_bunch() -> None:
     """Tests ctu_uhb dataset returning Bunch."""
     bunch = fetch(
-        'ctu-uhb-ctgdb',
+        "ctu-uhb-ctgdb",
         as_frame=True,
         target_column=["pH", "BDecf", "pCO2", "BE", "Apgar1", "Apgar5"],
     )
@@ -40,7 +40,7 @@ def test_fetch_ctu_uhb_ctgdb_bunch() -> None:
 def test_fetch_macecgdb() -> None:
     """Tests macecgdb dataset."""
     bunch = fetch(
-        'macecgdb',
+        "macecgdb",
         as_frame=True,
     )
     assert bunch.data.shape == (27, 5)

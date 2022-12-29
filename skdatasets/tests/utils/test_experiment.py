@@ -57,7 +57,7 @@ def _dataset(
 def _estimator(cv: CVLike) -> GridSearchCV:
     return GridSearchCV(
         DecisionTreeRegressor(),
-        {'max_depth': [2, 4]},
+        {"max_depth": [2, 4]},
         cv=cv,
     )
 
@@ -71,9 +71,9 @@ def _experiment(
         e.observers.append(FileStorageObserver(tmpdirname))
         e.run(
             config_updates={
-                'dataset': {
-                    'inner_cv': inner_cv,
-                    'outer_cv': outer_cv,
+                "dataset": {
+                    "inner_cv": inner_cv,
+                    "outer_cv": outer_cv,
                 },
             },
         )
