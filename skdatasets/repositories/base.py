@@ -95,7 +95,7 @@ def fetch_file(
 
         # store file
         try:
-            with open(filename, 'w+b') as data_file:
+            with open(filename, "w+b") as data_file:
                 copyfileobj(data_url, data_file)
         except Exception:
             filename.unlink()
@@ -130,16 +130,14 @@ def _missing_files(
         members_zip = compressed_file.infolist()
 
         return [
-            info for info in members_zip
+            info
+            for info in members_zip
             if not (data_home_path / info.filename).exists()
         ]
 
     members_tar = compressed_file.getmembers()
 
-    return [
-        info for info in members_tar
-        if not (data_home_path / info.name).exists()
-    ]
+    return [info for info in members_tar if not (data_home_path / info.name).exists()]
 
 
 def fetch_compressed(
@@ -148,7 +146,7 @@ def fetch_compressed(
     compression_open: OpenMethod,
     subfolder: Optional[str] = None,
     data_home: Optional[str] = None,
-    open_format: str = 'r',
+    open_format: str = "r",
 ) -> pathlib.Path:
     """Fetch compressed dataset.
 
@@ -268,7 +266,7 @@ def fetch_tgz(
         compression_open=tarfile.open,
         subfolder=subfolder,
         data_home=data_home,
-        open_format='r:gz',
+        open_format="r:gz",
     )
 
 
@@ -358,26 +356,17 @@ def dataset_from_dataframe(
 ):
 
     data_dataframe = (
-        frame
-        if target_column is None
-        else frame.drop(target_column, axis=1)
+        frame if target_column is None else frame.drop(target_column, axis=1)
     )
-    target_dataframe = (
-        None
-        if target_column is None
-        else frame.loc[:, target_column]
-    )
+    target_dataframe = None if target_column is None else frame.loc[:, target_column]
 
-    data = (
-        data_dataframe
-        if as_frame is True
-        else data_dataframe.to_numpy()
-    )
+    data = data_dataframe if as_frame is True else data_dataframe.to_numpy()
 
     target = (
         None
         if target_dataframe is None
-        else target_dataframe if as_frame is True
+        else target_dataframe
+        if as_frame is True
         else target_dataframe.to_numpy()
     )
 
@@ -385,11 +374,7 @@ def dataset_from_dataframe(
         return data, target
 
     feature_names = list(data_dataframe.keys())
-    target_names = (
-        None
-        if target_dataframe is None
-        else list(target_dataframe.keys())
-    )
+    target_names = None if target_dataframe is None else list(target_dataframe.keys())
 
     bunch = Bunch(
         data=data,

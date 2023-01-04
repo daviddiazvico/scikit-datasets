@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import pytest
 import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
@@ -56,7 +57,7 @@ def _dataset(
 def _estimator(cv: CVLike) -> GridSearchCV:
     return GridSearchCV(
         DecisionTreeRegressor(),
-        {'max_depth': [2, 4]},
+        {"max_depth": [2, 4]},
         cv=cv,
     )
 
@@ -70,24 +71,27 @@ def _experiment(
         e.observers.append(FileStorageObserver(tmpdirname))
         e.run(
             config_updates={
-                'dataset': {
-                    'inner_cv': inner_cv,
-                    'outer_cv': outer_cv,
+                "dataset": {
+                    "inner_cv": inner_cv,
+                    "outer_cv": outer_cv,
                 },
             },
         )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_nested_cv() -> None:
     """Tests nested CV experiment."""
     _experiment(3, 3)
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_inner_cv() -> None:
     """Tests inner CV experiment."""
     _experiment(3, None)
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_inner_folds() -> None:
     """Tests explicit inner folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -101,6 +105,7 @@ def test_explicit_inner_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_outer_folds_indexes() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -114,6 +119,7 @@ def test_explicit_outer_folds_indexes() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_outer_folds() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -127,6 +133,7 @@ def test_explicit_outer_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_nested_folds() -> None:
     """Tests explicit nested folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -144,6 +151,7 @@ def test_explicit_nested_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_create_experiments_basic() -> None:
 
     with tempfile.TemporaryDirectory() as tmpdirname:

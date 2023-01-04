@@ -5,31 +5,42 @@
 
 from . import aneurisk, libsvm, raetsch, sklearn, uci, ucr
 
-repos = {'libsvm': libsvm, 'raetsch': raetsch, 'sklearn': sklearn, 'uci': uci,
-         'ucr': ucr, 'aneurisk': aneurisk}
+repos = {
+    "libsvm": libsvm,
+    "raetsch": raetsch,
+    "sklearn": sklearn,
+    "uci": uci,
+    "ucr": ucr,
+    "aneurisk": aneurisk,
+}
 try:
     from . import cran
-    repos['cran'] = cran
+
+    repos["cran"] = cran
 except ImportError:
     pass
 try:
     from . import forex
-    repos['forex'] = forex
+
+    repos["forex"] = forex
 except ImportError:
     pass
 try:
     from . import keel
-    repos['keel'] = keel
+
+    repos["keel"] = keel
 except ImportError:
     pass
 try:
     from . import keras
-    repos['keras'] = keras
+
+    repos["keras"] = keras
 except ImportError:
     pass
 try:
     from . import physionet
-    repos['physionet'] = physionet
+
+    repos["physionet"] = physionet
 except ImportError:
     pass
 

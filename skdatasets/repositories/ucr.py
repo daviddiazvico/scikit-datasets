@@ -6,7 +6,6 @@ Datasets from the UCR time series database.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Final, Literal, Optional, Sequence, Tuple, Union, overload
 
@@ -16,7 +15,7 @@ from sklearn.utils import Bunch
 
 from .base import fetch_zip as _fetch_zip
 
-BASE_URL: Final = 'http://www.timeseriesclassification.com/Downloads/'
+BASE_URL: Final = "http://www.timeseriesclassification.com/Downloads/"
 
 
 def _target_conversion(
@@ -37,9 +36,8 @@ def data_to_matrix(
 ) -> np.typing.NDArray[float]:
     fields = struct_array.dtype.fields
     assert fields
-    if(
-        len(fields.items()) == 1
-        and list(fields.items())[0][1][0] == np.dtype(np.object_)
+    if len(fields.items()) == 1 and list(fields.items())[0][1][0] == np.dtype(
+        np.object_
     ):
         attribute = struct_array[list(fields.items())[0][0]]
 
@@ -89,10 +87,7 @@ def fetch(
     *,
     data_home: Optional[str] = None,
     return_X_y: bool = False,
-) -> Union[
-    Bunch,
-    Tuple[np.typing.NDArray[float], np.typing.NDArray[int]],
-]:
+) -> Union[Bunch, Tuple[np.typing.NDArray[float], np.typing.NDArray[int]],]:
     """
     Fetch UCR dataset.
 
@@ -121,7 +116,7 @@ def fetch(
 
     data_path = _fetch_zip(
         name,
-        urlname=url + '.zip',
+        urlname=url + ".zip",
         subfolder="ucr",
         data_home=data_home,
     )
@@ -137,12 +132,11 @@ def fetch(
         # No description is found
         path_file_descr = None
 
-    path_file_train = (data_path / (name + '_TRAIN')).with_suffix(".arff")
-    path_file_test = (data_path / (name + '_TEST')).with_suffix(".arff")
+    path_file_train = (data_path / (name + "_TRAIN")).with_suffix(".arff")
+    path_file_test = (data_path / (name + "_TEST")).with_suffix(".arff")
 
     DESCR = (
-        path_file_descr.read_text(errors='surrogateescape')
-        if path_file_descr else ''
+        path_file_descr.read_text(errors="surrogateescape") if path_file_descr else ""
     )
     train = scipy.io.arff.loadarff(path_file_train)
     test = scipy.io.arff.loadarff(path_file_test)
