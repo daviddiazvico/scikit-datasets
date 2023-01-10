@@ -26,7 +26,7 @@ def _fetch(get_rate, start=date(2015, 1, 1), end=date.today()):
     return np.asarray(data).reshape((-1, 1))
 
 
-def _load_bitcoin(start=date(2015, 1, 1), end=date.today(), currency='EUR'):
+def _load_bitcoin(start=date(2015, 1, 1), end=date.today(), currency="EUR"):
     """Load bitcoin dataset"""
     btcc = BtcConverter()
 
@@ -36,8 +36,9 @@ def _load_bitcoin(start=date(2015, 1, 1), end=date.today(), currency='EUR'):
     return _fetch(get_rate, start=start, end=end)
 
 
-def _load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
-                currency_2='EUR'):
+def _load_forex(
+    start=date(2015, 1, 1), end=date.today(), currency_1="USD", currency_2="EUR"
+):
     """Load forex dataset."""
     cr = CurrencyRates()
 
@@ -48,8 +49,13 @@ def _load_forex(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
     return _fetch(get_rate, start=start, end=end)
 
 
-def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
-          currency_2='EUR', return_X_y=False):
+def fetch(
+    start=date(2015, 1, 1),
+    end=date.today(),
+    currency_1="USD",
+    currency_2="EUR",
+    return_X_y=False,
+):
     """Fetch Forex datasets.
 
     Fetches the ECB Forex and Coindesk Bitcoin datasets. More info at
@@ -76,17 +82,18 @@ def fetch(start=date(2015, 1, 1), end=date.today(), currency_1='USD',
     (data, target) : tuple if ``return_X_y`` is True
 
     """
-    if currency_1 == 'BTC':
+    if currency_1 == "BTC":
         X = _load_bitcoin(start=start, end=end, currency=currency_2)
-        descr = 'BTC-' + str(currency_2)
-    elif currency_2 == 'BTC':
+        descr = "BTC-" + str(currency_2)
+    elif currency_2 == "BTC":
         X = _load_bitcoin(start=start, end=end, currency=currency_1)
-        descr = 'BTC-' + str(currency_1)
+        descr = "BTC-" + str(currency_1)
     else:
-        X = _load_forex(start=start, end=end, currency_1=currency_1,
-                        currency_2=currency_2)
-        descr = str(currency_1) + '-' + str(currency_2)
-    descr = descr + start.strftime('%Y-%m-%d') + '-' + end.strftime('%Y-%m-%d')
+        X = _load_forex(
+            start=start, end=end, currency_1=currency_1, currency_2=currency_2
+        )
+        descr = str(currency_1) + "-" + str(currency_2)
+    descr = descr + start.strftime("%Y-%m-%d") + "-" + end.strftime("%Y-%m-%d")
 
     if return_X_y:
         return X, None

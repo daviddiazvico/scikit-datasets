@@ -7,7 +7,6 @@ LIBSVM datasets (https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets).
 from __future__ import annotations
 
 import os
-import sys
 from typing import Final, Literal, Sequence, Tuple, overload
 
 import numpy as np
@@ -18,13 +17,15 @@ from sklearn.utils import Bunch
 
 from .base import DatasetNotFoundError, fetch_file
 
-BASE_URL: Final = 'https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets'
-COLLECTIONS: Final = frozenset((
-    'binary',
-    'multiclass',
-    'regression',
-    'string',
-))
+BASE_URL: Final = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets"
+COLLECTIONS: Final = frozenset(
+    (
+        "binary",
+        "multiclass",
+        "regression",
+        "string",
+    )
+)
 
 
 def _fetch_partition(
@@ -34,8 +35,8 @@ def _fetch_partition(
     data_home: str | None = None,
 ) -> str | None:
     """Fetch dataset partition."""
-    subfolder = os.path.join('libsvm', collection)
-    dataname = name.replace('/', '-')
+    subfolder = os.path.join("libsvm", collection)
+    dataname = name.replace("/", "-")
 
     url = f"{BASE_URL}/{collection}/{name}{partition}"
 
@@ -68,20 +69,26 @@ def _load(
     PredefinedSplit,
 ]:
     """Load dataset."""
-    filename = _fetch_partition(collection, name, '', data_home)
-    filename_tr = _fetch_partition(collection, name, '.tr', data_home)
-    filename_val = _fetch_partition(collection, name, '.val', data_home)
-    filename_t = _fetch_partition(collection, name, '.t', data_home)
-    filename_r = _fetch_partition(collection, name, '.r', data_home)
+    filename = _fetch_partition(collection, name, "", data_home)
+    filename_tr = _fetch_partition(collection, name, ".tr", data_home)
+    filename_val = _fetch_partition(collection, name, ".val", data_home)
+    filename_t = _fetch_partition(collection, name, ".t", data_home)
+    filename_r = _fetch_partition(collection, name, ".r", data_home)
 
-    if (filename_tr is not None) and (filename_val is not None) and (filename_t is not None):
+    if (
+        (filename_tr is not None)
+        and (filename_val is not None)
+        and (filename_t is not None)
+    ):
 
-        _, _, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files([
-            filename,
-            filename_tr,
-            filename_val,
-            filename_t,
-        ])
+        _, _, X_tr, y_tr, X_val, y_val, X_test, y_test = load_svmlight_files(
+            [
+                filename,
+                filename_tr,
+                filename_val,
+                filename_t,
+            ]
+        )
 
         cv = PredefinedSplit([-1] * X_tr.shape[0] + [0] * X_val.shape[0])
 
@@ -90,19 +97,23 @@ def _load(
 
         # Compute indices
         train_indices = list(range(X_tr.shape[0]))
-        validation_indices = list(range(
-            X_tr.shape[0],
-            X_tr.shape[0] + X_val.shape[0],
-        ))
+        validation_indices = list(
+            range(
+                X_tr.shape[0],
+                X_tr.shape[0] + X_val.shape[0],
+            )
+        )
         test_indices = list(range(X_tr.shape[0] + X_val.shape[0], X.shape[0]))
 
     elif (filename_tr is not None) and (filename_val is not None):
 
-        _, _, X_tr, y_tr, X_val, y_val = load_svmlight_files([
-            filename,
-            filename_tr,
-            filename_val,
-        ])
+        _, _, X_tr, y_tr, X_val, y_val = load_svmlight_files(
+            [
+                filename,
+                filename_tr,
+                filename_val,
+            ]
+        )
 
         cv = PredefinedSplit([-1] * X_tr.shape[0] + [0] * X_val.shape[0])
 
@@ -116,12 +127,12 @@ def _load(
 
     elif (filename_t is not None) and (filename_r is not None):
 
-        X_tr, y_tr, X_test, y_test, X_remaining, y_remaining = (
-            load_svmlight_files([
+        X_tr, y_tr, X_test, y_test, X_remaining, y_remaining = load_svmlight_files(
+            [
                 filename,
                 filename_t,
                 filename_r,
-            ])
+            ]
         )
 
         X = sp.sparse.vstack((X_tr, X_test, X_remaining))
@@ -132,7 +143,8 @@ def _load(
         validation_indices = []
         test_indices = list(
             range(
-                X_tr.shape[0], X_tr.shape[0] + X_test.shape[0],
+                X_tr.shape[0],
+                X_tr.shape[0] + X_test.shape[0],
             ),
         )
 
@@ -140,10 +152,12 @@ def _load(
 
     elif filename_t is not None:
 
-        X_tr, y_tr, X_test, y_test = load_svmlight_files([
-            filename,
-            filename_t,
-        ])
+        X_tr, y_tr, X_test, y_test = load_svmlight_files(
+            [
+                filename,
+                filename_t,
+            ]
+        )
 
         X = sp.sparse.vstack((X_tr, X_test))
         y = np.hstack((y_tr, y_test))
@@ -225,7 +239,7 @@ def fetch(
 
     """
     if collection not in COLLECTIONS:
-        raise Exception('Avaliable collections are ' + str(list(COLLECTIONS)))
+        raise Exception("Avaliable collections are " + str(list(COLLECTIONS)))
 
     X, y, train_indices, validation_indices, test_indices, cv = _load(
         collection,

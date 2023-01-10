@@ -46,7 +46,7 @@ class _LatestVersionHTMLParser(HTMLParser):
 
         self.last_is_version = False
         self.version: str | None = None
-        self.version_regex = re.compile('(?i).*version.*')
+        self.version_regex = re.compile("(?i).*version.*")
         self.handling_td = False
 
     def handle_starttag(
@@ -78,7 +78,7 @@ def _get_latest_version_online(package_name: str, dataset_name: str) -> str:
     )
     try:
         with urllib.request.urlopen(url_request) as url_file:
-            url_content = url_file.read().decode('utf-8')
+            url_content = url_file.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             raise DatasetNotFoundError(f"{package_name}/{dataset_name}") from e
@@ -105,7 +105,7 @@ def _get_latest_version_offline(package_name: str) -> str | None:
 
     if downloaded_packages:
         versions = [
-            LooseVersion(p.name[(len(package_name) + 1):-len(".tar.gz")])
+            LooseVersion(p.name[(len(package_name) + 1) : -len(".tar.gz")])
             for p in downloaded_packages
         ]
 
@@ -153,15 +153,12 @@ def _get_urls(
     version: str | None = None,
 ) -> Sequence[str]:
 
-    version = _get_version(
-        package_name, dataset_name=dataset_name, version=version)
+    version = _get_version(package_name, dataset_name=dataset_name, version=version)
 
     filename = f"{package_name}_{version}.tar.gz"
 
     latest_url = f"{CRAN_URL}/src/contrib/{filename}"
-    archive_url = (
-        f"{CRAN_URL}/src/contrib/Archive/{package_name}/{filename}"
-    )
+    archive_url = f"{CRAN_URL}/src/contrib/Archive/{package_name}/{filename}"
     return (latest_url, archive_url)
 
 
@@ -191,7 +188,7 @@ def _download_package_data(
 
     for i, url in enumerate(url_list):
         try:
-            directory = _fetch_tgz(folder_name, url, subfolder='cran')
+            directory = _fetch_tgz(folder_name, url, subfolder="cran")
             break
         except Exception:
             # If it is the last url, reraise
@@ -266,8 +263,7 @@ def fetch_dataset(
         possible_names = list(data_path.glob(dataset_name + ".*"))
         if len(possible_names) != 1:
             raise FileNotFoundError(
-                f"Dataset {dataset_name} not found in "
-                f"package {package_name}",
+                f"Dataset {dataset_name} not found in " f"package {package_name}",
             )
 
         file_path = data_path / possible_names[0]
@@ -341,7 +337,7 @@ def fetch_package(
 
     for dataset in data_path.iterdir():
 
-        if dataset.suffix.lower() in ['.rda', '.rdata']:
+        if dataset.suffix.lower() in [".rda", ".rdata"]:
             try:
                 parsed = rdata.parser.parse_file(dataset)
 
@@ -366,9 +362,9 @@ class _DatasetArguments(TypedDict):
 
 
 datasets: Mapping[str, _DatasetArguments] = {
-    'geyser': {
-        'load_args': (['geyser.rda', 'MASS'], {}),
-        'sklearn_args': ([], {'target_name': 'waiting'}),
+    "geyser": {
+        "load_args": (["geyser.rda", "MASS"], {}),
+        "sklearn_args": ([], {"target_name": "waiting"}),
     },
 }
 
@@ -447,10 +443,10 @@ def fetch(
     (data, target) : tuple if ``return_X_y`` is True
 
     """
-    load_args = datasets[name]['load_args']
+    load_args = datasets[name]["load_args"]
     dataset = fetch_dataset(*load_args[0], **load_args[1])
 
-    sklearn_args = datasets[name]['sklearn_args']
+    sklearn_args = datasets[name]["sklearn_args"]
     sklearn_dataset = _to_sklearn(dataset, *sklearn_args[0], **sklearn_args[1])
 
     if return_X_y:

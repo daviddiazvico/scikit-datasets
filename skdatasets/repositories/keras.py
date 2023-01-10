@@ -23,13 +23,13 @@ from tensorflow.keras.datasets import (
 )
 
 DATASETS = {
-    'boston_housing': boston_housing.load_data,
-    'cifar10': cifar10.load_data,
-    'cifar100': cifar100.load_data,
-    'fashion_mnist': fashion_mnist.load_data,
-    'imdb': imdb.load_data,
-    'mnist': mnist.load_data,
-    'reuters': reuters.load_data,
+    "boston_housing": boston_housing.load_data,
+    "cifar10": cifar10.load_data,
+    "cifar100": cifar100.load_data,
+    "fashion_mnist": fashion_mnist.load_data,
+    "imdb": imdb.load_data,
+    "mnist": mnist.load_data,
+    "reuters": reuters.load_data,
 }
 
 
@@ -83,7 +83,7 @@ def fetch(
     """
     (X_train, y_train), (X_test, y_test) = DATASETS[name](**kwargs)
     if len(X_train.shape) > 2:
-        name = name + ' ' + str(X_train.shape[1:]) + ' shaped'
+        name = name + " " + str(X_train.shape[1:]) + " shaped"
         X_max = np.iinfo(X_train[0][0].dtype).max
         n_features = np.prod(X_train.shape[1:])
         X_train = X_train.reshape([X_train.shape[0], n_features]) / X_max

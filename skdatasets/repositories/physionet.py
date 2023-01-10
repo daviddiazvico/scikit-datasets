@@ -29,7 +29,7 @@ from .base import DatasetNotFoundError, fetch_zip
 BASE_URL: Final = "https://physionet.org/static/published-projects"
 INFO_STRING_SEMICOLONS_ONE_STR: Final = r"(\S*): (\S*)\s*"
 INFO_STRING_SEMICOLONS_SEVERAL_REGEX: Final = re.compile(
-    fr"(?:{INFO_STRING_SEMICOLONS_ONE_STR})+",
+    rf"(?:{INFO_STRING_SEMICOLONS_ONE_STR})+",
 )
 INFO_STRING_SEMICOLONS_ONE_REGEX: Final = re.compile(
     INFO_STRING_SEMICOLONS_ONE_STR,
@@ -62,7 +62,7 @@ def _get_zip_name_online(dataset_name: str) -> str:
     url_request = urllib.request.Request(url=f"{BASE_URL}/{dataset_name}")
     try:
         with urllib.request.urlopen(url_request) as url_file:
-            url_content = url_file.read().decode('utf-8')
+            url_content = url_file.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             raise DatasetNotFoundError(dataset_name) from e
@@ -102,8 +102,8 @@ def _get_info_strings(comments: Sequence[str]) -> Mapping[str, Any]:
                     key = result.group(1)
                     if key[0] == "<" and key[-1] == ">":
                         key = key[1:-1]
-                    info_strings_semicolons[key] = (
-                        _parse_info_string_value(result.group(2))
+                    info_strings_semicolons[key] = _parse_info_string_value(
+                        result.group(2)
                     )
             else:
                 split = comment.rsplit(maxsplit=1)
@@ -115,9 +115,8 @@ def _get_info_strings(comments: Sequence[str]) -> Mapping[str, Any]:
         return info_strings_semicolons
 
     # Check for absurd things in spaces
-    if (
-        len(info_strings_spaces) == 1
-        or any(key.count(" ") > 3 for key in info_strings_spaces)
+    if len(info_strings_spaces) == 1 or any(
+        key.count(" ") > 3 for key in info_strings_spaces
     ):
         return {}
 
@@ -244,17 +243,14 @@ def fetch(
 
     with open(path / "RECORDS") as records_file:
         records = [
-            wfdb.io.rdrecord(str(path / record_name.rstrip('\n')))
+            wfdb.io.rdrecord(str(path / record_name.rstrip("\n")))
             for record_name in records_file
         ]
 
     info_strings = [_get_info_strings(r.comments) for r in records]
     info = _join_info_dicts(info_strings)
 
-    assert all(
-        _constant_attrs(r) == _constant_attrs(records[0])
-        for r in records
-    )
+    assert all(_constant_attrs(r) == _constant_attrs(records[0]) for r in records)
     data = {
         "signal": [r.p_signal for r in records],
     }

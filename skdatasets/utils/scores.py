@@ -10,13 +10,11 @@ from functools import reduce
 from typing import (
     Any,
     Callable,
-    Iterable,
     Literal,
     Mapping,
     Optional,
     Sequence,
     Tuple,
-    overload,
 )
 
 import numpy as np
@@ -33,21 +31,21 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 
 CorrectionLike = Literal[
     None,
-    'bonferroni',
-    'sidak',
-    'holm-sidak',
-    'holm',
-    'simes-hochberg',
-    'hommel',
-    'fdr_bh',
-    'fdr_by',
-    'fdr_tsbh',
-    'fdr_tsbky',
+    "bonferroni",
+    "sidak",
+    "holm-sidak",
+    "holm",
+    "simes-hochberg",
+    "hommel",
+    "fdr_bh",
+    "fdr_by",
+    "fdr_tsbh",
+    "fdr_tsbky",
 ]
 
-MultitestLike = Literal['kruskal', 'friedmanchisquare']
+MultitestLike = Literal["kruskal", "friedmanchisquare"]
 
-TestLike = Literal['mannwhitneyu', 'wilcoxon']
+TestLike = Literal["mannwhitneyu", "wilcoxon"]
 
 
 @dataclass
@@ -235,7 +233,6 @@ def _set_style_formatter(
     *,
     precision: int,
 ) -> pd.io.formats.style.Styler:
-
     def _formatter(
         data: object,
     ) -> str:
@@ -246,10 +243,10 @@ def _set_style_formatter(
         elif isinstance(data, float):
             return f"{data:.{precision}f}"
         elif isinstance(data, ScoreCell):
-            str_repr = f'{data.mean:.{precision}f}'
+            str_repr = f"{data.mean:.{precision}f}"
             if data.std is not None:
-                str_repr += f' ± {data.std:.{precision}f}'
-            str_repr += f' ({data.rank:.0f})'
+                str_repr += f" ± {data.std:.{precision}f}"
+            str_repr += f" ({data.rank:.0f})"
             return str_repr
         else:
             return ""
@@ -285,7 +282,7 @@ def _set_default_style_html(
             {
                 "selector": ".significant::after",
                 "props": [
-                    ("content", "\"*\""),
+                    ("content", '"*"'),
                     ("width", "0px"),
                     ("display", "inline-block"),
                 ],
@@ -345,12 +342,12 @@ def _set_default_style_latex(
     styler.set_table_styles(
         [
             {
-                'selector': r'newcommand{\summary}',
-                'props': r':[1]{\textit{#1}};',
+                "selector": r"newcommand{\summary}",
+                "props": r":[1]{\textit{#1}};",
             },
             {
-                'selector': r'newcommand{\significant}',
-                'props': r':[1]{#1*};',
+                "selector": r"newcommand{\significant}",
+                "props": r":[1]{#1*};",
             },
             {
                 'selector': r'newcommand{\rank}',
@@ -423,7 +420,7 @@ def scores_table(
     estimators: Sequence[str],
     nobs: int | None = None,
     greater_is_better: bool = True,
-    method: Literal['average', 'min', 'max', 'dense', 'ordinal'] = 'min',
+    method: Literal["average", "min", "max", "dense", "ordinal"] = "min",
     significancy_level: float = 0,
     paired_test: bool = False,
     two_sided: bool = True,
@@ -502,12 +499,14 @@ def scores_table(
         stds = np.std(scores, axis=-1)
         nobs = scores.shape[-1]
 
-    ranks = np.asarray([
-        rankdata(-m, method=method)
-        if greater_is_better
-        else rankdata(m, method=method)
-        for m in means
-    ])
+    ranks = np.asarray(
+        [
+            rankdata(-m, method=method)
+            if greater_is_better
+            else rankdata(m, method=method)
+            for m in means
+        ]
+    )
 
     significants = _all_significants(
         scores,
@@ -576,7 +575,7 @@ def hypotheses_table(
     *,
     alpha: float = 0.05,
     multitest: Optional[MultitestLike] = None,
-    test: TestLike = 'wilcoxon',
+    test: TestLike = "wilcoxon",
     correction: CorrectionLike = None,
     multitest_args: Optional[Mapping[str, Any]] = None,
     test_args: Optional[Mapping[str, Any]] = None,
@@ -626,32 +625,29 @@ def hypotheses_table(
     samples = np.asanyarray(samples)
 
     versus = list(it.combinations(range(len(models)), 2))
-    comparisons = [
-        f"{models[first]} vs {models[second]}"
-        for first, second in versus
-    ]
+    comparisons = [f"{models[first]} vs {models[second]}" for first, second in versus]
 
     multitests = {
-        'kruskal': kruskal,
-        'friedmanchisquare': friedmanchisquare,
+        "kruskal": kruskal,
+        "friedmanchisquare": friedmanchisquare,
     }
     tests = {
-        'mannwhitneyu': mannwhitneyu,
-        'wilcoxon': wilcoxon,
+        "mannwhitneyu": mannwhitneyu,
+        "wilcoxon": wilcoxon,
     }
 
     multitest_table = None
     if multitest is not None:
         multitest_table = pd.DataFrame(
             index=[multitest],
-            columns=['p-value', 'Hypothesis'],
+            columns=["p-value", "Hypothesis"],
         )
         _, pvalue = multitests[multitest](
             *samples.T,
             **multitest_args,
         )
-        reject_str = 'Rejected' if pvalue <= alpha else 'Not rejected'
-        multitest_table.loc[multitest] = ['{0:.2f}'.format(pvalue), reject_str]
+        reject_str = "Rejected" if pvalue <= alpha else "Not rejected"
+        multitest_table.loc[multitest] = ["{0:.2f}".format(pvalue), reject_str]
 
         # If the multitest does not detect a significative difference,
         # the individual tests are not meaningful, so skip them.
@@ -663,7 +659,8 @@ def hypotheses_table(
             samples[:, first],
             samples[:, second],
             **test_args,
-        )[1] for first, second in versus
+        )[1]
+        for first, second in versus
     ]
 
     if correction is not None:
@@ -672,29 +669,18 @@ def hypotheses_table(
             alpha,
             method=correction,
         )
-        reject = [
-            'Rejected'
-            if r
-            else 'Not rejected'
-            for r in reject_bool
-        ]
+        reject = ["Rejected" if r else "Not rejected" for r in reject_bool]
     else:
         reject = [
-            'Rejected'
-            if pvalue <= alpha
-            else 'Not rejected'
-            for pvalue in pvalues
+            "Rejected" if pvalue <= alpha else "Not rejected" for pvalue in pvalues
         ]
 
-    data = [
-        ('{0:.2f}'.format(p), r)
-        for p, r in zip(pvalues, reject)
-    ]
+    data = [("{0:.2f}".format(p), r) for p, r in zip(pvalues, reject)]
 
     test_table = pd.DataFrame(
         data,
         index=comparisons,
-        columns=['p-value', 'Hypothesis'],
+        columns=["p-value", "Hypothesis"],
     )
 
     return multitest_table, test_table
