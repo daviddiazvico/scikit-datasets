@@ -356,7 +356,7 @@ def _set_default_style_latex(
                 'selector': r'newcommand{\rank}',
                 'props': (
                     r':[2]{\ifnum#1=1 \textbf{#2} \else '
-                    r'\ifnum#1=2 \underline{#2} \fi\fi};'
+                    r'\ifnum#1=2 \underline{#2} \else #2 \fi\fi};'
                 ),
             },
         ],
