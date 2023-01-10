@@ -618,7 +618,8 @@ def hypotheses_table(
 
     versus = list(it.combinations(range(len(models)), 2))
     comparisons = [
-        f"{models[first]} vs {models[second]}" for first, second in versus]
+        f"{models[first]} vs {models[second]}" for first, second in versus
+    ]
 
     multitests = {
         "kruskal": kruskal,
