@@ -7,15 +7,7 @@ from __future__ import annotations
 import itertools as it
 from dataclasses import dataclass
 from functools import reduce
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -353,7 +345,7 @@ def _set_default_style_latex(
                 "selector": r"newcommand{\rank}",
                 "props": (
                     r":[2]{\ifnum#1=1 \textbf{#2} \else "
-                    r"\ifnum#1=2 \underline{#2} \fi\fi};"
+                    r"\ifnum#1=2 \underline{#2} \else #2 \fi\fi};"
                 ),
             },
         ],
@@ -625,7 +617,9 @@ def hypotheses_table(
     samples = np.asanyarray(samples)
 
     versus = list(it.combinations(range(len(models)), 2))
-    comparisons = [f"{models[first]} vs {models[second]}" for first, second in versus]
+    comparisons = [
+        f"{models[first]} vs {models[second]}" for first, second in versus
+    ]
 
     multitests = {
         "kruskal": kruskal,
