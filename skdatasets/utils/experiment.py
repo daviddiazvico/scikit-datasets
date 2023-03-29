@@ -29,6 +29,7 @@ import numpy as np
 from sacred import Experiment, Ingredient
 from sacred.observers import FileStorageObserver, MongoObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
+from sklearn.metrics import check_scoring
 from sklearn.model_selection import check_cv
 from sklearn.utils import Bunch
 
@@ -62,6 +63,11 @@ ExplicitSplitType = Tuple[
 ConfigLike = Union[
     Mapping[str, Any],
     str,
+]
+ScorerLike = Union[
+    str,
+    Callable[[BaseEstimator, DataType, TargetType], float],
+    None,
 ]
 
 
@@ -189,9 +195,13 @@ def _benchmark_from_data(
     y_train: TargetType,
     X_test: DataType,
     y_test: TargetType,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> None:
+
+    scoring_fun = check_scoring(estimator, scoring)
+
     with _add_timing(experiment, "fit_time"):
         estimator.fit(X_train, y_train)
 
@@ -207,12 +217,12 @@ def _benchmark_from_data(
         _append_info(experiment, "search_best_score", best_score)
 
     with _add_timing(experiment, "score_time"):
-        test_score = estimator.score(X_test, y_test)
+        test_score = scoring_fun(estimator, X_test, y_test)
 
     _append_info(experiment, "test_score", float(test_score))
 
     if save_train:
-        train_score = estimator.score(X_train, y_train)
+        train_score = scoring_fun(estimator, X_train, y_train)
         _append_info(experiment, "train_score", float(train_score))
 
     for output in ("transform", "predict"):
@@ -233,6 +243,7 @@ def _benchmark_one(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> None:
@@ -257,6 +268,7 @@ def _benchmark_one(
         y_train=y_train_val,
         X_test=X_test,
         y_test=y_test,
+        scoring=scoring,
         save_estimator=save_estimator,
         save_train=save_train,
     )
@@ -269,6 +281,7 @@ def _benchmark_partitions(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
     outer_cv: CVLike | Literal["dataset"] = None,
@@ -290,6 +303,7 @@ def _benchmark_partitions(
             y_train=y_train,
             X_test=X_test,
             y_test=y_test,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
         )
@@ -302,6 +316,7 @@ def _benchmark(
     *,
     estimator: BaseEstimator,
     data: Bunch,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
@@ -312,6 +327,7 @@ def _benchmark(
             experiment=experiment,
             estimator=estimator,
             data=data,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
         )
@@ -320,6 +336,7 @@ def _benchmark(
             experiment=experiment,
             estimator=estimator,
             data=data,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
             outer_cv=outer_cv,
@@ -330,6 +347,7 @@ def experiment(
     dataset: Callable[..., Bunch],
     estimator: Callable[..., BaseEstimator],
     *,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> Experiment:
@@ -386,6 +404,7 @@ def experiment(
             experiment=experiment,
             estimator=e,
             data=data,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
         )
@@ -438,6 +457,7 @@ def _create_one_experiment(
     config: ConfigLike,
     inner_cv: CVLike | Literal[False, "dataset"] = None,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> Experiment:
@@ -477,6 +497,7 @@ def _create_one_experiment(
             experiment=experiment,
             estimator=estimator,
             data=dataset,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
             outer_cv=outer_cv,
@@ -493,6 +514,7 @@ def create_experiments(
     config: ConfigLike | None = None,
     inner_cv: CVLike | Literal[False, "dataset"] = False,
     outer_cv: CVLike | Literal[False, "dataset"] = None,
+    scoring: ScorerLike[DataType, TargetType] = None,
     save_estimator: bool = False,
     save_train: bool = False,
 ) -> Sequence[Experiment]:
@@ -554,6 +576,10 @@ def create_experiments(
         * Otherwise, this will be passed to
           :external:func:`sklearn.model_selection.check_cv` and the resulting
           cross validator will be used to define the partitions.
+    scoring : string, callable or ``None``, default ``None``
+        Scoring method used to measure the performance of the estimator.
+        If a callable, it should have the signature `scorer(estimator, X, y)`.
+        If ``None`` it uses the ``scorer`` method of the estimator.
     save_estimator : bool, default ``False``
         Whether to save the fitted estimator. This is useful for debugging
         and for obtaining extra information in some cases, but for some
@@ -588,6 +614,7 @@ def create_experiments(
             config=config,
             inner_cv=inner_cv,
             outer_cv=outer_cv,
+            scoring=scoring,
             save_estimator=save_estimator,
             save_train=save_train,
         )
