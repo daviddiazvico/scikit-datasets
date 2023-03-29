@@ -224,6 +224,7 @@ def _set_style_formatter(
     styler: pd.io.formats.style.Styler,
     *,
     precision: int,
+    show_rank: bool = True,
 ) -> pd.io.formats.style.Styler:
     def _formatter(
         data: object,
@@ -238,7 +239,9 @@ def _set_style_formatter(
             str_repr = f"{data.mean:.{precision}f}"
             if data.std is not None:
                 str_repr += f" ± {data.std:.{precision}f}"
-            str_repr += f" ({data.rank:.0f})"
+            if show_rank:
+                precision_rank = 0 if isinstance(data.rank, int) else precision
+                str_repr += f" ({data.rank:.{precision_rank}f})"
             return str_repr
         else:
             return ""
@@ -352,7 +355,7 @@ def _set_default_style_latex(
         overwrite=False,
     )
 
-    for rank in range(styler.data.shape[1]):
+    for rank in range(1, styler.data.shape[1] + 1):
         styler = _set_style_from_class(
             styler,
             f"rank{rank}",
@@ -418,6 +421,7 @@ def scores_table(
     two_sided: bool = True,
     default_style: Literal["html", "latex", None] = "html",
     precision: int = 2,
+    show_rank: bool = True,
     summary_rows: Sequence[Tuple[str, Callable[..., SummaryRow]]] = (
         ("Average rank", average_rank),
     ),
@@ -496,7 +500,7 @@ def scores_table(
             rankdata(-m, method=method)
             if greater_is_better
             else rankdata(m, method=method)
-            for m in means
+            for m in means.round(precision)
         ]
     )
 
@@ -517,7 +521,7 @@ def scores_table(
             table.loc[d, e] = ScoreCell(
                 mean=means[i, j],
                 std=None if stds is None else stds[i, j],
-                rank=ranks[i, j],
+                rank=int(ranks[i, j]),
                 significant=significants[i, j],
             )
 
@@ -552,6 +556,7 @@ def scores_table(
     styler = _set_style_formatter(
         styler,
         precision=precision,
+        show_rank=show_rank,
     )
 
     return _set_default_style(
