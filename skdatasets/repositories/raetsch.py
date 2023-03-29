@@ -8,7 +8,6 @@ Gunnar Raetsch benchmark datasets
 from __future__ import annotations
 
 import hashlib
-import sys
 from pathlib import Path
 from typing import (
     Final,
@@ -27,21 +26,23 @@ from sklearn.utils import Bunch
 
 from .base import fetch_file
 
-DATASETS: Final = frozenset((
-    'banana',
-    'breast_cancer',
-    'diabetis',
-    'flare_solar',
-    'german',
-    'heart',
-    'image',
-    'ringnorm',
-    'splice',
-    'thyroid',
-    'titanic',
-    'twonorm',
-    'waveform',
-))
+DATASETS: Final = frozenset(
+    (
+        "banana",
+        "breast_cancer",
+        "diabetis",
+        "flare_solar",
+        "german",
+        "heart",
+        "image",
+        "ringnorm",
+        "splice",
+        "thyroid",
+        "titanic",
+        "twonorm",
+        "waveform",
+    )
+)
 
 
 class RaetschOuterCV(object):
@@ -59,12 +60,16 @@ class RaetschOuterCV(object):
         self.train_splits = train_splits
         self.test_splits = test_splits
 
-    def __iter__(self) -> Iterator[Tuple[
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[int, float]],
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[int, float]],
-    ]]:
+    def __iter__(
+        self,
+    ) -> Iterator[
+        Tuple[
+            np.typing.NDArray[float],
+            np.typing.NDArray[Union[int, float]],
+            np.typing.NDArray[float],
+            np.typing.NDArray[Union[int, float]],
+        ]
+    ]:
         return (
             (self.X[tr - 1], self.y[tr - 1], self.X[ts - 1], self.y[ts - 1])
             for tr, ts in zip(self.train_splits, self.test_splits)
@@ -89,9 +94,9 @@ def _fetch_remote(data_home: Optional[str] = None) -> Path:
         Full path of the created file.
     """
     file_path = fetch_file(
-        'raetsch',
-        'https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets'
-        '/raw/master/benchmarks.mat',
+        "raetsch",
+        "https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets"
+        "/raw/master/benchmarks.mat",
         data_home=data_home,
     )
     sha256hash = hashlib.sha256()
@@ -102,9 +107,7 @@ def _fetch_remote(data_home: Optional[str] = None) -> Path:
                 break
             sha256hash.update(buffer)
     checksum = sha256hash.hexdigest()
-    remote_checksum = (
-        '47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75'
-    )
+    remote_checksum = "47c19e4bc4716edc4077cfa5ea61edf4d02af4ec51a0ecfe035626ae8b561c75"
     if remote_checksum != checksum:
         raise IOError(
             f"{file_path} has an SHA256 checksum ({checksum}) differing "
@@ -169,7 +172,7 @@ def fetch(
 
     """
     if name not in DATASETS:
-        raise Exception('Avaliable datasets are ' + str(list(DATASETS)))
+        raise Exception("Avaliable datasets are " + str(list(DATASETS)))
     filename = _fetch_remote(data_home=data_home)
     X, y, train_splits, test_splits = loadmat(filename)[name][0][0]
     if len(y.shape) == 2 and y.shape[1] == 1:

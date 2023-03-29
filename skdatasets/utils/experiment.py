@@ -5,13 +5,9 @@
 from __future__ import annotations
 
 import itertools
-import os
-import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from inspect import signature
-from tempfile import NamedTemporaryFile, mkdtemp
-from time import perf_counter, process_time, sleep
+from time import perf_counter, sleep
 from typing import (
     Any,
     Callable,
@@ -29,14 +25,13 @@ from typing import (
 )
 from warnings import warn
 
-import joblib
 import numpy as np
 from sacred import Experiment, Ingredient
 from sacred.observers import FileStorageObserver, MongoObserver, RunObserver
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.metrics import check_scoring
 from sklearn.model_selection import check_cv
-from sklearn.utils import Bunch, is_scalar_nan
+from sklearn.utils import Bunch
 
 from incense import ExperimentLoader, FileSystemExperimentLoader
 from incense.experiment import FileSystemExperiment
@@ -45,7 +40,6 @@ SelfType = TypeVar("SelfType")
 
 
 class DataLike(Protocol):
-
     def __getitem__(
         self: SelfType,
         key: np.typing.NDArray[int],
@@ -78,7 +72,6 @@ ScorerLike = Union[
 
 
 class EstimatorProtocol(Protocol[DataType, TargetType]):
-
     def fit(self: SelfType, X: DataType, y: TargetType) -> SelfType:
         pass
 
@@ -87,7 +80,6 @@ class EstimatorProtocol(Protocol[DataType, TargetType]):
 
 
 class CVSplitter(Protocol):
-
     def split(
         self,
         X: np.typing.NDArray[float],
@@ -178,9 +170,7 @@ def _add_timing(experiment: Experiment, name: str) -> Iterator[None]:
 
 
 def _iterate_outer_cv(
-    outer_cv: CVLike | Iterable[
-        Tuple[DataType, TargetType, DataType, TargetType]
-    ],
+    outer_cv: CVLike | Iterable[Tuple[DataType, TargetType, DataType, TargetType]],
     estimator: EstimatorProtocol[DataType, TargetType],
     X: DataType,
     y: TargetType,
@@ -193,8 +183,7 @@ def _iterate_outer_cv(
 
     cv = check_cv(outer_cv, y, classifier=is_classifier(estimator))
     yield from (
-        (X[train], y[train], X[test], y[test])
-        for train, test in cv.split(X, y)
+        (X[train], y[train], X[test], y[test]) for train, test in cv.split(X, y)
     )
 
 
@@ -245,12 +234,8 @@ def _benchmark_from_data(
 
 def _compute_means(experiment: Experiment) -> None:
 
-    experiment.info["score_mean"] = float(
-        np.nanmean(experiment.info["test_score"])
-    )
-    experiment.info["score_std"] = float(
-        np.nanstd(experiment.info["test_score"])
-    )
+    experiment.info["score_mean"] = float(np.nanmean(experiment.info["test_score"]))
+    experiment.info["score_std"] = float(np.nanstd(experiment.info["test_score"]))
 
 
 def _benchmark_one(
@@ -270,16 +255,8 @@ def _benchmark_one(
     validation_indices = getattr(data, "validation_indices", [])
     test_indices = getattr(data, "test_indices", [])
 
-    X_train_val = (
-        X[train_indices + validation_indices]
-        if train_indices
-        else X
-    )
-    y_train_val = (
-        y[train_indices + validation_indices]
-        if train_indices
-        else y
-    )
+    X_train_val = X[train_indices + validation_indices] if train_indices else X
+    y_train_val = y[train_indices + validation_indices] if train_indices else y
 
     X_test = X[test_indices]
     y_test = y[test_indices]
@@ -445,8 +422,10 @@ def _get_estimator_function(
 ) -> Callable[..., EstimatorProtocol[Any, Any]]:
 
     if hasattr(estimator, "fit"):
+
         def estimator_function() -> EstimatorProtocol:
             return estimator
+
     else:
         estimator_function = estimator
 
@@ -461,6 +440,7 @@ def _get_dataset_function(
     if callable(dataset):
         dataset_function = dataset
     else:
+
         def dataset_function() -> Bunch:
             return dataset
 
@@ -704,7 +684,8 @@ def _get_experiments(
 
     if (
         (ids, dataset_names, estimator_names) == (None, None, None)
-        or isinstance(loader, FileSystemExperimentLoader) and ids is None
+        or isinstance(loader, FileSystemExperimentLoader)
+        and ids is None
     ):
         find_all_fun = getattr(
             loader,
@@ -717,16 +698,14 @@ def _get_experiments(
 
         experiments = find_all_fun()
 
-    elif (
-        (dataset_names, estimator_names) == (None, None)
-        or isinstance(loader, FileSystemExperimentLoader)
+    elif (dataset_names, estimator_names) == (None, None) or isinstance(
+        loader, FileSystemExperimentLoader
     ):
         load_ids_fun = getattr(
             loader,
             "find_by_ids",
             lambda id_seq: [
-                loader.find_by_id(experiment_id)
-                for experiment_id in id_seq
+                loader.find_by_id(experiment_id) for experiment_id in id_seq
             ],
         )
 
@@ -745,8 +724,7 @@ def _get_experiments(
             conditions.append({"_id": {"$in": ids}})
 
         if estimator_names is not None:
-            conditions.append(
-                {"config.estimator_name": {"$in": estimator_names}})
+            conditions.append({"config.estimator_name": {"$in": estimator_names}})
 
         if dataset_names is not None:
             conditions.append({"config.dataset_name": {"$in": dataset_names}})
@@ -758,16 +736,14 @@ def _get_experiments(
     if isinstance(loader, FileSystemExperimentLoader):
         # Filter experiments by dataset and estimator names
         experiments = [
-            e for e in experiments
+            e
+            for e in experiments
             if (
                 (
                     estimator_names is None
                     or e.config["estimator_name"] in estimator_names
                 )
-                and (
-                    dataset_names is None
-                    or e.config["dataset_name"] in dataset_names
-                )
+                and (dataset_names is None or e.config["dataset_name"] in dataset_names)
             )
         ]
 
@@ -869,9 +845,7 @@ def fetch_scores(
     estimator_names = (
         tuple(estimator_list) if estimator_names is None else estimator_names
     )
-    dataset_names = (
-        tuple(dataset_list) if dataset_names is None else dataset_names
-    )
+    dataset_names = tuple(dataset_list) if dataset_names is None else dataset_names
     matrix_shape = (len(dataset_names), len(estimator_names))
 
     scores = np.full(matrix_shape + (nobs,), np.nan)

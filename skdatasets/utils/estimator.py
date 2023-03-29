@@ -25,7 +25,7 @@ def json2estimator(estimator, **kwargs):
         Instantiated Scikit-learn estimator.
 
     """
-    with open(estimator, 'r') as definition:
+    with open(estimator, "r") as definition:
         estimator = jsonpickle.decode(definition.read())
         for k, v in kwargs.items():
             setattr(estimator, k, v)
