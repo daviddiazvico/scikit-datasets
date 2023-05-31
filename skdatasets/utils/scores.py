@@ -363,7 +363,7 @@ def _set_default_style_latex(
         overwrite=False,
     )
 
-    for rank in range(styler.data.shape[1]):
+    for rank in range(1, styler.data.shape[1] + 1):
         styler = _set_style_from_class(
             styler,
             f"rank{rank}",
@@ -503,9 +503,9 @@ def scores_table(
         nobs = scores.shape[-1]
 
     ranks = np.asarray([
-        rankdata(-m, method=method)
+        rankdata(-m.round(precision), method=method)
         if greater_is_better
-        else rankdata(m, method=method)
+        else rankdata(m.round(precision), method=method)
         for m in means
     ])
 
