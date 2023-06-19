@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import io
 import os
-import sys
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -31,44 +30,46 @@ from sklearn.utils import Bunch
 
 from .base import fetch_file
 
-BASE_URL = 'http://sci2s.ugr.es/keel'
-COLLECTIONS: Final = frozenset((
-    'classification',
-    'missing',
-    'imbalanced',
-    'multiInstance',
-    'multilabel',
-    'textClassification',
-    'classNoise',
-    'attributeNoise',
-    'semisupervised',
-    'regression',
-    'timeseries',
-    'unsupervised',
-    'lowQuality',
-))
+BASE_URL = "http://sci2s.ugr.es/keel"
+COLLECTIONS: Final = frozenset(
+    (
+        "classification",
+        "missing",
+        "imbalanced",
+        "multiInstance",
+        "multilabel",
+        "textClassification",
+        "classNoise",
+        "attributeNoise",
+        "semisupervised",
+        "regression",
+        "timeseries",
+        "unsupervised",
+        "lowQuality",
+    )
+)
 
 
 # WTFs
 IMBALANCED_URLS: Final = (
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3',
-    'dataset/data/imbalanced',
-    'keel-dataset/datasets/imbalanced/imb_noisyBordExamples',
-    'keel-dataset/datasets/imbalanced/preprocessed',
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3",
+    "dataset/data/imbalanced",
+    "keel-dataset/datasets/imbalanced/imb_noisyBordExamples",
+    "keel-dataset/datasets/imbalanced/preprocessed",
 )
 
 IRREGULAR_DESCR_IMBALANCED_URLS: Final = (
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2',
-    'keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3',
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p1",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p2",
+    "keel-dataset/datasets/imbalanced/imb_IRhigherThan9p3",
 )
 
 INCORRECT_DESCR_IMBALANCED_URLS: Final = MappingProxyType(
-    {'semisupervised': 'classification'},
+    {"semisupervised": "classification"},
 )
 
 
@@ -87,22 +88,26 @@ class KeelOuterCV(object):
         self.Xs_test = Xs_test
         self.ys_test = ys_test
 
-    def __iter__(self) -> Iterator[Tuple[
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[int, float]],
-        np.typing.NDArray[float],
-        np.typing.NDArray[Union[int, float]],
-    ]]:
+    def __iter__(
+        self,
+    ) -> Iterator[
+        Tuple[
+            np.typing.NDArray[float],
+            np.typing.NDArray[Union[int, float]],
+            np.typing.NDArray[float],
+            np.typing.NDArray[Union[int, float]],
+        ]
+    ]:
         return zip(self.Xs, self.ys, self.Xs_test, self.ys_test)
 
 
 def _load_Xy(
     zipfile: Path,
     csvfile: str,
-    sep: str = ',',
+    sep: str = ",",
     header: Optional[int] = None,
-    engine: str = 'python',
-    na_values: AbstractSet[str] = frozenset(('?')),
+    engine: str = "python",
+    na_values: AbstractSet[str] = frozenset(("?")),
     **kwargs: Any,
 ) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[int, float]]]:
     """Load a zipped csv file with target in the last column."""
@@ -129,14 +134,14 @@ def _load_descr(
     data_home: Optional[str] = None,
 ) -> Tuple[int, str]:
     """Load a dataset description."""
-    subfolder = os.path.join('keel', collection)
-    filename = name + '-names.txt'
-    if collection == 'imbalanced':
+    subfolder = os.path.join("keel", collection)
+    filename = name + "-names.txt"
+    if collection == "imbalanced":
         for url in IMBALANCED_URLS:
             if url in IRREGULAR_DESCR_IMBALANCED_URLS:
-                url = BASE_URL + '/' + url + '/' + 'names' + '/' + filename
+                url = BASE_URL + "/" + url + "/" + "names" + "/" + filename
             else:
-                url = BASE_URL + '/' + url + '/' + filename
+                url = BASE_URL + "/" + url + "/" + filename
             try:
                 f = fetch_file(
                     dataname=name,
@@ -173,10 +178,10 @@ def _fetch_keel_zip(
     data_home: Optional[str] = None,
 ) -> Path:
     """Fetch Keel dataset zip file."""
-    subfolder = os.path.join('keel', collection)
-    if collection == 'imbalanced':
+    subfolder = os.path.join("keel", collection)
+    if collection == "imbalanced":
         for url in IMBALANCED_URLS:
-            url = BASE_URL + '/' + url + '/' + filename
+            url = BASE_URL + "/" + url + "/" + filename
             try:
                 return fetch_file(
                     dataname=name,
@@ -210,13 +215,13 @@ def _load_folds(
     Optional[KeelOuterCV],
 ]:
     """Load a dataset folds."""
-    filename = name + '.zip'
+    filename = name + ".zip"
     f = _fetch_keel_zip(collection, name, filename, data_home=data_home)
-    X, y = _load_Xy(f, name + '.dat', skiprows=nattrs + 4)
+    X, y = _load_Xy(f, name + ".dat", skiprows=nattrs + 4)
     cv = None
     if nfolds in (5, 10):
-        fold = 'dobscv' if dobscv else 'fold'
-        filename = name + '-' + str(nfolds) + '-' + fold + '.zip'
+        fold = "dobscv" if dobscv else "fold"
+        filename = name + "-" + str(nfolds) + "-" + fold + ".zip"
         f = _fetch_keel_zip(collection, name, filename, data_home=data_home)
         Xs = []
         ys = []
@@ -228,11 +233,10 @@ def _load_folds(
                 _name = f"{name}/{name}-{nfolds}dobscv-{i + 1}"
             else:
                 _name = f"{name}-{nfolds}-{i + 1}"
-            X_fold, y_fold = _load_Xy(
-                f, _name + 'tra.dat', skiprows=nattrs + 4)
+            X_fold, y_fold = _load_Xy(f, _name + "tra.dat", skiprows=nattrs + 4)
             X_test_fold, y_test_fold = _load_Xy(
                 f,
-                _name + 'tst.dat',
+                _name + "tst.dat",
                 skiprows=nattrs + 4,
             )
             Xs.append(X_fold)
@@ -317,7 +321,7 @@ def fetch(
 
     """
     if collection not in COLLECTIONS:
-        raise ValueError('Avaliable collections are ' + str(list(COLLECTIONS)))
+        raise ValueError("Avaliable collections are " + str(list(COLLECTIONS)))
     nattrs, DESCR = _load_descr(collection, name, data_home=data_home)
     X, y, cv = _load_folds(
         collection,

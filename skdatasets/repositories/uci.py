@@ -6,7 +6,6 @@ UCI datasets (https://archive.ics.uci.edu/ml/datasets.html).
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Any, Literal, Optional, Tuple, Union, overload
 
@@ -16,21 +15,18 @@ from sklearn.utils import Bunch
 
 from .base import fetch_file
 
-BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
+BASE_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases"
 
 
 def _load_csv(
     fname: Path,
     **kwargs: Any,
-) -> Tuple[
-    np.typing.NDArray[float],
-    np.typing.NDArray[Union[float, int, str]],
-]:
+) -> Tuple[np.typing.NDArray[float], np.typing.NDArray[Union[float, int, str]],]:
     """Load a csv with targets in the last column and features in the rest."""
     data = np.genfromtxt(
         fname,
         dtype=str,
-        delimiter=',',
+        delimiter=",",
         encoding=None,
         **kwargs,
     )
@@ -57,9 +53,9 @@ def _fetch(
     np.typing.NDArray[str],
 ]:
     """Fetch dataset."""
-    subfolder = 'uci'
-    filename_str = name + '.data'
-    url = BASE_URL + '/' + name + '/' + filename_str
+    subfolder = "uci"
+    filename_str = name + ".data"
+    url = BASE_URL + "/" + name + "/" + filename_str
 
     filename = fetch_file(
         dataname=name,
@@ -74,8 +70,8 @@ def _fetch(
         y = ordinal_encoder.fit_transform(y.reshape(-1, 1))[:, 0]
         target_names = ordinal_encoder.categories_[0]
     try:
-        filename_str = name + '.test'
-        url = BASE_URL + '/' + name + '/' + filename_str
+        filename_str = name + ".test"
+        url = BASE_URL + "/" + name + "/" + filename_str
         filename = fetch_file(
             dataname=name,
             urlname=url,
@@ -93,8 +89,8 @@ def _fetch(
         X_test = None
         y_test = None
     try:
-        filename_str = name + '.names'
-        url = BASE_URL + '/' + name + '/' + filename_str
+        filename_str = name + ".names"
+        url = BASE_URL + "/" + name + "/" + filename_str
         filename = fetch_file(
             dataname=name,
             urlname=url,
@@ -102,8 +98,8 @@ def _fetch(
             data_home=data_home,
         )
     except Exception:
-        filename_str = name + '.info'
-        url = BASE_URL + '/' + name + '/' + filename_str
+        filename_str = name + ".info"
+        url = BASE_URL + "/" + name + "/" + filename_str
         filename = fetch_file(
             dataname=name,
             urlname=url,
@@ -140,10 +136,7 @@ def fetch(
     data_home: Optional[str] = None,
     *,
     return_X_y: bool = False,
-) -> Union[
-    Bunch,
-    Tuple[np.typing.NDArray[float], np.typing.NDArray[float]],
-]:
+) -> Union[Bunch, Tuple[np.typing.NDArray[float], np.typing.NDArray[float]],]:
     """
     Fetch UCI dataset.
 

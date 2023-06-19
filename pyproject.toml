@@ -1,6 +1,6 @@
 [project]
 name = "scikit-datasets"
-version = "0.2.2"
+version = "0.2.3"
 description = "Scikit-learn-compatible datasets"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -21,14 +21,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
 ]
-
-dependencies = [
-  "numpy",
-  "scipy",
-  "scikit-learn",
-]
-
+dependencies = ["numpy", "scipy", "scikit-learn"]
 [project.optional-dependencies]
 cran = ["rdata"]
 forex = ["forex_python>=1.6"]
@@ -38,20 +33,13 @@ physionet = ["pandas", "wfdb"]
 utils-estimator = ["jsonpickle"]
 utils-experiments = ["sacred", "incense"]
 utils-scores = ["statsmodels", "jinja2"]
-all = ["scikit-datasets[cran,forex,keel,keras,physionet,utils-estimator,utils-experiments,utils-scores]"]
-test = [
-  "pytest",
-  "pytest-cov[all]",
-  "coverage",
-  "scikit-datasets[all]",
-]
-
+all = ["scikit-datasets[cran, forex, keel, keras, physionet, utils-estimator, utils-experiments, utils-scores]"]
+test = ["pytest", "pytest-cov[all]", "coverage", "scikit-datasets[all]"]
 [project.urls]
 homepage = "https://github.com/daviddiazvico/scikit-datasets"
 documentation = "https://daviddiazvico.github.io/scikit-datasets/"
 repository = "https://github.com/daviddiazvico/scikit-datasets"
-download = "https://github.com/daviddiazvico/scikit-datasets/archive/v0.2.1.tar.gz"
-
+download = "https://github.com/daviddiazvico/scikit-datasets/archive/v0.2.2.tar.gz"
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = ["setuptools", "wheel"]  # PEP 508 specifications.
