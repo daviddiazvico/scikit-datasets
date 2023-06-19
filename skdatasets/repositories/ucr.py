@@ -15,7 +15,7 @@ from sklearn.utils import Bunch
 
 from .base import fetch_zip as _fetch_zip
 
-BASE_URL: Final = "http://www.timeseriesclassification.com/Downloads/"
+BASE_URL: Final = "http://www.timeseriesclassification.com/ClassificationDownloads/"
 
 
 def _target_conversion(
@@ -87,7 +87,7 @@ def fetch(
     *,
     data_home: Optional[str] = None,
     return_X_y: bool = False,
-) -> Union[Bunch, Tuple[np.typing.NDArray[float], np.typing.NDArray[int]],]:
+) -> Union[Bunch, Tuple[np.typing.NDArray[float], np.typing.NDArray[int]], ]:
     """
     Fetch UCR dataset.
 
@@ -136,7 +136,8 @@ def fetch(
     path_file_test = (data_path / (name + "_TEST")).with_suffix(".arff")
 
     DESCR = (
-        path_file_descr.read_text(errors="surrogateescape") if path_file_descr else ""
+        path_file_descr.read_text(
+            errors="surrogateescape") if path_file_descr else ""
     )
     train = scipy.io.arff.loadarff(path_file_train)
     test = scipy.io.arff.loadarff(path_file_test)
