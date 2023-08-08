@@ -15,7 +15,7 @@ from sklearn.utils import Bunch
 
 from .base import fetch_zip as _fetch_zip
 
-BASE_URL: Final = "http://www.timeseriesclassification.com/ClassificationDownloads/"
+BASE_URL: Final = "https://www.timeseriesclassification.com/aeon-toolkit/"
 
 
 def _target_conversion(
