@@ -11,7 +11,6 @@ import pathlib
 import re
 import urllib
 import warnings
-from distutils.version import LooseVersion
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import (
@@ -28,10 +27,10 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+import rdata
+from packaging.version import Version
 from sklearn.datasets import get_data_home
 from sklearn.utils import Bunch
-
-import rdata
 
 from .base import DatasetNotFoundError, fetch_tgz as _fetch_tgz
 
@@ -105,7 +104,7 @@ def _get_latest_version_offline(package_name: str) -> str | None:
 
     if downloaded_packages:
         versions = [
-            LooseVersion(p.name[(len(package_name) + 1) : -len(".tar.gz")])
+            Version(p.name[(len(package_name) + 1):-len(".tar.gz")])
             for p in downloaded_packages
         ]
 
