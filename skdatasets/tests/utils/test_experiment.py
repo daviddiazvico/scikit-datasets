@@ -4,10 +4,12 @@
 """
 from __future__ import annotations
 
+import pytest
 import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
+import pytest
 from sacred.observers import FileStorageObserver
 from sklearn.datasets import load_diabetes, load_iris, load_wine
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -16,6 +18,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import Bunch
 
 from skdatasets.utils.experiment import (
+    ScorerLike,
     create_experiments,
     experiment,
     fetch_scores,
@@ -56,7 +59,7 @@ def _dataset(
 def _estimator(cv: CVLike) -> GridSearchCV:
     return GridSearchCV(
         DecisionTreeRegressor(),
-        {'max_depth': [2, 4]},
+        {"max_depth": [2, 4]},
         cv=cv,
     )
 
@@ -70,24 +73,27 @@ def _experiment(
         e.observers.append(FileStorageObserver(tmpdirname))
         e.run(
             config_updates={
-                'dataset': {
-                    'inner_cv': inner_cv,
-                    'outer_cv': outer_cv,
+                "dataset": {
+                    "inner_cv": inner_cv,
+                    "outer_cv": outer_cv,
                 },
             },
         )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_nested_cv() -> None:
     """Tests nested CV experiment."""
     _experiment(3, 3)
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_inner_cv() -> None:
     """Tests inner CV experiment."""
     _experiment(3, None)
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_inner_folds() -> None:
     """Tests explicit inner folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -101,6 +107,7 @@ def test_explicit_inner_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_outer_folds_indexes() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -114,6 +121,7 @@ def test_explicit_outer_folds_indexes() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_outer_folds() -> None:
     """Tests explicit outer folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -127,6 +135,7 @@ def test_explicit_outer_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Sacred to be fixed.")
 def test_explicit_nested_folds() -> None:
     """Tests explicit nested folds experiment."""
     X, y = load_diabetes(return_X_y=True)
@@ -144,7 +153,38 @@ def test_explicit_nested_folds() -> None:
     )
 
 
-def test_create_experiments_basic() -> None:
+@pytest.mark.parametrize(
+    ["scoring", "expected_mean", "expected_std"],
+    [
+        (
+            None,
+            [
+                [0.96666667, 0.97333333, 0.98],
+                [0.70285714, 0.69126984, 0.68063492],
+            ],
+            [
+                [0.02108185, 0.02494438, 0.01632993],
+                [0.07920396, 0.04877951, 0.0662983],
+            ],
+        ),
+        (
+            "recall_micro",
+            [
+                [0.96666667, 0.97333333, 0.98],
+                [0.70285714, 0.69126984, 0.68063492],
+            ],
+            [
+                [0.02108185, 0.02494438, 0.01632993],
+                [0.07920396, 0.04877951, 0.0662983],
+            ],
+        ),
+    ],
+)
+def test_create_experiments_basic(
+    scoring: ScorerLike[np.typing.NDArray[np.float_], np.typing.NDArray[np.int_]],
+    expected_mean: np.typing.NDArray[np.float_],
+    expected_std: np.typing.NDArray[np.float_],
+) -> None:
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         experiments = create_experiments(
@@ -157,6 +197,7 @@ def test_create_experiments_basic() -> None:
                 "iris": load_iris(),
                 "wine": load_wine(),
             },
+            scoring=scoring,
             storage=tmpdirname,
         )
 
@@ -171,16 +212,10 @@ def test_create_experiments_basic() -> None:
         assert scores.estimator_names == ("knn-3", "knn-5", "knn-7")
         np.testing.assert_allclose(
             scores.scores_mean,
-            [
-                [0.96666667, 0.97333333, 0.98],
-                [0.70285714, 0.69126984, 0.68063492],
-            ],
+            expected_mean,
         )
         np.testing.assert_allclose(
             scores.scores_std,
-            [
-                [0.02108185, 0.02494438, 0.01632993],
-                [0.07920396, 0.04877951, 0.0662983],
-            ],
+            expected_std,
             rtol=1e-6,
         )
