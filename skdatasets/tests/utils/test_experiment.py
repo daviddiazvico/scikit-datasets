@@ -2,6 +2,7 @@
 @author: David Diaz Vico
 @license: MIT
 """
+
 from __future__ import annotations
 
 import pytest
@@ -9,7 +10,6 @@ import tempfile
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
 import numpy as np
-import pytest
 from sacred.observers import FileStorageObserver
 from sklearn.datasets import load_diabetes, load_iris, load_wine
 from sklearn.model_selection import GridSearchCV, train_test_split
