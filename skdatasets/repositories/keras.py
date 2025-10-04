@@ -12,7 +12,7 @@ from typing import Any, Literal, Tuple, overload
 import numpy as np
 from sklearn.utils import Bunch
 
-from tensorflow.keras.datasets import (
+from keras.datasets import (
     boston_housing,
     cifar10,
     cifar100,
