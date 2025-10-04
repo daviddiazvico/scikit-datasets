@@ -2,6 +2,7 @@
 @author: David Diaz Vico
 @license: MIT
 """
+
 from __future__ import annotations
 
 import itertools
@@ -145,6 +146,7 @@ class ScoresInfo:
     fetch_scores
 
     """
+
     dataset_names: Sequence[str]
     estimator_names: Sequence[str]
     scores: np.typing.NDArray[float]
@@ -182,9 +184,7 @@ def _iterate_outer_cv(
             yield from outer_cv
 
     cv = check_cv(outer_cv, y, classifier=is_classifier(estimator))
-    yield from (
-        (X[train], y[train], X[test], y[test]) for train, test in cv.split(X, y)
-    )
+    yield from ((X[train], y[train], X[test], y[test]) for train, test in cv.split(X, y))
 
 
 def _benchmark_from_data(
@@ -690,23 +690,16 @@ def _get_experiments(
         find_all_fun = getattr(
             loader,
             "find_all",
-            lambda: [
-                FileSystemExperiment.from_run_dir(run_dir)
-                for run_dir in loader._runs_dir.iterdir()
-            ],
+            lambda: [FileSystemExperiment.from_run_dir(run_dir) for run_dir in loader._runs_dir.iterdir()],
         )
 
         experiments = find_all_fun()
 
-    elif (dataset_names, estimator_names) == (None, None) or isinstance(
-        loader, FileSystemExperimentLoader
-    ):
+    elif (dataset_names, estimator_names) == (None, None) or isinstance(loader, FileSystemExperimentLoader):
         load_ids_fun = getattr(
             loader,
             "find_by_ids",
-            lambda id_seq: [
-                loader.find_by_id(experiment_id) for experiment_id in id_seq
-            ],
+            lambda id_seq: [loader.find_by_id(experiment_id) for experiment_id in id_seq],
         )
 
         experiments = load_ids_fun(ids)
@@ -739,10 +732,7 @@ def _get_experiments(
             e
             for e in experiments
             if (
-                (
-                    estimator_names is None
-                    or e.config["estimator_name"] in estimator_names
-                )
+                (estimator_names is None or e.config["estimator_name"] in estimator_names)
                 and (dataset_names is None or e.config["dataset_name"] in dataset_names)
             )
         ]
@@ -842,9 +832,7 @@ def fetch_scores(
             score_std,
         )
 
-    estimator_names = (
-        tuple(estimator_list) if estimator_names is None else estimator_names
-    )
+    estimator_names = tuple(estimator_list) if estimator_names is None else estimator_names
     dataset_names = tuple(dataset_list) if dataset_names is None else dataset_names
     matrix_shape = (len(dataset_names), len(estimator_names))
 

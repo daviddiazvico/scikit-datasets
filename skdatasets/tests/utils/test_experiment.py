@@ -153,6 +153,7 @@ def test_explicit_nested_folds() -> None:
     )
 
 
+@pytest.mark.skip(reason="Waiting for Incense to be fixed.")
 @pytest.mark.parametrize(
     ["scoring", "expected_mean", "expected_std"],
     [
