@@ -100,6 +100,7 @@ class CVSplitter(Protocol):
 CVLike = Union[
     CVSplitter,
     Iterable[IndicesType],
+    Callable[[], Iterable[IndicesType]],
     int,
     None,
 ]
@@ -176,6 +177,9 @@ def _iterate_outer_cv(
     y: TargetType,
 ) -> Iterable[Tuple[DataType, TargetType, DataType, TargetType]]:
     """Iterate over multiple partitions."""
+    if callable(outer_cv):
+        outer_cv = outer_cv()
+    
     if isinstance(outer_cv, Iterable):
         outer_cv, cv_copy = itertools.tee(outer_cv)
         if len(next(cv_copy)) == 4:
