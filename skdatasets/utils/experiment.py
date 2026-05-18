@@ -229,7 +229,11 @@ def _benchmark_from_data(
         method = getattr(estimator, output, None)
         if method is not None:
             with _add_timing(experiment, f"{output}_time"):
-                _append_info(experiment, f"{output}", method(X_test))
+                try:
+                    result = method(X_test)
+                except NotImplementedError:
+                    continue
+                _append_info(experiment, f"{output}", result)
 
 
 def _compute_means(experiment: Experiment) -> None:
