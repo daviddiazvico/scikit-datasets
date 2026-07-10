@@ -216,6 +216,14 @@ def _benchmark_from_data(
     if best_params:
         _append_info(experiment, "search_best_params", best_params)
 
+    best_index = getattr(estimator, "best_index_", None)
+    if best_index:
+        _append_info(experiment, "search_best_index", best_index)
+
+    cv_results = getattr(estimator, "cv_results_", None)
+    if cv_results:
+        _append_info(experiment, "search_cv_results", cv_results)
+
     best_score = getattr(estimator, "best_score_", None)
     if best_params:
         _append_info(experiment, "search_best_score", best_score)
