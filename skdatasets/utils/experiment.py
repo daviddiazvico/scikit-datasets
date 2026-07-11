@@ -213,19 +213,19 @@ def _benchmark_from_data(
         _append_info(experiment, "fitted_estimator", estimator)
 
     best_params = getattr(estimator, "best_params_", None)
-    if best_params:
+    if best_params is not None:
         _append_info(experiment, "search_best_params", best_params)
 
     best_index = getattr(estimator, "best_index_", None)
-    if best_index:
+    if best_index is not None:
         _append_info(experiment, "search_best_index", best_index)
 
     cv_results = getattr(estimator, "cv_results_", None)
-    if cv_results:
+    if cv_results is not None:
         _append_info(experiment, "search_cv_results", cv_results)
 
     best_score = getattr(estimator, "best_score_", None)
-    if best_params:
+    if best_score is not None:
         _append_info(experiment, "search_best_score", best_score)
 
     with _add_timing(experiment, "score_time"):
